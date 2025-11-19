@@ -1,0 +1,51 @@
+.teacher-page .teacher-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.teacher-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.students-list, .submissions-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.students-list li, .submissions-list li {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: var(--bg-main);
+  border-radius: var(--border-radius);
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.student-name, .submission-student {
+  flex-grow: 1;
+  font-weight: 500;
+}
+
+.student-level {
+  padding: 0.2rem 0.6rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  color: white;
+}
+.student-level.متقدم { background-color: var(--primary); }
+.student-level.متوسط { background-color: var(--accent); }
+.student-level.مبتدئ { background-color: #f44336; }
+
+.student-activity, .submission-topic, .submission-score {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.button-small {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+}

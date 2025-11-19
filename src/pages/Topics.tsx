@@ -1,41 +1,34 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/Topics.css';
 
-export type Topic = {
-  id: string;
-  title: string;
-  level: string;
-  description: string;
-};
-
-const topics: Topic[] = [
+// Mock Data
+const topics = [
   {
     id: '1',
     title: 'احترام البيئة في حياتنا اليومية',
     level: 'الصف الخامس',
-    description: 'تعلم كيفية الكتابة عن أهمية الحفاظ على البيئة من حولنا.'
+    description: 'تعلم كيفية كتابة مقال عن أهمية الحفاظ على البيئة من حولنا.',
   },
   {
     id: '2',
     title: 'أهمية القراءة اليومية',
     level: 'الصف السادس',
-    description: 'اكتشف كيف يمكن للقراءة أن تغير حياتك وتوسع آفاقك.'
+    description: 'اكتشف كيف تصيغ نصًا إقناعيًا حول فوائد القراءة وتأثيرها على الفكر.',
   },
   {
     id: '3',
     title: 'رحلة إلى المتحف الوطني',
     level: 'الصف الرابع',
-    description: 'صف زيارتك للمتحف الوطني وما تعلمته من كنوز تاريخية.'
-  }
+    description: 'تدرب على كتابة نص وصفي لرحلة قمت بها إلى مكان تاريخي.',
+  },
 ];
 
-const Topics: React.FC = () => {
+export default function Topics() {
   return (
-    <div className="topics-page">
+    <div className="topics-page container">
       <header className="topics-header">
         <h1>اختر موضوع الكتابة</h1>
-        <p>كل موضوع يحتوي على درس، نموذج، أسئلة، ونشاط كتابي لمساعدتك على التحسن.</p>
+        <p>كل موضوع يضم درسًا، ونماذج، وأدوات لمساعدتك على الكتابة ببراعة.</p>
       </header>
       <div className="topics-grid">
         {topics.map(topic => (
@@ -43,12 +36,12 @@ const Topics: React.FC = () => {
             <span className="topic-level">{topic.level}</span>
             <h2>{topic.title}</h2>
             <p>{topic.description}</p>
-            <Link to={`/topic/${topic.id}`} className="button">فتح الموضوع</Link>
+            <Link to={`/topic/${topic.id}`} className="button">
+              فتح الموضوع
+            </Link>
           </div>
         ))}
       </div>
     </div>
   );
-};
-
-export default Topics;
+}

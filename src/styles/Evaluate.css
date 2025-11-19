@@ -1,0 +1,69 @@
+.evaluate-page .evaluate-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.evaluation-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.submission-card p {
+  background-color: var(--bg-main);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  line-height: 1.8;
+}
+
+.evaluation-card .score {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+}
+
+.evaluation-card .score span {
+  color: var(--primary);
+  background-color: var(--bg-main);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius);
+}
+
+.feedback-list {
+  list-style-type: none;
+  padding: 0;
+  margin-bottom: 1.5rem;
+}
+
+.feedback-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  background-color: var(--bg-main);
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+}
+
+.feedback-list .error {
+  color: var(--accent);
+  text-decoration: line-through;
+  margin-left: 0.5rem;
+}
+
+.feedback-list .arrow {
+  margin: 0 0.5rem;
+  color: var(--text-muted);
+}
+
+.feedback-list .suggestion {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.suggested-version {
+  background-color: var(--bg-main);
+  border-left: 3px solid var(--primary);
+  padding: 1rem;
+  line-height: 1.8;
+}

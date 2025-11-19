@@ -1,68 +1,40 @@
-.topics-header {
+.topics-page .topics-header {
   text-align: center;
-  margin-bottom: 3rem;
-}
-
-.topics-header h1 {
-  font-size: 2.5rem;
-  color: var(--text-main);
-  margin-bottom: 0.5rem;
-}
-
-.topics-header p {
-  font-size: 1.1rem;
-  color: var(--text-muted);
-  max-width: 600px;
-  margin: 0 auto;
+  margin-bottom: 2rem;
 }
 
 .topics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .topic-card {
-  position: relative;
-  padding-top: 2.5rem; 
+  display: flex;
+  flex-direction: column;
 }
 
-.topic-level {
-  position: absolute;
-  top: 1.5rem;
-  right: -10px;
+.topic-card .topic-level {
   background-color: var(--accent);
-  color: var(--bg-card);
-  padding: 0.5rem 1.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: 16px 0 0 16px;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  align-self: flex-start;
+  margin-bottom: 1rem;
 }
 
 .topic-card h2 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-size: 1.4rem;
-  color: var(--text-main);
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .topic-card p {
-  margin-bottom: 2rem;
+  flex-grow: 1;
   color: var(--text-muted);
-  line-height: 1.6;
+  margin-bottom: 1.5rem;
 }
 
-.button {
-  display: inline-block;
-  background-color: var(--primary);
-  color: #fff;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--border-radius-md);
-  text-decoration: none;
-  font-weight: 500;
-  transition: background-color 0.2s ease-in-out;
-}
-
-.button:hover {
-  background-color: var(--accent);
+.topic-card .button {
+  text-align: center;
 }

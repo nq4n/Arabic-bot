@@ -1,11 +1,14 @@
 export function useWritingTools() {
-  const countWords = (text: string): number => {
-    return text.trim().split(/\s+/).filter(Boolean).length;
-  };
 
-  const countSentences = (text: string): number => {
+  function countWords(text: string): number {
+    if (!text) return 0;
+    return text.trim().split(/\s+/).length;
+  }
+
+  function countSentences(text: string): number {
+    if (!text) return 0;
     return text.split(/[.!?]+/).filter(Boolean).length;
-  };
+  }
 
   return { countWords, countSentences };
 }

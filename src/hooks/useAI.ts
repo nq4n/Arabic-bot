@@ -1,34 +1,33 @@
-export type MockEvaluation = {
-  score: number;
-  feedback: string[];
-  suggestedVersion: string;
-};
-
 export function useAI() {
-  async function getPredefinedBotResponse(questionId: string): Promise<string> {
-    console.log(`Fetching answer for question: ${questionId}`);
+  async function getPredefinedBotResponse(questionId: string) {
+    console.log(`Getting response for questionId: ${questionId}`);
+    // Mock delay
     await new Promise(resolve => setTimeout(resolve, 500));
-    return `هذا هو الجواب المحدد مسبقًا للسؤال رقم ${questionId}.`;
+    return {
+      answer: "هذا جواب وهمي من البوت المحدد مسبقًا."
+    };
   }
 
-  async function chatWithAI(message: string): Promise<string> {
+  async function chatWithAI(message: string) {
     console.log(`Sending message to AI: ${message}`);
+    // Mock delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-    return "هذه إجابة وهمية من الذكاء الاصطناعي. كيف يمكنني مساعدتك أكثر؟";
+    return {
+      response: "هذا رد وهمي من الذكاء الاصطناعي."
+    };
   }
 
-  async function evaluateWriting(text: string, topicId: string): Promise<MockEvaluation> {
-    console.log(`Evaluating text for topic: ${topicId}`);
-    console.log(text);
+  async function evaluateWriting(text: string, topicId: string) {
+    console.log(`Evaluating text for topicId: ${topicId}`, text);
+    // Mock delay
     await new Promise(resolve => setTimeout(resolve, 1500));
     return {
       score: 85,
       feedback: [
-        'الجملة الأولى قوية ومباشرة.',
-        'حاول استخدام مفردات أكثر تنوعًا في الفقرة الثانية.',
-        'النهاية كانت ضعيفة بعض الشيء، يمكنك تحسينها.'
+        { error: "الكلمة", suggestion: "كلمة بديلة" },
+        { error: "الجملة الطويلة جدًا", suggestion: "حاول تقسيم الجملة" }
       ],
-      suggestedVersion: text.replace('ضعيفة', 'قوية') + '\n\n هذه هي النسخة المقترحة من الذكاء الاصطناعي.'
+      suggestedVersion: "هذه هي النسخة المقترحة والمحسنة من النص الذي كتبته."
     };
   }
 
