@@ -1,0 +1,565 @@
+Here’s a clear **spec document** you can give to any AI (or developer) to build the whole project based on your React + Vite + TSX structure and your idea.
+
+You can copy–paste this into a file named, for example:
+`PROJECT_SPEC_ARABIC_WRITING_PLATFORM.md`
+
+---
+
+# Arabic Writing Improvement Platform – Full Project Spec
+
+## 1. Project Overview
+
+**Goal:**
+A web platform that helps **students improve their Arabic writing skills** through:
+
+1. Reading a **topic/lesson** about a specific writing style or theme.
+2. Seeing a **sample/model** of that type of writing.
+3. Interacting with:
+
+   * A **predefined question bot** (fixed Q&A about the topic).
+   * An **AI chat box** (free conversation with AI about the topic).
+4. Writing their own **text** for that topic and type of writing.
+5. Receiving **evaluation** from:
+
+   * The **AI** (automatic feedback).
+   * The **teacher** (manual review and comments).
+
+There are **two main roles**:
+
+* **Student**
+* **Teacher**
+
+The platform is **front-end only for now** (React + Vite + TypeScript), but the structure must be ready for backend and AI integration later.
+
+---
+
+## 2. Tech Stack
+
+* **React** with **TypeScript** and **Vite**
+* **Routing:** React Router DOM
+* **Styling:** CSS (using `src/styles/global.css`) with CSS variables for:
+
+  * Light & Dark themes
+  * RTL support for Arabic
+* **Language:** UI is **100% Arabic**, RTL layout
+* **AI Integration:**
+  For now, just create **front-end functions and hooks** (no real API calls).
+  Later, they can be connected to backend or AI APIs.
+
+---
+
+## 3. Folder Structure (Existing)
+
+The project already has these empty files (keep and use them):
+
+```plaintext
+index.html
+tsconfig.json
+vite.config.ts
+package.json
+
+src/
+  main.tsx
+  App.tsx
+
+  components/
+    Navbar.tsx
+    Footer.tsx
+
+  pages/
+    Topics.tsx       // قائمة الموضوعات
+    Topic.tsx        // صفحة موضوع واحد + الوحدات
+    Write.tsx        // صفحة الكتابة
+    Evaluate.tsx     // صفحة التقييم
+    Teacher.tsx      // صفحة المعلم
+
+  hooks/
+    useTheme.ts
+    useAI.ts
+    useWritingTools.ts
+
+  styles/
+    global.css
+```
+
+The AI must **keep this structure** and fill it with implementation.
+
+---
+
+## 4. Routing & Pages
+
+Use **React Router** for navigation between pages.
+
+Routes:
+
+* `/` → `Topics.tsx`
+* `/topic/:topicId` → `Topic.tsx`
+* `/write/:topicId` → `Write.tsx`
+* `/evaluate/:topicId/:submissionId?` → `Evaluate.tsx`
+* `/teacher` → `Teacher.tsx`
+
+Each page must use **`Navbar` + main content + `Footer`**.
+
+---
+
+## 5. Theme & Layout
+
+### 5.1 RTL + Arabic
+
+* `html` and `body` should use: `direction: rtl;` and `lang="ar"`.
+* Global font: use a modern Arabic font (e.g., **Cairo** or similar).
+* All UI text labels are in Arabic.
+
+### 5.2 Theme System
+
+Use `useTheme.ts` hook to:
+
+* Store theme in state: `"light"` or `"dark"`.
+* Apply class `dark` on `<body>` (or main root) when theme is dark.
+* Use CSS variables in `global.css`, e.g.:
+
+```css
+:root {
+  --bg-main: #F5F6F7;
+  --bg-card: #FFFFFF;
+  --text-main: #0A2540;
+  --text-muted: #5D6B82;
+  --primary: #133B5C;
+  --accent: #1B6CA8;
+}
+
+body.dark {
+  --bg-main: #0B1A2A;
+  --bg-card: #112A42;
+  --text-main: #FFFFFF;
+  --text-muted: #A5B4C4;
+  --primary: #1B6CA8;
+  --accent: #34D399;
+}
+```
+
+`Navbar` should include a **theme toggle button** to switch between light/dark using `useTheme`.
+
+---
+
+## 6. Shared Components
+
+### 6.1 `Navbar.tsx`
+
+* Always displayed at top.
+* Contains:
+
+  * Logo with Arabic letter (e.g. "أ").
+  * Site title: **"منصّة تطوير الكتابة العربية"**
+  * Navigation links:
+
+    * "الموضوعات" → `/`
+    * "الدرس" → takes to last opened topic or `/topic/1` as example
+    * "الكتابة" → `/write/:topicId` when applicable
+    * "التقييم" → `/evaluate/:topicId`
+    * "صفحة المعلم" → `/teacher`
+  * Theme toggle (light/dark).
+  * User pill (simple placeholder, e.g. "طالب" or "معلم").
+
+Use React Router’s `<NavLink>` for active styles.
+
+### 6.2 `Footer.tsx`
+
+* Simple footer with small Arabic text, for example:
+
+  * "منصّة لتطوير مهارات الكتابة لدى الطلاب."
+
+No heavy logic needed.
+
+---
+
+## 7. Hooks
+
+### 7.1 `useTheme.ts`
+
+Responsibilities:
+
+* Maintain `theme` state (`"light"` or `"dark"`).
+* Sync with `localStorage` (optional but preferred).
+* Add/remove `dark` class on the `document.documentElement` or `body`.
+
+Example shape:
+
+```ts
+type Theme = "light" | "dark";
+
+export function useTheme() {
+  const [theme, setTheme] = useState<Theme>("light");
+  // logic to toggle and persist
+  return { theme, toggleTheme };
+}
+```
+
+### 7.2 `useWritingTools.ts`
+
+For now:
+
+* Provide functions for:
+
+  * `countWords(text: string): number`
+  * `countSentences(text: string): number`
+* Later: can be extended for:
+
+  * readability score
+  * basic grammar hints (placeholder on frontend).
+
+### 7.3 `useAI.ts`
+
+For now:
+
+* Provide **placeholder** async functions (no real HTTP):
+
+```ts
+export function useAI() {
+  async function getPredefinedBotResponse(questionId: string) { /* mock */ }
+  async function chatWithAI(message: string) { /* mock */ }
+  async function evaluateWriting(text: string, topicId: string) { /* mock */ }
+
+  return { getPredefinedBotResponse, chatWithAI, evaluateWriting };
+}
+```
+
+These will later call a real backend API or AI service.
+
+---
+
+## 8. Page Definitions & Behavior
+
+### 8.1 `Topics.tsx` – صفحة الموضوعات
+
+**Purpose:**
+Student chooses a topic to work on.
+
+**UI Sections:**
+
+1. **Title + Intro**
+
+   * Title: "اختر موضوع الكتابة"
+   * Short description: explaining that each topic has a lesson, examples, questions, and writing activity.
+
+2. **Topic Cards Grid**
+   Use simple in-memory data array (for now):
+
+   ```ts
+   type Topic = {
+     id: string;
+     title: string;
+     level: string;          // e.g. "الصف الخامس"
+     description: string;
+   };
+   ```
+
+   Example topics:
+
+   * "احترام البيئة في حياتنا اليومية"
+   * "أهمية القراءة اليومية"
+   * "رحلة إلى المتحف الوطني"
+
+Each **TopicCard** contains:
+
+* Topic title.
+* Short description.
+* Level (badge).
+* Button/link: "فتح الموضوع" → navigates to `/topic/:id`.
+
+---
+
+### 8.2 `Topic.tsx` – صفحة الموضوع + الوحدات
+
+Route: `/topic/:topicId`
+
+**Purpose:**
+Student:
+
+1. Reads a **lesson text** about a writing style or theme.
+2. Sees a **model/sample** of this writing type.
+3. Uses:
+
+   * **Predefined Q&A bot** area.
+   * **Free AI chat area** to ask questions.
+4. Then goes to the writing page.
+
+**UI Layout:**
+
+Sections:
+
+1. **Header**
+   Shows topic title and summary.
+
+2. **Lesson Card (نص الدرس)**
+
+   * Static paragraph describing the topic.
+
+3. **Writing Model (نموذج الكتابة)**
+
+   * A sample text showing how this type of writing should look.
+
+4. **Interactive Zone (بوت الأسئلة + AI Chat)**
+
+   Split area into two columns (stack on mobile):
+
+   * **Predefined Questions Bot:**
+
+     * A list of FAQ-like questions (buttons or list).
+     * When student clicks one, show a predefined answer in a chat-style box.
+     * Data stored in a local array, e.g.:
+
+       ```ts
+       type PredefinedQuestion = { id: string; question: string; answer: string };
+       ```
+
+   * **Free AI Chat:**
+
+     * A small chat UI with:
+
+       * Text input
+       * Send button
+       * Chat history (student messages + mock AI responses)
+     * Uses `useAI().chatWithAI` to get mock answer.
+
+5. **Button to Start Writing**
+
+At the bottom:
+
+* Button: **"الانتقال إلى صفحة الكتابة"**
+* Navigates to `/write/:topicId`.
+
+---
+
+### 8.3 `Write.tsx` – صفحة الكتابة
+
+Route: `/write/:topicId`
+
+**Purpose:**
+Student writes a text related to the topic and writing type.
+
+**UI Layout:**
+
+1. **Header**
+
+   * Display current topic title.
+   * Small reminder of the writing goal.
+
+2. **Writing Editor Card**
+
+   Contains:
+
+   * Simple toolbar (no real formatting logic needed at first):
+
+     * Bold, underline, list buttons (visual only for now).
+   * `<textarea>` or a contenteditable div for the student to write.
+   * Live stats:
+
+     * Word count (using `useWritingTools`).
+     * Sentence count.
+
+3. **Buttons Zone**
+
+   * Button: "حفظ مسودة" → just keeps text in local state (later backend).
+   * Button: "إرسال للتقييم" → in this frontend-only version:
+
+     * Simulate sending:
+
+       * Call `useAI().evaluateWriting(text, topicId)` to get mock evaluation/rating data.
+       * Navigate to `/evaluate/:topicId` with some state (React Router `state` or query params).
+
+**Important:**
+Keep the code ready so later the submit button can actually send data to backend/AI.
+
+---
+
+### 8.4 `Evaluate.tsx` – صفحة التقييم
+
+Route: `/evaluate/:topicId/:submissionId?`
+
+**Purpose:**
+Show evaluation of student’s writing from AI and (optionally) teacher.
+
+**UI Layout:**
+
+1. **Header**
+
+   * Topic name.
+   * Maybe a label: "نتائج التقييم".
+
+2. **Three Columns (stack on small screens):**
+
+   * **Column 1 – نص الطالب**
+
+     * Show the writing text submitted by student.
+     * For now, can come from mock state or static text.
+
+   * **Column 2 – ملاحظات وأخطاء (AI)**
+
+     * Show list of errors / improvement points:
+
+       * E.g. bullet points with:
+
+         * Red part (error)
+         * Green suggestion
+     * Use `useAI().evaluateWriting` mock data.
+
+   * **Column 3 – نسخة مقترحة**
+
+     * Show an improved version of the text.
+     * Make clear: this is a suggestion, not a replacement.
+
+3. **Teacher Section (Optional, read-only in this front-end)**
+
+   * Placeholder area for “Teacher’s comments”.
+   * This will be editable when teacher is logged in (in future).
+
+---
+
+### 8.5 `Teacher.tsx` – صفحة المعلم
+
+Route: `/teacher`
+
+**Purpose (as you described):**
+
+* Add/manage users (students).
+* Evaluate students.
+* View student activity.
+* Ability to **upload/download student data** (e.g., email & password CSV).
+
+For now, front-end only with mock data and UI ready for real backend.
+
+**UI Sections:**
+
+1. **Header**
+
+   * Title: "صفحة المعلم"
+   * Short description.
+
+2. **User Management Card**
+
+   * Table of students (mock data).
+
+     * Columns: Name, Email, Class, Activity status.
+   * Button: "إضافة طالب" → open modal or simple form placeholder.
+   * “رفع بيانات الطلبة”:
+
+     * File input to upload CSV (frontend only; show just a message “تم قراءة الملف (وهمياً)”).
+   * “تنزيل بيانات الطلبة”:
+
+     * Button that triggers download of a dummy CSV file (generated on frontend).
+
+3. **Student Evaluation Card**
+
+   * List of student submissions with:
+
+     * Student name
+     * Topic title
+     * AI score (mock)
+     * Teacher score (mock)
+     * Button "عرض" → navigates to `/evaluate/:topicId/:submissionId`.
+
+4. **Activity Overview Card**
+
+   * Summary metrics:
+
+     * How many writings submitted (mock).
+     * How many topics completed.
+   * Show as simple cards or small stats.
+
+---
+
+## 9. Styling Guidelines
+
+* Use **`src/styles/global.css`** for:
+
+  * Base layout (body, main container).
+  * Typography.
+  * Cards, buttons, grids.
+* Each page/component can have small inline styles or CSS modules, but the base design tokens (colors, radius, spacing) must be in `global.css`.
+* Design language:
+
+  * Professional but friendly.
+  * Rounded cards (e.g. `border-radius: 16px–20px`).
+  * Soft shadows.
+  * Comfortable spacing.
+
+---
+
+## 10. Data Model (Frontend Only / Mock)
+
+For now, implement simple **TypeScript types and mock data** inside pages/hooks:
+
+```ts
+// Topic
+export type Topic = {
+  id: string;
+  title: string;
+  description: string;
+  level: string;
+};
+
+// Student (for Teacher page demo)
+export type Student = {
+  id: string;
+  name: string;
+  email: string;
+  level: string;
+  status: "active" | "needs_followup" | "inactive";
+};
+
+// Submission (for Evaluate page demo)
+export type Submission = {
+  id: string;
+  topicId: string;
+  studentId: string;
+  text: string;
+  aiScore?: number;
+  teacherScore?: number;
+};
+```
+
+Use simple arrays inside components or a small context if needed.
+
+---
+
+## 11. Future Backend & AI Integration (NOT implemented now)
+
+Front-end must be written in a way that future backend can:
+
+* Load topics from an API.
+* Save student writing submission.
+* Call AI evaluation endpoint.
+* Store and fetch teacher comments.
+* Manage authentication (student/teacher login).
+
+For now, just keep functions like:
+
+```ts
+// in useAI.ts
+async function evaluateWriting(text: string, topicId: string): Promise<MockEvaluation> { ... }
+
+// in future: this will call real AI backend.
+```
+
+---
+
+## 12. Summary for the AI Building the Project
+
+1. Use the **existing React + Vite + TSX structure** (do not change file names).
+2. Implement **React Router** with the routes defined above.
+3. Implement **RTL Arabic UI** with light/dark theme via `useTheme` and CSS variables.
+4. Build **5 main pages**:
+
+   * Topics
+   * Topic details (lesson + model + bots)
+   * Writing editor
+   * Evaluation
+   * Teacher dashboard
+5. Use **mock data and placeholder AI functions** in `useAI` and `useWritingTools`.
+6. Focus on **clean, professional UI** appropriate for an educational platform in Arabic.
+7. Do **not** add real backend or real AI calls now, only front-end structure and mock logic.
+
+---
+
+If you want, next I can write a **short “system prompt” version** of this (compressed) specifically optimized to paste directly into another AI as instructions like: *“You are building this project, follow this spec…”*

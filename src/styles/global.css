@@ -1,0 +1,48 @@
+
+:root {
+  --bg-main: #F5F6F7;
+  --bg-card: #FFFFFF;
+  --text-main: #0A2540;
+  --text-muted: #5D6B82;
+  --primary: #133B5C;
+  --accent: #1B6CA8;
+  --border-radius-lg: 20px;
+  --border-radius-md: 16px;
+}
+
+body.dark {
+  --bg-main: #0B1A2A;
+  --bg-card: #112A42;
+  --text-main: #FFFFFF;
+  --text-muted: #A5B4C4;
+  --primary: #1B6CA8;
+  --accent: #34D399;
+}
+
+body {
+  direction: rtl;
+  lang: "ar";
+  font-family: 'Cairo', sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 2rem;
+}
+
+.card {
+  background-color: var(--bg-card);
+  border-radius: var(--border-radius-lg);
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
