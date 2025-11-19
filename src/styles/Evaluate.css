@@ -1,20 +1,41 @@
+
 .evaluate-page .evaluate-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
+}
+
+.evaluate-page .evaluate-header h1 {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.evaluate-page .evaluate-header p {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-top: 8px;
 }
 
 .evaluation-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  grid-template-columns: 1fr 420px;
+  gap: 2.5rem;
   align-items: start;
 }
 
-.submission-card p {
-  background-color: var(--bg-main);
-  padding: 1rem;
+.submission-card h2, .evaluation-card h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.submission-card .card-content {
+  background-color: var(--bg-card);
   border-radius: var(--border-radius);
-  line-height: 1.8;
+  padding: 1.5rem;
+  line-height: 1.9;
+  font-size: 15px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 .evaluation-card .score {
@@ -34,19 +55,23 @@
   list-style-type: none;
   padding: 0;
   margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .feedback-list li {
-  display: flex;
   align-items: center;
-  margin-bottom: 0.75rem;
-  background-color: var(--bg-main);
-  padding: 0.5rem;
+  background-color: var(--bg-card);
+  padding: 12px 16px;
   border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  font-size: 14px;
+  box-shadow: var(--shadow);
 }
 
 .feedback-list .error {
-  color: var(--accent);
+  color: #EF4444; /* A shade of red */
   text-decoration: line-through;
   margin-left: 0.5rem;
 }
@@ -57,13 +82,18 @@
 }
 
 .feedback-list .suggestion {
-  color: var(--primary);
-  font-weight: 500;
+  color: #22C55E; /* A shade of green */
+  font-weight: 600;
 }
 
 .suggested-version {
-  background-color: var(--bg-main);
-  border-left: 3px solid var(--primary);
+  background-color: var(--bg-card);
+  border-left: 4px solid var(--primary);
   padding: 1rem;
   line-height: 1.8;
+  font-size: 15px;
+  border-radius: 4px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  box-shadow: var(--shadow);
 }

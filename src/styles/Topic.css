@@ -1,80 +1,73 @@
-.topic-page .topic-header {
+.topic-page {
+  padding: 2rem 1.5rem;
+}
+
+.topic-header {
   text-align: center;
   margin-bottom: 2rem;
 }
 
-.topic-page .topic-header h1 {
+.topic-grade {
+  background-color: var(--primary);
+  color: #fff;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  display: inline-block;
   margin-bottom: 1rem;
 }
 
-.topic-content {
-  display: flex;
-  gap: 2rem;
-  align-items: flex-start;
+.topic-header h1 {
+  font-size: 26px;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
 }
 
-.main-column {
-  flex: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.side-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.model-text {
+.topic-header .topic-description {
+  color: var(--text-muted);
+  font-size: 15px;
   line-height: 1.8;
-  color: var(--text-muted);
+  max-width: 620px;
+  margin: auto;
 }
 
-.qa-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.topic-layout {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  margin-top: 2rem;
 }
 
-.qa-list li {
-  border-bottom: 1px solid var(--bg-main);
-  padding: 1rem 0;
-  cursor: pointer;
+.topic-section .section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 1rem;
 }
 
-.qa-list li:last-child {
-  border-bottom: none;
+.topic-section .section-text {
+  font-size: 15px;
+  line-height: 1.9;
+  color: var(--text-main);
 }
 
-.question-text {
-  font-weight: 600;
-}
-
-.answer-text {
-  margin-top: 0.75rem;
+.questions-list {
+  margin-top: 0.5rem;
   padding-right: 1rem;
-  color: var(--text-muted);
-  border-right: 3px solid var(--accent);
+  color: var(--text-main);
+  line-height: 1.8;
 }
 
-.tips-card ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  color: var(--text-muted);
+.topic-actions {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+.fade-in {
+  opacity: 0;
+  animation: fadeIn var(--animate-duration) var(--animate-ease) forwards;
 }
 
-.tips-card li {
-  margin-bottom: 0.75rem;
-  padding-right: 1rem;
-  position: relative;
-}
-
-.tips-card li::before {
-  content: '✨';
-  position: absolute;
-  right: -1rem;
-  top: 0;
+@keyframes fadeIn {
+  to { opacity: 1; }
 }

@@ -1,28 +1,35 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+@font-face {
+  font-family: "title";
+  src: url("/fonts/title.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 
 :root {
-  --bg-main: #F9F9F9;
+  --bg-main: #F3F4F6;
   --bg-card: #FFFFFF;
-  --text-main: #333333;
-  --text-muted: #8D8D8D;
-  --primary: #6C63FF;
-  --accent: #FF6584;
-  --border-color: #EAEAEA;
+  --text-main: #1F2937;
+  --text-muted: #6B7280;
+  --primary: #1E40AF;
+  --accent: #3B82F6;
+  --border-color: #E5E7EB;
 
   --font-family-sans: 'Tajawal', sans-serif;
   --border-radius: 12px;
-  --shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 body.dark {
-  --bg-main: #1A1A2E;
-  --bg-card: #2A2A4D;
-  --text-main: #EAEAEA;
-  --text-muted: #9B9BBD;
-  --primary: #8A85FF;
-  --accent: #FF8FAB;
-  --border-color: #3A3A6D;
+  --bg-main: #0B0C0F;
+  --bg-card: #141417;
+  --text-main: #F5F6F7;
+  --text-muted: #A7A9BC;
+  --border-color: #000000;
+  --primary: #3B82F6;
+  --accent: #60A5FA;
+  --border-color: #000000;
 }
 
 html {
@@ -51,18 +58,18 @@ main {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  color: var(--primary);
+  color: var(--text-main);
   font-weight: 700;
 }
 
 a {
-  color: var(--accent);
+  color: var(--primary);
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 a:hover {
-  color: var(--primary);
+  color: var(--accent);
 }
 
 .card {
@@ -72,16 +79,10 @@ a:hover {
   box-shadow: var(--shadow);
   border: 1px solid var(--border-color);
   margin-bottom: 1.5rem;
-  transition: all 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 button {
-  background-image: linear-gradient(to right, var(--primary), var(--accent));
+  background-color: var(--primary);
   color: white;
   border: none;
   padding: 0.85rem 1.8rem;
@@ -90,20 +91,18 @@ button {
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.15);
+  background-color: var(--accent);
 }
 
 button.secondary {
   background: transparent;
   color: var(--primary);
   border: 2px solid var(--primary);
-  background-image: none;
 }
 
 button.secondary:hover {
@@ -117,7 +116,7 @@ textarea, input {
     padding: 0.85rem 1rem;
     border-radius: 8px;
     border: 1px solid var(--border-color);
-    background-color: var(--bg-main);
+    background-color: var(--bg-card);
     color: var(--text-main);
     font-size: 1rem;
     box-sizing: border-box;
@@ -127,7 +126,7 @@ textarea, input {
 textarea:focus, input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .container {
@@ -135,3 +134,4 @@ textarea:focus, input:focus {
   margin: 0 auto;
   padding: 0 1rem;
 }
+
