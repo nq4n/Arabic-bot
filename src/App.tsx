@@ -3,79 +3,66 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  useLocation,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import TeacherPanel from "./pages/TeacherPanel";
+
 import Topics from "./pages/Topics";
 import Evaluate from "./pages/Evaluate";
 import Login from "./pages/Login";
-import Chat from "./components/Chat";
 import Topic from "./pages/topic";
+import TeacherPanel from "./pages/TeacherPanel";
+import FirstLoginChangePassword from "./components/FirstLoginChangePassword";
+import LessonReview from "./pages/LessonReview";
+import MySubmissions from "./pages/MySubmissions";
 
 import { supabase } from "./supabaseClient";
 import type { Session } from "@supabase/supabase-js";
-import FirstLoginChangePassword from "./components/FirstLoginChangePassword";
 
-// نوع الدور
 type UserRole = "student" | "teacher" | "admin" | null;
 
-// ✅ مكوّن لحماية الصفحات
 type ProtectedRouteProps = {
   session: Session | null;
-  userRole?: UserRole;
-  requiredRole?: UserRole; // لو تركته فاضي → بس يتحقق من وجود session
   children: React.ReactNode;
 };
 
 function ProtectedRoute({
   session,
-  userRole,
-  requiredRole,
   children,
 }: ProtectedRouteProps) {
-  // لو ما فيه جلسة → رجّع المستخدم للـ login
   if (!session) {
     return <Navigate to="/login" replace />;
   }
 
-  // لو محدد دور معيّن للصفحة (مثلاً طالب فقط) والمستخدم ليس من نفس الدور
-  if (requiredRole && userRole && userRole !== requiredRole) {
-    // نمنعه ونرجعه للصفحة الرئيسية
-    return <Navigate to="/" replace />;
-  }
-
-  // مسموح يدخل
   return <>{children}</>;
 }
 
-// ✅ المكوّن الرئيسي للتطبيق
-function App() {
+function AppInner() {
   const location = useLocation();
   const showNavbar = location.pathname !== "/login";
 
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // جلب session من Supabase + متابعة تغيّرها
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+      setSession(session || null);
+      setLoadingAuth(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      setSession(session || null);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // جلب دور المستخدم من جدول profiles
   useEffect(() => {
     const fetchRole = async () => {
       if (!session) {
@@ -83,31 +70,26 @@ function App() {
         return;
       }
 
-      const userId = session.user.id;
-
-      // نحاول أولاً من جدول profiles
-      const { data: profile, error } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", userId)
+        .eq("id", session.user.id)
         .single();
 
-      if (!error && profile?.role) {
-        setRole(profile.role as UserRole);
-        return;
-      }
-
-      // في حال ما وجدنا، نحاول نقرأ من user_metadata
-      const metaRole = (session.user.user_metadata as any)?.role;
-      if (metaRole) {
-        setRole(metaRole as UserRole);
+      if (!error && data?.role) {
+        setRole(data.role as UserRole);
       } else {
-        setRole(null);
+        const metaRole = (session.user.user_metadata as any)?.role;
+        setRole(metaRole || null);
       }
     };
 
     fetchRole();
   }, [session]);
+
+  if (loadingAuth) {
+    return <div style={{ padding: "2rem" }}>...جارِ تحميل البيانات</div>;
+  }
 
   return (
     <>
@@ -115,10 +97,11 @@ function App() {
 
       <main>
         <Routes>
-          {/* صفحة تسجيل الدخول */}
-          <Route path="/login" element={<Login />} />
+          <Route
+            path="/login"
+            element={session ? <Navigate to="/" replace /> : <Login />}
+          />
 
-          {/* صفحة تغيير كلمة المرور أول مرة (محمية، لكن بدون تقييد دور معيّن) */}
           <Route
             path="/first-login"
             element={
@@ -128,7 +111,6 @@ function App() {
             }
           />
 
-          {/* الصفحة الرئيسية: متاحة لأي مستخدم مسجّل (طالب، معلم، أدمن) */}
           <Route
             path="/"
             element={
@@ -137,32 +119,18 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/teacher/panel" element={<TeacherPanel />} />
-          {/* صفحة تسليماتي: للطالب فقط */}
+
+          <Route path="/topics" element={<Navigate to="/" replace />} />
+
           <Route
             path="/evaluate/:topicId/:submissionId?"
             element={
-              <ProtectedRoute
-                session={session}
-                userRole={role}
-                requiredRole="student"
-              >
-                <Evaluate />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* صفحة الشات: مفتوحة لكل المستخدمين المسجلين */}
-          <Route
-            path="/chat"
-            element={
               <ProtectedRoute session={session}>
-                <Chat />
+                {role === "student" ? <Evaluate /> : <Navigate to="/" replace />}
               </ProtectedRoute>
             }
           />
 
-          {/* صفحة موضوع واحد: مفتوحة لكل المستخدمين المسجلين */}
           <Route
             path="/topic/:topicId"
             element={
@@ -172,11 +140,45 @@ function App() {
             }
           />
 
-          {/* أي مسار غير معروف → رجوع حسب الحالة */}
+          <Route
+            path="/lesson-review/:topicId"
+            element={
+              <ProtectedRoute session={session}>
+                <LessonReview />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/my-submissions"
+            element={
+              <ProtectedRoute session={session}>
+                <MySubmissions />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/teacher/panel"
+            element={
+              <ProtectedRoute session={session}>
+                {role === "teacher" || role === "admin" ? (
+                  <TeacherPanel />
+                ) : (
+                  <Navigate to="/" replace />
+                )}
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="*"
             element={
-              session ? <Navigate to="/" replace /> : <Navigate to="/login" replace />
+              session ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to="/login" replace />
+              )
             }
           />
         </Routes>
@@ -187,11 +189,10 @@ function App() {
   );
 }
 
-// ✅ الجذر الذي يغلّف التطبيق بالـ Router
 function Root() {
   return (
     <Router>
-      <App />
+      <AppInner />
     </Router>
   );
 }

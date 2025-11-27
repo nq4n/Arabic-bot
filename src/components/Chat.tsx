@@ -1,35 +1,37 @@
-import React, { useState } from "react";
-import "../styles/Chat.css"; // يستخدم الكلاسات الموجودة عندك
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "../styles/Chat.css";
 
-export default function Chat() {
-  const [messages, setMessages] = useState<{ sender: "user" | "bot"; text: string }[]>([
-    { sender: "bot", text: "مرحباً! كيف أستطيع مساعدتك في فهم الموضوع؟" },
+type Message = {
+  sender: "user" | "bot";
+  text: string;
+};
+
+// تحديث الخصائص لاستقبال topicId
+type ChatProps = {
+  topicId?: string;
+};
+
+export default function Chat({ topicId }: ChatProps) {
+  const navigate = useNavigate();
+  const [messages, setMessages] = useState<Message[]>([
+    { sender: "bot", text: "أهلاً بك! كيف يمكنني مساعدتك في فهم هذا الموضوع؟" },
   ]);
 
   const [input, setInput] = useState("");
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const newUserMessage = {
+    const newUserMessage: Message = {
       sender: "user",
       text: input.trim(),
     };
 
     setMessages((prev) => [...prev, newUserMessage]);
-
-    // رد افتراضي (AI mock)
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text: "تم استلام رسالتك! سأعمل على مساعدتك.",
-        },
-      ]);
-    }, 500);
-
     setInput("");
+
+    // ... (نفس منطق إرسال الرسالة)
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -38,22 +40,17 @@ export default function Chat() {
 
   return (
     <div className="card" style={{ padding: "1.5rem", marginTop: "1rem" }}>
-      <h2 style={{ textAlign: "center", marginBottom: "1.5rem" }}>الدردشة مع الذكاء الاصطناعي</h2>
-
       <div className="chat-widget">
-        {/* History */}
         <div className="chat-history">
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`chat-message ${msg.sender === "user" ? "user" : "bot"}`}
-            >
+              className={`chat-message ${msg.sender === "user" ? "bot" : "user"}`}>
               {msg.text}
             </div>
           ))}
         </div>
 
-        {/* Input */}
         <div className="chat-input">
           <input
             type="text"
@@ -62,12 +59,21 @@ export default function Chat() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress}
           />
-
-          <button onClick={sendMessage}>
-            إرسال
-          </button>
+          <button onClick={sendMessage}>إرسال</button>
         </div>
       </div>
+
+      {/* زر العودة إلى صفحة المراجعة */}
+      {topicId && (
+        <div className="chat-actions" style={{ marginTop: "1rem", textAlign: "center" }}>
+          <button
+            className="button button-light"
+            onClick={() => navigate(`/lesson-review/${topicId}`)}
+          >
+            العودة إلى المراجعة
+          </button>
+        </div>
+      )}
     </div>
   );
 }

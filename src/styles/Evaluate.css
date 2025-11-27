@@ -1,99 +1,86 @@
+/* src/styles/Evaluate.css */
 
-.evaluate-page .evaluate-header {
+.evaluate-page {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.evaluate-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
-.evaluate-page .evaluate-header h1 {
-  font-size: 28px;
-  font-weight: 800;
+.evaluate-header h1 {
+  font-size: 2.5rem;
+  color: var(--primary-color);
 }
 
-.evaluate-page .evaluate-header p {
-  font-size: 16px;
-  color: var(--text-muted);
-  margin-top: 8px;
-}
-
-.evaluation-content {
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 2.5rem;
-  align-items: start;
-}
-
-.submission-card h2, .evaluation-card h2 {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-.submission-card .card-content {
-  background-color: var(--bg-card);
-  border-radius: var(--border-radius);
-  padding: 1.5rem;
-  line-height: 1.9;
-  font-size: 15px;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow);
-}
-
-.evaluation-card .score {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 1.5rem;
-}
-
-.evaluation-card .score span {
-  color: var(--primary);
-  background-color: var(--bg-main);
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--border-radius);
-}
-
-.feedback-list {
-  list-style-type: none;
-  padding: 0;
-  margin-bottom: 1.5rem;
+.evaluation-area {
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
-.feedback-list li {
-  align-items: center;
-  background-color: var(--bg-card);
-  padding: 12px 16px;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--border-color);
-  font-size: 14px;
-  box-shadow: var(--shadow);
-}
-
-.feedback-list .error {
-  color: #EF4444; /* A shade of red */
-  text-decoration: line-through;
-  margin-left: 0.5rem;
-}
-
-.feedback-list .arrow {
-  margin: 0 0.5rem;
-  color: var(--text-muted);
-}
-
-.feedback-list .suggestion {
-  color: #22C55E; /* A shade of green */
-  font-weight: 600;
-}
-
-.suggested-version {
-  background-color: var(--bg-card);
-  border-left: 4px solid var(--primary);
+.text-editor {
+  width: 100%;
   padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-family: inherit; /* استخدام نفس خط الموقع */
+  font-size: 1rem;
   line-height: 1.8;
-  font-size: 15px;
-  border-radius: 4px;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+  resize: vertical; /* السماح بتغيير الحجم عموديًا */
+}
+
+.evaluation-area .button {
+  align-self: flex-start; /* وضع الزر في البداية */
+}
+
+.results-area {
+  margin-top: 2rem;
+  border-top: 3px solid var(--accent-color);
+}
+
+.results-area h2 {
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.results-area .score {
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.results-area h3 {
+  font-size: 1.5rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.results-area h3 .fas {
+  margin-left: 0.5rem; /* تعديل لـ LTR */
+  margin-right: 0; /* تعديل لـ LTR */
+  color: var(--accent-color);
+}
+
+.results-area ul {
+  padding-right: 20px; /* تعديل لـ LTR */
+}
+
+.results-area li {
+  margin-bottom: 0.75rem;
+}
+
+.page-actions {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
 }

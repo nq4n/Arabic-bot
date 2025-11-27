@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
+import Papa from "papaparse";
 import "../styles/global.css";
-import "../styles/Navbar.css"; // لو فيها كلاس card وغيره
+import "../styles/Navbar.css";
 
 type UserRole = "student" | "teacher" | "admin" | null;
 
-type Profile = {
+type AppUser = {
   id: string;
   username: string | null;
+  email: string | null;
   role: string | null;
   must_change_password: boolean;
 };
@@ -17,16 +19,22 @@ type Submission = {
   student_id: string;
 };
 
-type UserWithStats = Profile & {
+type UserWithStats = AppUser & {
   submissionsCount: number;
 };
 
 export default function TeacherPanel() {
   const [users, setUsers] = useState<UserWithStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  // فورم إضافة مستخدم جديد
+  // رفع CSV
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+
+  // إضافة مستخدم واحد
   const [newEmail, setNewEmail] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [newRole, setNewRole] = useState<UserRole>("student");
@@ -34,165 +42,237 @@ export default function TeacherPanel() {
   const [addingUser, setAddingUser] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // تحميل المستخدمين + إحصائياتهم
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
-      setSuccessMessage(null);
+  // جلب البيانات من Supabase
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setFormError(null);
 
-      try {
-        // 1) جلب كل البروفايلات
-        const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("id, username, role, must_change_password")
-          .order("username", { ascending: true });
+    try {
+      // 1) جلب المستخدمين من جدول profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, username, email, role, must_change_password")
+        .order("username", { ascending: true });
 
-        if (profilesError) throw profilesError;
+      console.log("PROFILES DATA:", profiles);
+      console.log("PROFILES ERROR:", profilesError);
 
-        // 2) جلب كل التسليمات (المعلم/الأدمن فقط يقدرون يشوفونهم حسب RLS)
-        const { data: submissions, error: submissionsError } = await supabase
-          .from("submissions")
-          .select("id, student_id");
+      if (profilesError) throw profilesError;
 
-        if (submissionsError) throw submissionsError;
+      // 2) جلب التسليمات لحساب عددها
+      const { data: submissions, error: submissionsError } = await supabase
+        .from("submissions")
+        .select("id, student_id");
 
-        const subs = (submissions || []) as Submission[];
+      console.log("SUBMISSIONS DATA:", submissions);
+      console.log("SUBMISSIONS ERROR:", submissionsError);
 
-        // 3) نحسب عدد التسليمات لكل طالب
-        const countsMap: Record<string, number> = {};
-        subs.forEach((s) => {
-          countsMap[s.student_id] = (countsMap[s.student_id] || 0) + 1;
-        });
+      if (submissionsError) throw submissionsError;
 
-        const list: UserWithStats[] = (profiles || []).map((p) => ({
-          ...p,
-          submissionsCount: countsMap[p.id] || 0,
-        }));
+      const subs = (submissions || []) as Submission[];
 
-        setUsers(list);
-      } catch (err) {
-        console.error(err);
-        setError("حدث خطأ أثناء جلب بيانات المستخدمين.");
-      } finally {
-        setLoading(false);
-      }
-    };
+      const countsMap: Record<string, number> = {};
+      subs.forEach((s) => {
+        countsMap[s.student_id] = (countsMap[s.student_id] || 0) + 1;
+      });
 
-    loadData();
+      // 3) دمج البيانات
+      const list: UserWithStats[] = (profiles || []).map((p: any) => ({
+        id: p.id,
+        username: p.username,
+        email: p.email,
+        role: p.role,
+        must_change_password: p.must_change_password ?? false,
+        submissionsCount: countsMap[p.id] || 0,
+      }));
+
+      console.log("FINAL USER LIST:", list);
+      setUsers(list);
+    } catch (err: any) {
+      console.error("Error loading data:", err);
+      setFormError(`حدث خطأ أثناء جلب البيانات: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // إضافة مستخدم جديد (معلم يضيف طالب أو معلم)
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // ===== رفع ملف CSV =====
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleFileUpload = async () => {
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+    setUploadSuccess(null);
+    setFormError(null);
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const usersToCreate = results.data as any[];
+        let createdCount = 0;
+        let errorList: string[] = [];
+
+        for (const user of usersToCreate) {
+          const { email, username, role, password } = user;
+          if (!email || !username || !role || !password) {
+            console.warn("Skipping incomplete row in CSV:", user);
+            continue;
+          }
+
+          try {
+            const { error: signUpError } = await supabase.auth.signUp({
+              email,
+              password,
+              options: { data: { username, role } },
+            });
+            if (signUpError) {
+              errorList.push(`${email}: ${signUpError.message}`);
+            } else {
+              createdCount++;
+            }
+          } catch (e: any) {
+            errorList.push(`${email}: ${e.message}`);
+          }
+        }
+
+        setUploading(false);
+        if (createdCount > 0) {
+          setUploadSuccess(`تم إنشاء ${createdCount} مستخدم بنجاح.`);
+        }
+        if (errorList.length > 0) {
+          setUploadError(`فشل في إنشاء بعض المستخدمين: ${errorList.join(", ")}`);
+        }
+
+        if (createdCount > 0) {
+          setTimeout(() => loadData(), 1500);
+        }
+      },
+      error: (err) => {
+        setUploadError(`حدث خطأ أثناء تحليل الملف: ${err.message}`);
+        setUploading(false);
+      },
+    });
+  };
+
+  // ===== إضافة مستخدم يدوي =====
   const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAddingUser(true);
-    setError(null);
+    setFormError(null);
     setSuccessMessage(null);
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email: newEmail,
         password: newPassword,
-        options: {
-          data: {
-            username: newUsername,
-            role: newRole,
-          },
-        },
+        options: { data: { username: newUsername, role: newRole } },
       });
 
-      console.log("SIGNUP DATA:", data);
-      console.error("SIGNUP ERROR:", signUpError);
-
       if (signUpError) {
-        setError("تعذّر إنشاء المستخدم. تأكّد من البريد أو جرّب لاحقاً.");
+        setFormError(`تعذّر إنشاء المستخدم: ${signUpError.message}`);
         return;
       }
 
-      setSuccessMessage("تم إنشاء المستخدم بنجاح ✅ (لا تنسَ إبلاغه بالبريد والرمز المؤقت)");
-
-      // تنظيف الحقول
+      setSuccessMessage("تم إنشاء المستخدم بنجاح ✅");
       setNewEmail("");
       setNewUsername("");
       setNewPassword("123456789");
       setNewRole("student");
-
-      // نعيد تحميل المستخدمين بعد أن ينشئ التريغر صف البروفايل
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, username, role, must_change_password")
-        .order("username", { ascending: true });
-
-      if (!profilesError) {
-        // نعيد بناء users بدون إحصائيات التسليمات (أو تقدر تعيد حسابها بالكامل)
-        setUsers((prev) => {
-          // دمج بسيط: نخلي إعادة التحميل الكاملة أبسط
-          return prev;
-        });
-      }
-    } catch (err) {
+      setTimeout(() => loadData(), 1000);
+    } catch (err: any) {
       console.error(err);
-      setError("حدث خطأ غير متوقع أثناء إنشاء المستخدم.");
+      setFormError(`حدث خطأ غير متوقع: ${err.message}`);
     } finally {
       setAddingUser(false);
     }
   };
 
-  // تغيير دور المستخدم (طالب ↔ معلم / أدمن)
+  // ===== تغيير الصلاحيات =====
   const handleChangeRole = async (userId: string, newRole: UserRole) => {
     if (!newRole) return;
-
     try {
       const { error } = await supabase
         .from("profiles")
         .update({ role: newRole })
         .eq("id", userId);
 
-      if (error) {
-        console.error(error);
-        setError("تعذّر تحديث صلاحيات المستخدم.");
-        return;
-      }
+      if (error) throw error;
 
-      // تحديث في الواجهة
       setUsers((prev) =>
-        prev.map((u) =>
-          u.id === userId ? { ...u, role: newRole } : u
-        )
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
       );
-    } catch (err) {
-      console.error(err);
-      setError("حدث خطأ غير متوقع أثناء تحديث الصلاحيات.");
+    } catch (err: any) {
+      setFormError(`فشل تحديث الصلاحية: ${err.message}`);
     }
   };
 
   return (
     <div className="page" dir="rtl" style={{ padding: "2rem" }}>
-      <h1 style={{ fontFamily: "title", marginBottom: "1rem" }}>لوحة إدارة المستخدمين</h1>
+      <h1 style={{ fontFamily: "title", marginBottom: "1rem" }}>
+        لوحة إدارة المستخدمين
+      </h1>
       <p style={{ marginBottom: "1.5rem", color: "#4b5563" }}>
         من هنا يمكن للمعلم/المسؤول متابعة نشاط الطلاب، إضافة مستخدمين جدد، وتعديل الصلاحيات.
       </p>
 
-      {/* قسم إضافة مستخدم جديد */}
+      {/* رفع CSV */}
+      <section
+        className="card"
+        style={{ marginBottom: "2rem", padding: "1.5rem" }}
+      >
+        <h2 style={{ marginBottom: "1rem" }}>رفع مستخدمين من ملف</h2>
+        <p
+          style={{
+            marginBottom: "0.75rem",
+            fontSize: "0.9rem",
+            color: "#6b7280",
+          }}
+        >
+          ارفع ملف CSV يحتوي على الأعمدة:{" "}
+          <code>email</code>, <code>username</code>, <code>role</code>,{" "}
+          <code>password</code>.
+        </p>
+        {uploadError && (
+          <p className="login-error" style={{ marginBottom: "0.75rem" }}>
+            {uploadError}
+          </p>
+        )}
+        {uploadSuccess && (
+          <p style={{ color: "green", marginBottom: "0.75rem" }}>
+            {uploadSuccess}
+          </p>
+        )}
+        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          <input type="file" accept=".csv" onChange={handleFileChange} />
+          <button
+            onClick={handleFileUpload}
+            className="login-submit-btn"
+            disabled={uploading || !file}
+          >
+            {uploading ? "جاري الرفع..." : "رفع وإنشاء"}
+          </button>
+        </div>
+      </section>
+
+      {/* إضافة مستخدم جديد */}
       <section
         className="card"
         style={{ marginBottom: "2rem", padding: "1.5rem" }}
       >
         <h2 style={{ marginBottom: "1rem" }}>إضافة مستخدم جديد</h2>
-        <p style={{ marginBottom: "0.75rem", fontSize: "0.9rem", color: "#6b7280" }}>
-          سيتم إنشاء المستخدم برمز مؤقت يمكنه تغييره عند أول تسجيل دخول.
-        </p>
-
-        {error && (
-          <p className="login-error" style={{ marginBottom: "0.75rem" }}>
-            {error}
-          </p>
-        )}
-        {successMessage && (
-          <p style={{ color: "green", marginBottom: "0.75rem" }}>
-            {successMessage}
-          </p>
-        )}
+        {formError && <p className="login-error">{formError}</p>}
+        {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
 
         <form
           onSubmit={handleCreateUser}
@@ -228,9 +308,7 @@ export default function TeacherPanel() {
             <select
               id="newRole"
               value={newRole || "student"}
-              onChange={(e) =>
-                setNewRole(e.target.value as UserRole)
-              }
+              onChange={(e) => setNewRole(e.target.value as UserRole)}
             >
               <option value="student">طالب</option>
               <option value="teacher">معلم</option>
@@ -254,19 +332,21 @@ export default function TeacherPanel() {
             className="login-submit-btn"
             disabled={addingUser}
           >
-            {addingUser ? "جاري إنشاء المستخدم..." : "إنشاء المستخدم"}
+            {addingUser ? "جاري الإنشاء..." : "إنشاء المستخدم"}
           </button>
         </form>
       </section>
 
-      {/* قائمة المستخدمين */}
+      {/* جدول المستخدمين */}
       <section className="card" style={{ padding: "1.5rem" }}>
         <h2 style={{ marginBottom: "1rem" }}>المستخدمون الحاليون</h2>
 
         {loading ? (
           <p>جارِ تحميل المستخدمين...</p>
+        ) : formError ? (
+          <p className="login-error">{formError}</p>
         ) : users.length === 0 ? (
-          <p>لا يوجد مستخدمون حتى الآن.</p>
+          <p>لا يوجد مستخدمون مسجلون حتى الآن.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table
@@ -278,23 +358,57 @@ export default function TeacherPanel() {
             >
               <thead>
                 <tr>
-                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>
+                  <th
+                    style={{
+                      borderBottom: "1px solid #e5e7eb",
+                      padding: "0.5rem",
+                    }}
+                  >
                     اسم المستخدم
                   </th>
-                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>
+                  <th
+                    style={{
+                      borderBottom: "1px solid #e5e7eb",
+                      padding: "0.5rem",
+                    }}
+                  >
+                    البريد الإلكتروني
+                  </th>
+                  <th
+                    style={{
+                      borderBottom: "1px solid #e5e7eb",
+                      padding: "0.5rem",
+                    }}
+                  >
                     الصلاحية
                   </th>
-                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>
+                  <th
+                    style={{
+                      borderBottom: "1px solid #e5e7eb",
+                      padding: "0.5rem",
+                    }}
+                  >
                     عدد التسليمات
                   </th>
-                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>
+                  <th
+                    style={{
+                      borderBottom: "1px solid #e5e7eb",
+                      padding: "0.5rem",
+                    }}
+                  >
                     يحتاج تغيير كلمة المرور؟
                   </th>
-                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>
+                  <th
+                    style={{
+                      borderBottom: "1px solid #e5e7eb",
+                      padding: "0.5rem",
+                    }}
+                  >
                     تعديل الصلاحيات
                   </th>
                 </tr>
               </thead>
+
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id}>
@@ -305,6 +419,14 @@ export default function TeacherPanel() {
                       }}
                     >
                       {u.username || "—"}
+                    </td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #f3f4f6",
+                        padding: "0.5rem",
+                      }}
+                    >
+                      {u.email || "—"}
                     </td>
                     <td
                       style={{
@@ -343,10 +465,7 @@ export default function TeacherPanel() {
                       <select
                         value={u.role || "student"}
                         onChange={(e) =>
-                          handleChangeRole(
-                            u.id,
-                            e.target.value as UserRole
-                          )
+                          handleChangeRole(u.id, e.target.value as UserRole)
                         }
                       >
                         <option value="student">طالب</option>

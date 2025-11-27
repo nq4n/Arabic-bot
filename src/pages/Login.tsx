@@ -4,24 +4,61 @@ import { supabase } from "../supabaseClient";
 import "../styles/Login.css";
 import "../styles/global.css";
 
+// A new modal component for OTP verification
+const OtpModal = ({ onClose, onVerify, loading }: { onClose: () => void; onVerify: (otp: string) => void; loading: boolean; }) => {
+  const [otpCode, setOtpCode] = useState("");
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onVerify(otpCode);
+  };
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal-content card">
+        <h3>تفعيل الحساب برمز التحقق</h3>
+        <p>
+          تم إرسال رمز مكوّن من أرقام إلى بريدك الإلكتروني. الرجاء إدخاله
+          لتفعيل الحساب ومتابعة تغيير كلمة المرور.
+        </p>
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="input-group">
+            <label htmlFor="otp">رمز التفعيل (OTP)</label>
+            <input
+              id="otp"
+              type="text"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value)}
+              required
+              placeholder="123456"
+            />
+          </div>
+          <button type="submit" className="login-submit-btn" disabled={loading}>
+            {loading ? "جاري التحقق..." : "تأكيد الرمز والمتابعة"}
+          </button>
+        </form>
+        <button onClick={onClose} className="modal-close-btn">
+          إغلاق
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  // 👇 حالة الـ OTP
-  const [otpMode, setOtpMode] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
+  // New state for showing the OTP modal
+  const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  // 🔹 1) تسجيل الدخول العادي بالبريد + كلمة المرور
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -35,68 +72,54 @@ export default function Login() {
           password,
         });
 
-      console.log("LOGIN DATA:", data);
-      console.error("LOGIN ERROR:", signInError);
-
-      // لو فيه خطأ
-      if (signInError || !data?.user) {
-        // ⛔ الحالة الخاصة بنا: الإيميل غير مفعّل → نفعّل وضع OTP
-        if (signInError?.message === "Email not confirmed") {
-          // محاولة إرسال OTP إلى الإيميل
+      if (signInError) {
+        if (signInError.message === "Email not confirmed") {
           const { error: otpError } = await supabase.auth.signInWithOtp({
             email,
             options: {
-              shouldCreateUser: false, // لا ننشئ مستخدم جديد، نفس المستخدم الحالي
+              shouldCreateUser: false,
             },
           });
 
           if (otpError) {
-            console.error("OTP SEND ERROR:", otpError);
             setError("تعذّر إرسال رمز التفعيل، حاول مرة أخرى لاحقًا.");
           } else {
-            setOtpMode(true);
-            setInfo("تم إرسال رمز التفعيل إلى بريدك الإلكتروني، الرجاء إدخاله في الخانة أدناه.");
+            setInfo(
+              "تم إرسال رمز التفعيل إلى بريدك الإلكتروني، الرجاء إدخاله في النموذج المنبثق."
+            );
+            setShowOtpModal(true);
           }
-
-          return;
+        } else {
+          setError("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
         }
-
-        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
         return;
       }
 
-      // ✅ لو نجح تسجيل الدخول بكلمة المرور
-      const user = data.user;
+      if (!data.user) {
+        setError("حدث خطأ غير متوقع، حاول مرة أخرى.");
+        return;
+      }
 
-      // نفحص هل لازم يغيّر كلمة المرور (must_change_password)
-      const { data: profile, error: profileError } = await supabase
+      const user = data.user;
+      const { data: profile } = await supabase
         .from("profiles")
         .select("must_change_password")
         .eq("id", user.id)
         .single();
 
-      if (profileError) {
-        console.error("PROFILE ERROR:", profileError);
-        setError("حدث خطأ أثناء جلب بيانات الحساب.");
-        return;
-      }
-
       if (profile?.must_change_password) {
         navigate("/first-login");
-      } else {
-        navigate("/");
-      }
+      } 
+      // No else block needed, App.tsx will handle the redirect
+
     } catch (err) {
-      console.error("UNEXPECTED LOGIN ERROR:", err);
       setError("حدث خطأ غير متوقع، حاول مرة أخرى لاحقًا.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 2) التحقق من الـ OTP بعد ما يوصله بالإيميل
-  const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleVerifyOtp = async (otpCode: string) => {
     setOtpLoading(true);
     setError(null);
     setInfo(null);
@@ -105,40 +128,17 @@ export default function Login() {
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token: otpCode,
-        type: "email", // تأكيد إيميل برمز
+        type: "email",
       });
 
-      console.log("VERIFY OTP DATA:", data);
-      console.error("VERIFY OTP ERROR:", error);
-
-      if (error || !data?.user) {
+      if (error || !data.user) {
         setError("رمز التفعيل غير صحيح أو منتهي الصلاحية.");
         return;
       }
 
-      const user = data.user;
-
-      // بعد تأكيد الإيميل، نرسل المستخدم إلى صفحة تغيير كلمة المرور
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("must_change_password")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError) {
-        console.error("PROFILE ERROR:", profileError);
-        // حتى لو صار خطأ في البروفايل، نوديه يغيّر الرمز
-        navigate("/first-login");
-        return;
-      }
-
-      if (profile?.must_change_password) {
-        navigate("/first-login");
-      } else {
-        navigate("/");
-      }
+      setShowOtpModal(false);
+      navigate("/first-login");
     } catch (err) {
-      console.error("UNEXPECTED OTP VERIFY ERROR:", err);
       setError("حدث خطأ أثناء التحقق من الرمز.");
     } finally {
       setOtpLoading(false);
@@ -147,6 +147,14 @@ export default function Login() {
 
   return (
     <div className="login-page" dir="rtl">
+      {showOtpModal && (
+        <OtpModal
+          onClose={() => setShowOtpModal(false)}
+          onVerify={handleVerifyOtp}
+          loading={otpLoading}
+        />
+      )}
+
       {/* Hero Section */}
       <section className="login-hero">
         <div className="login-hero-inner">
@@ -182,11 +190,9 @@ export default function Login() {
             </p>
           </header>
 
-          {/* رسائل عامة */}
           {error && <p className="login-error">{error}</p>}
           {info && <p style={{ color: "#0f766e", marginBottom: "0.75rem" }}>{info}</p>}
 
-          {/* نموذج تسجيل الدخول */}
           <form onSubmit={handleLogin} className="login-form">
             <div className="input-group">
               <label htmlFor="email">البريد الإلكتروني</label>
@@ -245,48 +251,6 @@ export default function Login() {
               {loading ? "جاري الدخول..." : "الدخول إلى المنصّة"}
             </button>
           </form>
-
-          {/* 👇 كارت الـ OTP يظهر فقط لما يكون otpMode = true */}
-          {otpMode && (
-            <div
-              className="card"
-              style={{
-                marginTop: "1.5rem",
-                padding: "1rem 1.25rem",
-                background: "#f9fafb",
-                border: "1px solid #e5e7eb",
-                borderRadius: "0.75rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "0.5rem" }}>تفعيل الحساب برمز التحقق</h3>
-              <p style={{ fontSize: "0.9rem", color: "#6b7280", marginBottom: "0.75rem" }}>
-                تم إرسال رمز مكوّن من أرقام إلى بريدك الإلكتروني. الرجاء إدخاله
-                لتفعيل الحساب ومتابعة تغيير كلمة المرور.
-              </p>
-
-              <form onSubmit={handleVerifyOtp} className="login-form">
-                <div className="input-group">
-                  <label htmlFor="otp">رمز التفعيل (OTP)</label>
-                  <input
-                    id="otp"
-                    type="text"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    required
-                    placeholder="123456"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="login-submit-btn"
-                  disabled={otpLoading}
-                >
-                  {otpLoading ? "جاري التحقق..." : "تأكيد الرمز والمتابعة"}
-                </button>
-              </form>
-            </div>
-          )}
 
           <footer className="login-footer-note">
             <p>

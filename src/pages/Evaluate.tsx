@@ -1,114 +1,91 @@
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import "../styles/Evaluate.css";
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
-import '../styles/Evaluate.css';
-
-// Define the structure of a submission based on your database
-interface Submission {
-  id: number;
-  student_id: string;
-  text: string;
-  ai_fixed_text: string;
-  ai_grade: number;
-  ai_response: {
-    score: number;
-    feedback: { error: string; suggestion: string }[];
-    suggestedVersion: string;
-  };
-  created_at: string;
-}
+// نوع بيانات لنتيجة التقييم
+type EvaluationResult = {
+  score: number;
+  feedback: string;
+  suggestions: string[];
+};
 
 export default function Evaluate() {
-  const { submissionId } = useParams<{ submissionId: string }>();
-  const [submission, setSubmission] = useState<Submission | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { topicId } = useParams();
 
-  useEffect(() => {
-    if (!submissionId) {
-      setLoading(false);
-      setError('لم يتم تحديد تسليم لعرضه.');
+  const [text, setText] = useState("");
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [result, setResult] = useState<EvaluationResult | null>(null);
+
+  const handleEvaluate = async () => {
+    if (!text.trim()) {
+      alert("الرجاء إدخال النص أولاً.");
       return;
     }
+    setIsEvaluating(true);
+    setResult(null); // مسح النتائج السابقة
 
-    const fetchSubmission = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('submissions')
-        .select('*')
-        .eq('id', submissionId)
-        .single(); // Use single() as we expect one result
+    // --- محاكاة لطلب تقييم من الذكاء الاصطناعي ---
+    // لاحقًا، سنستبدل هذا بطلب API حقيقي
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      if (error) {
-        console.error('Error fetching submission:', error);
-        setError('حدث خطأ أثناء جلب بيانات التقييم.');
-        setSubmission(null);
-      } else {
-        setSubmission(data);
-        setError(null);
-      }
-      setLoading(false);
+    const mockResult: EvaluationResult = {
+      score: 85,
+      feedback: "عمل رائع! نصك منظم بشكل جيد ويعبر عن الفكرة بوضوح.",
+      suggestions: [
+        "حاول استخدام مفردات أكثر تنوعًا لإثراء النص.",
+        'يمكنك إضافة مثال شخصي لتدعيم فكرتك في الفقرة الثانية. ',
+        'تأكد من علامات الترقيم في نهاية كل جملة. ',
+      ],
     };
+    // --- نهاية المحاكاة ---
 
-    fetchSubmission();
-  }, [submissionId]);
-
-  if (loading) {
-    return <div className="container">جاري تحميل التقييم...</div>;
-  }
-
-  if (error) {
-    return <div className="container error-message">{error}</div>;
-  }
-
-  if (!submission) {
-    return <div className="container">لم يتم العثور على التسليم المطلوب.</div>;
-  }
-
-  const evaluation = submission.ai_response; // The AI response from the database
+    setResult(mockResult);
+    setIsEvaluating(false);
+  };
 
   return (
-    <div className="evaluate-page container">
+    <div className="evaluate-page" dir="rtl">
       <header className="evaluate-header">
-        <h1>نتائج التقييم</h1>
+        <h1>تقييم النص</h1>
+        <p>اكتب أو الصق النص الذي أعددته للحصول على تقييم فوري.</p>
       </header>
 
-      <div className="evaluation-content">
-        <div className="card submission-card">
-          <h2>النص الذي أرسلته</h2>
-          <p>{submission.text}</p>
-        </div>
+      <div className="card evaluation-area">
+        <textarea
+          className="text-editor"
+          placeholder="أدخل النص هنا..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={15}
+        ></textarea>
+        <button onClick={handleEvaluate} disabled={isEvaluating} className="button">
+          {isEvaluating ? "...جاري التقييم" : "قيّم النص الآن"}
+        </button>
+      </div>
 
-        {evaluation ? (
-          <div className="card evaluation-card">
-            <h2>تقييم الذكاء الاصطناعي</h2>
-            <div className="score">الدرجة: <span>{submission.ai_grade || evaluation.score} / 100</span></div>
-            {evaluation.feedback && evaluation.feedback.length > 0 && (
-              <>
-                <h3>الأخطاء والتوصيات:</h3>
-                <ul className="feedback-list">
-                  {evaluation.feedback.map((item: any, index: number) => (
-                    <li key={index}>
-                      <span className="error">{item.error}</span> <span className="arrow">→</span> <span className="suggestion">{item.suggestion}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {submission.ai_fixed_text && (
-                <>
-                    <h3>النسخة المقترحة:</h3>
-                    <p className="suggested-version">{submission.ai_fixed_text}</p>
-                </>
-            )}
-          </div>
-        ) : (
-            <div className="card evaluation-card">
-                <h2>التقييم</h2>
-                <p>لم يتم العثور على تقييم لهذا النص.</p>
-            </div>
-        )}
+      {result && (
+        <section className="card results-area">
+          <h2>نتيجة التقييم</h2>
+          <div className="score">{result.score}/100</div>
+          <h3><i className="fas fa-comment-dots"></i> ملاحظات عامة</h3>
+          <p>{result.feedback}</p>
+          <h3><i className="fas fa-lightbulb"></i> اقتراحات للتحسين</h3>
+          <ul>
+            {result.suggestions.map((s, i) => (
+              <li key={i}>{s}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div className="page-actions">
+        <button
+          className="button button-light"
+          onClick={() => navigate(`/lesson-review/${topicId}`)}
+        >
+          العودة إلى المراجعة
+        </button>
       </div>
     </div>
   );

@@ -14,10 +14,8 @@ export default function Navbar({ session }: { session: Session | null }) {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    // غالبًا عندك في App useEffect يتابع session ويحوّل لصفحة login
   };
 
-  // جلب دور المستخدم من profiles أو من user_metadata
   useEffect(() => {
     const fetchRole = async () => {
       if (!session) {
@@ -27,7 +25,6 @@ export default function Navbar({ session }: { session: Session | null }) {
 
       const userId = session.user.id;
 
-      // نحاول أولاً من جدول profiles
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("role")
@@ -39,7 +36,6 @@ export default function Navbar({ session }: { session: Session | null }) {
         return;
       }
 
-      // لو ما قدرنا، نرجع لبيانات المستخدم في auth
       const metaRole = (session.user.user_metadata as any)?.role;
       if (metaRole) {
         setRole(metaRole as UserRole);
@@ -55,17 +51,17 @@ export default function Navbar({ session }: { session: Session | null }) {
     if (role === "teacher" || role === "admin") {
       return (
         <>
-          <NavLink to="/teacher/panel">لوحة المستخدم</NavLink>
-          <NavLink to="/teacher/submissions">تقييم التسليمات</NavLink>
+          <NavLink to="/teacher/panel">لوحة المستخدمين</NavLink>
+          <NavLink to="/submissions">التسليمات</NavLink>
         </>
       );
     }
 
-    // الحالة الافتراضية: طالب
+    // الطالب
     return (
       <>
-        <NavLink to="/topics">الموضوعات</NavLink>
-        <NavLink to="/evaluate/1">تسليماتي</NavLink>
+        <NavLink to="/">الموضوعات</NavLink>
+        <NavLink to="/my-submissions">تسليماتي</NavLink>
       </>
     );
   };
@@ -79,14 +75,12 @@ export default function Navbar({ session }: { session: Session | null }) {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        {/* اللوجو / اسم المشروع */}
         <div className="navbar-logo">
           <NavLink to={"/"}>
-            <h1 style={{ fontFamily: "title" }}>صَياغ</h1>
+            <h1 style={{ fontFamily: "title" }}>مداد</h1>
           </NavLink>
         </div>
 
-        {/* الروابط حسب دور المستخدم */}
         <div className="navbar-links">{renderLinks()}</div>
 
         <div className="navbar-actions">

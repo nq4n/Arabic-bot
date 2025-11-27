@@ -1,0 +1,63 @@
+/* src/styles/LessonReview.css */
+
+.lesson-review-page {
+  padding: 2rem;
+  max-width: 1200px; /* زيادة العرض لاستيعاب العمودين */
+  margin: 0 auto;
+}
+
+.lesson-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+}
+
+.lesson-header h1 {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+}
+
+/* New Layout Styles */
+.review-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* تقسيم إلى عمودين متساويين */
+  gap: 2rem; /* مسافة بين العمودين */
+}
+
+.review-tools, .review-chat-area {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.card {
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.card h2 {
+  font-size: 1.8rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--accent-color);
+  padding-bottom: 0.5rem;
+}
+
+.card ul {
+  padding-right: 20px;
+}
+
+.card li {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.questions-list li {
+  list-style: none; /* إزالة النقاط الافتراضية */
+  margin-bottom: 1rem;
+}
