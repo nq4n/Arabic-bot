@@ -1,200 +1,66 @@
-import { useState, useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './hooks/ThemeContext';
+import useAuth from './hooks/useAuth';
 
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import ProtectedRoute from './components/ProtectedRoute';
 
-import Topics from "./pages/Topics";
-import Evaluate from "./pages/Evaluate";
-import Login from "./pages/Login";
-import Topic from "./pages/topic";
-import TeacherPanel from "./pages/TeacherPanel";
-import FirstLoginChangePassword from "./components/FirstLoginChangePassword";
-import LessonReview from "./pages/LessonReview";
-import MySubmissions from "./pages/MySubmissions";
+// Page Imports
+import Topics from './pages/Topics';
+import Topic from './pages/topic';
+import LessonReview from './pages/LessonReview';
+import Evaluate from './pages/Evaluate';
+import Login from './pages/Login';
+import TeacherPanel from './pages/TeacherPanel';
+import MySubmissions from './pages/MySubmissions';
 
-import { supabase } from "./supabaseClient";
-import type { Session } from "@supabase/supabase-js";
+import './styles/global.css';
 
-type UserRole = "student" | "teacher" | "admin" | null;
+function App() {
+  const { userRole, isLoading, session } = useAuth();
 
-type ProtectedRouteProps = {
-  session: Session | null;
-  children: React.ReactNode;
-};
-
-function ProtectedRoute({
-  session,
-  children,
-}: ProtectedRouteProps) {
-  if (!session) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-}
-
-function AppInner() {
-  const location = useLocation();
-  const showNavbar = location.pathname !== "/login";
-
-  const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<UserRole>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session || null);
-      setLoadingAuth(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session || null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const fetchRole = async () => {
-      if (!session) {
-        setRole(null);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", session.user.id)
-        .single();
-
-      if (!error && data?.role) {
-        setRole(data.role as UserRole);
-      } else {
-        const metaRole = (session.user.user_metadata as any)?.role;
-        setRole(metaRole || null);
-      }
-    };
-
-    fetchRole();
-  }, [session]);
-
-  if (loadingAuth) {
-    return <div style={{ padding: "2rem" }}>...جارِ تحميل البيانات</div>;
+  // Wait until the auth state is loaded
+  if (isLoading) {
+    return <div>Loading...</div>; // Or a proper spinner component
   }
 
   return (
-    <>
-      {showNavbar && <Navbar session={session} />}
+    <ThemeProvider>
+      <Router>
+        <div className="App">
+          <Navbar userRole={userRole} />
+          <main>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
 
-      <main>
-        <Routes>
-          <Route
-            path="/login"
-            element={session ? <Navigate to="/" replace /> : <Login />}
-          />
+              {/* Protected Routes for All Logged-in Users */}
+              <Route path="/" element={<ProtectedRoute userRole={userRole}><Topics /></ProtectedRoute>} />
+              <Route path="/topic/:topicId" element={<ProtectedRoute userRole={userRole}><Topic /></ProtectedRoute>} />
+              <Route path="/lesson-review/:topicId" element={<ProtectedRoute userRole={userRole}><LessonReview /></ProtectedRoute>} />
+              <Route path="/evaluate/:topicId" element={<ProtectedRoute userRole={userRole}><Evaluate /></ProtectedRoute>} />
+              <Route path="/my-submissions" element={<ProtectedRoute userRole={userRole}><MySubmissions /></ProtectedRoute>} />
 
-          <Route
-            path="/first-login"
-            element={
-              <ProtectedRoute session={session}>
-                <FirstLoginChangePassword />
-              </ProtectedRoute>
-            }
-          />
+              {/* Teacher and Admin Routes */}
+              <Route 
+                path="/teacher" 
+                element={
+                  <ProtectedRoute userRole={userRole} requiredRole="teacher">
+                    <TeacherPanel />
+                  </ProtectedRoute>
+                }
+              />
 
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute session={session}>
-                <Topics />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route path="/topics" element={<Navigate to="/" replace />} />
-
-          <Route
-            path="/evaluate/:topicId/:submissionId?"
-            element={
-              <ProtectedRoute session={session}>
-                {role === "student" ? <Evaluate /> : <Navigate to="/" replace />}
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/topic/:topicId"
-            element={
-              <ProtectedRoute session={session}>
-                <Topic />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/lesson-review/:topicId"
-            element={
-              <ProtectedRoute session={session}>
-                <LessonReview />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="/my-submissions"
-            element={
-              <ProtectedRoute session={session}>
-                <MySubmissions />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/teacher/panel"
-            element={
-              <ProtectedRoute session={session}>
-                {role === "teacher" || role === "admin" ? (
-                  <TeacherPanel />
-                ) : (
-                  <Navigate to="/" replace />
-                )}
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="*"
-            element={
-              session ? (
-                <Navigate to="/" replace />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-        </Routes>
-      </main>
-
-      {showNavbar && <Footer />}
-    </>
+              {/* Fallback for unknown routes - maybe a 404 page */}
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
 
-function Root() {
-  return (
-    <Router>
-      <AppInner />
-    </Router>
-  );
-}
-
-export default Root;
+export default App;
