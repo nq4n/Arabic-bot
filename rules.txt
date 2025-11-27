@@ -1,0 +1,39 @@
+🔚 Summary Table
+Indicator
+Syntax Example
+Common Use Case
+Bold
+**text**
+Headings, key actions
+Italic
+*text*
+Definitions, soft emphasis
+Inline Code
+`code`
+Commands, filenames
+Code Block
+Multi-line code
+Bullet List
+- item
+Features, options
+Numbered List
+1. step
+Step-by-step guides
+Blockquote
+> quote
+User input, quotes
+Divider
+---
+Section separation
+Emoji
+✅, ⚠️
+Visual signaling
+Link
+[text](url)
+External references
+Strikethrough
+~~old~~
+Corrections (rare)
+Simulated Heading
+**Title** + line
+Section titles in chat

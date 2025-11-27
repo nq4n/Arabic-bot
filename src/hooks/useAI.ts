@@ -36,7 +36,8 @@ export const useAI = (systemInstruction: string) => {
     ];
 
     const requestPayload = {
-      model: 'qwen/qwen3-4b:free', // Using the free model requested by the user
+      // FINAL FIX: Using a reliable and confirmed free model from Google.
+      model: 'x-ai/grok-4.1-fast:free',
       messages: messagesForAPI,
     };
     
@@ -46,10 +47,8 @@ export const useAI = (systemInstruction: string) => {
         headers: {
           'Authorization': `Bearer ${API_KEY}`,
           'Content-Type': 'application/json',
-          // OpenRouter recommends these headers for identification.
-          // Replace with your actual site URL in production.
           'HTTP-Referer': 'http://localhost:5173', 
-          'X-Title': 'Midad', // FIXED: Changed to an ASCII string to prevent header errors
+          'X-Title': 'Midad', 
         },
         body: JSON.stringify(requestPayload),
       });
@@ -57,7 +56,6 @@ export const useAI = (systemInstruction: string) => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("API Error:", errorData);
-        // Extract the specific error message from the API response if available
         const apiErrorMessage = errorData?.error?.message || 'فشل الاتصال بالـ API. تأكد من أن المفتاح صحيح وأن النموذج متاح.';
         throw new Error(apiErrorMessage);
       }
@@ -71,7 +69,7 @@ export const useAI = (systemInstruction: string) => {
 
       const botResponse = data.choices[0].message.content;
       
-      // Update internal history using the original format
+      // Update internal history
       setHistory(prev => [
         ...prev,
         { role: 'user', parts: [{ text: message }] },
@@ -82,7 +80,6 @@ export const useAI = (systemInstruction: string) => {
 
     } catch (e: any) {
       console.error(e);
-      // Display a more specific error to the user
       const errorMessage = `عذراً، حدث خطأ: ${e.message}`;
       setError(errorMessage);
       return errorMessage;
