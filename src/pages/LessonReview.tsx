@@ -1,81 +1,76 @@
-import { useNavigate, useParams } from "react-router-dom";
-import Chat from "../components/Chat";
-import "../styles/LessonReview.css";
+import { useParams, useNavigate } from "react-router-dom";
+import { topics } from "../data/topics";
+import "../styles/LessonReview.css"; 
+import Chat from '../components/Chat';
 
 export default function LessonReview() {
+  const { topicId } = useParams<{ topicId: string }>();
   const navigate = useNavigate();
-  const { topicId } = useParams();
+  const topic = topics.find((t) => t.id === topicId);
 
-  const lesson = {
-    title: "أهمية القراءة اليومية",
-    summary: [
-      "القراءة توسع المعرفة وتفتح آفاقًا جديدة.",
-      "تحسن مهارات الكتابة والتعبير.",
-      "تزيد من القدرة على التركيز والتحليل.",
-      "تنمي الخيال والإبداع.",
-    ],
-    readyQuestions: [
-      "ما الفكرة الأساسية في هذا الموضوع؟",
-      "كيف تؤثر القراءة اليومية على أسلوب الكتابة؟",
-      "ما العناصر المهمة عند وصف فوائد القراءة؟",
-    ],
-  };
+  if (!topic) {
+    return <div className="review-page">الموضوع غير موجود</div>;
+  }
+
+  // 1. Assemble all relevant topic information into a single string for the AI.
+  const topicContent = `
+    عنوان الدرس: ${topic.title}
+
+    ملخص الخطوات:
+    ${topic.lesson.steps.map(step => `- ${step.title}: ${step.description}`).join('\n')}
+
+    نموذج تطبيقي للكتابة:
+    ${topic.writingModel.content}
+  `;
 
   return (
-    <div className="lesson-review-page" dir="rtl">
-      <header className="lesson-header">
-        <h1>مراجعة درس: {lesson.title}</h1>
-        <p>استخدم هذه الأدوات لتعميق فهمك للدرس وترسيخ معلوماتك.</p>
+    <div className="review-page" dir="rtl">
+      <header className="review-header">
+        <h1>مراجعة الدرس: {topic.title}</h1>
+        <p>قبل أن تبدأ الكتابة، دعنا نراجع أهم النقاط ونتفاعل مع المساعد الذكي.</p>
       </header>
 
-      <div className="review-layout">
-        {/* القسم الأيمن: أدوات المراجعة */}
-        <div className="review-tools">
-          <section className="card">
-            <h2>أهم النقاط في الدرس</h2>
-            <ul>
-              {lesson.summary.map((point, i) => (
-                <li key={i}>{point}</li>
+      <div className="review-grid">
+        {/* Left Column: Summary and Model */}
+        <div className="review-column">
+          <section className="review-section card">
+            <h2 className="section-title"><i className="fas fa-list-check icon"></i> ملخص الخطوات</h2>
+            <ul className="summary-list">
+              {topic.lesson.steps.map(step => (
+                <li key={step.step}>
+                  <i className={`${step.icon} step-icon`}></i>
+                  <strong>{step.title}:</strong> {step.description}
+                </li>
               ))}
             </ul>
           </section>
-          <section className="card">
-            <h2>اختبر فهمك</h2>
-            <p>قريبًا... اختبار قصير ممتع!</p>
+
+          <section className="review-section card">
+            <h2 className="section-title"><i className="fas fa-file-invoice icon"></i> {topic.writingModel.header}</h2>
+            <p className="model-content">{topic.writingModel.content}</p>
           </section>
         </div>
 
-        {/* القسم الأيسر: الشات والأسئلة */}
-        <div className="review-chat-area">
-          <div className="card">
-            <h2>أسئلة جاهزة</h2>
-            <ul className="questions-list">
-              {lesson.readyQuestions.map((q, i) => (
-                <li key={i}>• {q}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="card">
-            <h2>اسأل الذكاء الاصطناعي</h2>
-            <Chat topicId={topicId} />
-          </div>
+        {/* Right Column: AI Assistant */}
+        <div className="review-column">
+          <section className="review-section card sticky-card">
+             <h2 className="section-title"><i className="fas fa-comments icon"></i> المساعد الذكي</h2>
+             <p>لديك سؤال؟ أو تحتاج لمناقشة فكرة؟ تحدث مع المساعد الذكي الآن.</p>
+             {/* 2. Pass the assembled content to the Chat component */}
+             <Chat topicContent={topicContent} />
+          </section>
         </div>
       </div>
 
-      {/* أزرار أسفل الصفحة */}
-      <div className="review-actions">
-        <button
-          className="button"
-          onClick={() => navigate(`/evaluate/${topicId}`)}
-        >
-          أكتب تعبيرك عن هذا الموضوع
-        </button>
-        <button
-          className="button button-light"
-          onClick={() => navigate(`/topic/${topicId}`)}
-        >
-          العودة إلى الموضوع
-        </button>
+       {/* Final Action Button */}
+      <div className="page-actions">
+         <button
+            className="button button-primary cta-button"
+            onClick={() => navigate(`/evaluate/${topic.id}`)}
+          >
+            <i className="fas fa-feather-alt"></i>
+            أنا مستعد، لنبدأ الكتابة!
+          </button>
       </div>
     </div>
   );

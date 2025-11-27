@@ -1,67 +1,114 @@
-.chat-widget {
+/* src/styles/Chat.css */
+
+.chat-container {
   display: flex;
   flex-direction: column;
+  height: 400px; /* تحديد ارتفاع ثابت للحاوية */
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--bg-primary);
 }
 
-.chat-widget h3 {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.chat-history {
+.chat-messages {
   flex-grow: 1;
-  background-color: var(--bg-main);
-  border-radius: var(--border-radius);
   padding: 1rem;
-  min-height: 200px;
-  margin-bottom: 1rem;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.chat-message {
-  padding: 0.5rem 1rem;
-  border-radius: 12px;
-  max-width: 80%;
+.message {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 85%;
+}
+
+.message.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.message.ai {
+  align-self: flex-start;
+}
+
+.message-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: white;
+}
+
+.message.user .message-avatar {
+  background-color: var(--primary-color);
+}
+
+.message.ai .message-avatar {
+  background-color: #4a4a4a; /* لون مختلف للمساعد */
+}
+
+.message-bubble {
+  padding: 0.75rem 1rem;
+  border-radius: 18px;
   line-height: 1.6;
 }
 
-.chat-message.user {
-  background-color: var(--primary);
+.message.user .message-bubble {
+  background-color: var(--primary-color);
   color: white;
-  align-self: flex-end;
-  border-bottom-right-radius: 2px;
+  border-bottom-right-radius: 4px;
 }
 
-.chat-message.bot {
+.message.ai .message-bubble {
   background-color: var(--bg-secondary);
-  color: var(--text-main);
-  align-self: flex-start;
-  border-bottom-left-radius: 2px;
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
 }
 
 .chat-input {
   display: flex;
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
 }
 
 .chat-input input {
   flex-grow: 1;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin-left: 0.5rem; /* تغيير الهامش ليكون على اليسار */
+}
+
+.chat-input input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-shadow);
 }
 
 .chat-input button {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+  padding: 0.75rem 1.5rem;
+  border-radius: 20px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
 }
 
-/* New styles for review page layout */
-.review-actions {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--border-color);
+.chat-input button:hover {
+  background-color: var(--primary-hover);
+}
+
+.chat-input button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }

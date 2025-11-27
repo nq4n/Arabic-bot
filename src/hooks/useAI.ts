@@ -1,35 +1,95 @@
-export function useAI() {
-  async function getPredefinedBotResponse(questionId: string) {
-    console.log(`Getting response for questionId: ${questionId}`);
-    // Mock delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return {
-      answer: "هذا جواب وهمي من البوت المحدد مسبقًا."
-    };
-  }
+import { useState } from 'react';
 
-  async function chatWithAI(message: string) {
-    console.log(`Sending message to AI: ${message}`);
-    // Mock delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return {
-      response: "هذا رد وهمي من الذكاء الاصطناعي."
-    };
-  }
+// Using OpenRouter API
+const API_KEY = import.meta.env.VITE_REVIEW_API_KEY;
+const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-  async function evaluateWriting(text: string, topicId: string) {
-    console.log(`Evaluating text for topicId: ${topicId}`, text);
-    // Mock delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    return {
-      score: 85,
-      feedback: [
-        { error: "الكلمة", suggestion: "كلمة بديلة" },
-        { error: "الجملة الطويلة جدًا", suggestion: "حاول تقسيم الجملة" }
-      ],
-      suggestedVersion: "هذه هي النسخة المقترحة والمحسنة من النص الذي كتبته."
-    };
-  }
+// This is the internal format for storing conversation history, based on Gemini's structure.
+type History = {
+  role: 'user' | 'model';
+  parts: { text: string }[];
+}[];
 
-  return { getPredefinedBotResponse, chatWithAI, evaluateWriting };
-}
+export const useAI = (systemInstruction: string) => {
+  const [history, setHistory] = useState<History>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const sendMessageToAI = async (message: string) => {
+    if (!API_KEY) {
+      const errorMessage = "مفتاح OpenRouter API غير موجود. يرجى إضافته في ملف .env باسم VITE_REVIEW_API_KEY";
+      setError(errorMessage);
+      return errorMessage;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    // Convert internal history to the format required by OpenRouter (similar to OpenAI)
+    const messagesForAPI = [
+        { role: 'system', content: systemInstruction },
+        ...history.map(h => ({
+            role: h.role === 'model' ? 'assistant' : 'user', // API expects 'assistant' for model responses
+            content: h.parts[0].text
+        })),
+        { role: 'user', content: message }
+    ];
+
+    const requestPayload = {
+      model: 'qwen/qwen3-4b:free', // Using the free model requested by the user
+      messages: messagesForAPI,
+    };
+    
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json',
+          // OpenRouter recommends these headers for identification.
+          // Replace with your actual site URL in production.
+          'HTTP-Referer': 'http://localhost:5173', 
+          'X-Title': 'Midad', // FIXED: Changed to an ASCII string to prevent header errors
+        },
+        body: JSON.stringify(requestPayload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API Error:", errorData);
+        // Extract the specific error message from the API response if available
+        const apiErrorMessage = errorData?.error?.message || 'فشل الاتصال بالـ API. تأكد من أن المفتاح صحيح وأن النموذج متاح.';
+        throw new Error(apiErrorMessage);
+      }
+
+      const data = await response.json();
+      
+      if (!data.choices || !data.choices[0].message.content) {
+        console.error("Invalid API response:", data);
+        throw new Error('تم استلام رد غير متوقع من الخادم.');
+      }
+
+      const botResponse = data.choices[0].message.content;
+      
+      // Update internal history using the original format
+      setHistory(prev => [
+        ...prev,
+        { role: 'user', parts: [{ text: message }] },
+        { role: 'model', parts: [{ text: botResponse }] }
+      ]);
+
+      return botResponse;
+
+    } catch (e: any) {
+      console.error(e);
+      // Display a more specific error to the user
+      const errorMessage = `عذراً، حدث خطأ: ${e.message}`;
+      setError(errorMessage);
+      return errorMessage;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { sendMessageToAI, loading, error };
+};

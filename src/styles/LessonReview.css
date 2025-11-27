@@ -1,63 +1,131 @@
 /* src/styles/LessonReview.css */
 
-.lesson-review-page {
-  padding: 2rem;
-  max-width: 1200px; /* زيادة العرض لاستيعاب العمودين */
-  margin: 0 auto;
-}
-
-.lesson-header {
-  text-align: center;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 1rem;
-}
-
-.lesson-header h1 {
-  font-size: 2.5rem;
-  color: var(--primary-color);
-}
-
-/* New Layout Styles */
-.review-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* تقسيم إلى عمودين متساويين */
-  gap: 2rem; /* مسافة بين العمودين */
-}
-
-.review-tools, .review-chat-area {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.card {
-  background-color: var(--background-color);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+.review-page {
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  max-width: 1200px;
+  margin: 0 auto;
+  color: var(--text-primary);
 }
 
-.card h2 {
-  font-size: 1.8rem;
-  margin-top: 0;
-  margin-bottom: 1rem;
+.review-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.review-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
   color: var(--primary-color);
-  border-bottom: 2px solid var(--accent-color);
-  padding-bottom: 0.5rem;
 }
 
-.card ul {
-  padding-right: 20px;
+.review-header p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
 }
 
-.card li {
-  margin-bottom: 0.75rem;
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.review-column { 
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.review-section.card {
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.6rem;
+  color: var(--primary-color);
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section-title .icon {
+  margin-left: 1rem; /* RTL */
+}
+
+/* Summary List */
+.summary-list {
+  list-style: none;
+  padding: 0;
+}
+
+.summary-list li {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
   line-height: 1.6;
 }
 
-.questions-list li {
-  list-style: none; /* إزالة النقاط الافتراضية */
-  margin-bottom: 1rem;
+.summary-list .step-icon {
+  color: var(--primary-color);
+  margin-left: 1rem; /* RTL */
+  font-size: 1.1rem;
+  margin-top: 5px;
+}
+
+.summary-list strong {
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+/* Writing Model */
+.model-content {
+  font-family: 'Shoroq-Font', sans-serif; /* Example of a more literary font */
+  font-size: 1.1rem;
+  line-height: 1.9;
+  padding: 1rem;
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px dashed var(--border-color);
+}
+
+/* AI Assistant Card */
+.sticky-card {
+    position: -webkit-sticky; /* For Safari */
+    position: sticky;
+    top: 2rem; /* Stick to the top with a margin */
+}
+
+.sticky-card p {
+    margin-bottom: 1.5rem;
+    line-height: 1.7;
+}
+
+
+/* Final Page Action */
+.page-actions {
+  text-align: center;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 2px dashed var(--border-color);
+}
+
+.cta-button {
+  font-size: 1.2rem;
+  padding: 0.9rem 2.5rem;
+  border-radius: 30px;
+  box-shadow: 0 4px 15px var(--primary-shadow);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.cta-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px var(--primary-shadow);
 }

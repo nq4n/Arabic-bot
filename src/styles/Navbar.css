@@ -6,75 +6,41 @@
   top: 0;
   z-index: 100;
   padding: 14px 0;
-
-  /* Glass Effect */
-
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   border-bottom: 1px solid rgba(0, 0, 0, 0.045);
-
   transition: background 0.35s ease, border-color 0.35s ease;
 }
 
-/* Dark mode navbar fix */
 body.dark .navbar {
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(1%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* ============================
-   CONTAINER
-============================ */
 .navbar-container {
   max-width: 1180px;
   margin: 0 auto;
   padding: 0 1.6rem;
-
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-/* ============================
-   LOGO
-============================ */
 .navbar-logo {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.logo-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 800;
-  box-shadow: 0px 6px 14px rgba(0, 0, 0, 0.12);
-  transition: transform 0.25s ease;
-}
-
-.logo-circle:hover {
-  transform: scale(1.06);
-}
-
 .navbar-logo h1 {
-  font-family: 'Thuluth';
+  font-family: 'title';
   font-size: 50px;
   font-weight: 800;
   color: var(--text-main);
   margin: 0;
 }
 
-/* ============================
-   LINKS
-============================ */
 .navbar-links {
   display: flex;
   align-items: center;
@@ -86,7 +52,6 @@ body.dark .navbar {
   text-decoration: none;
 }
 
-/* خط الـ active يبقى كما هو */
 .navbar-links a.active::after {
   content: '';
   position: absolute;
@@ -98,7 +63,6 @@ body.dark .navbar {
   border-radius: 4px;
 }
 
-/* إزالة خط الهوفر نهائياً */
 .navbar-links a:hover {
   text-decoration: none !important;
 }
@@ -107,78 +71,33 @@ body.dark .navbar {
   width: 0 !important;
 }
 
-
-/* Dark mode link color */
-body.dark .navbar-links a {
-  color: var(--text-muted-dark, #000000);
-}
-
-body.dark .navbar-links a.active {
-  color: var(--primary);
-}
-
-/* ============================
-   ACTIONS
-============================ */
 .navbar-actions {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-/* THEME BUTTON — fixed & minimal */
 .theme-toggle {
-  background: none !important;
-  border: none;
-  outline: none;
-  cursor: pointer;
-
-  font-size: 22px;
-  color: var(--text-main);
-  opacity: 0.85;
-
-  padding: 6px;
-  border-radius: 50%;
-  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+    background-color: var(--bg-main);
+    border: 1px solid var(--border-color);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 20px;
+    color: var(--text-main);
+    transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .theme-toggle:hover {
-  transform: scale(1.12);
-  background: rgba(0, 0, 0, 0.06);
-  opacity: 1;
+    border-color: var(--accent);
+    background-color: var(--bg-card);
 }
 
-/* Dark mode icon color */
-body.dark .theme-toggle {
-  color: #000000;
-}
-
-body.dark .theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* ============================
-   USER PILL
-============================ */
-.user-pill {
-  background: var(--bg-main);
-  color: var(--text-main);
-  border: 1px solid var(--border-color);
-
-  padding: 8px 18px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-
-  transition: background 0.25s ease, border-color 0.25s ease;
-}
-
-/* Dark mode user pill */
-body.dark .user-pill {
-  background: var(--bg-main);
-  border-color: rgba(0, 0, 0, 0.12) !important;
-  color: var(--text-main);
-}
 
 .navbar-logo a {
   text-decoration: none !important;

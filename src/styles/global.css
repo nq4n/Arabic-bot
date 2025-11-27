@@ -1,4 +1,3 @@
-
 @font-face {
   font-family: "title";
   src: url("/fonts/title.otf") format("opentype");
@@ -15,10 +14,15 @@
   --primary: #1E40AF;
   --accent: #3B82F6;
   --border-color: #E5E7EB;
+  --primary-icon: #FFFFFF; /* Color for icons on primary background */
 
   --font-family-sans: 'Tajawal', sans-serif;
   --border-radius: 12px;
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+  --destructive: #D93025;
+  --destructive-hover-bg: #FEE2E2;
+  --destructive-hover-text: #B91C1C;
 }
 
 body.dark {
@@ -26,10 +30,14 @@ body.dark {
   --bg-card: #141417;
   --text-main: #F5F6F7;
   --text-muted: #A7A9BC;
-  --border-color: #000000;
+  --border-color: rgba(255, 255, 255, 0.15);
   --primary: #3B82F6;
   --accent: #60A5FA;
-  --border-color: #000000;
+  --primary-icon: #1F2937; /* Color for icons on primary background */
+  
+  --destructive: #F28B82;
+  --destructive-hover-bg: rgba(242, 139, 130, 0.15);
+  --destructive-hover-text: #FAD2CF;
 }
 
 html {
@@ -56,82 +64,3 @@ main {
   flex-grow: 1;
   padding: 2rem;
 }
-
-h1, h2, h3, h4, h5, h6 {
-  color: var(--text-main);
-  font-weight: 700;
-}
-
-a {
-  color: var(--primary);
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-a:hover {
-  color: var(--accent);
-}
-
-.card {
-  background-color: var(--bg-card);
-  border-radius: var(--border-radius);
-  padding: 1.5rem 2rem;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
-  margin-bottom: 1.5rem;
-}
-
-button {
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  padding: 0.85rem 1.8rem;
-  border-radius: 50px;
-  font-family: var(--font-family-sans);
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-button:hover {
-  background-color: var(--accent);
-}
-
-button.secondary {
-  background: transparent;
-  color: var(--primary);
-  border: 2px solid var(--primary);
-}
-
-button.secondary:hover {
-  background-color: var(--primary);
-  color: white;
-}
-
-textarea, input {
-    font-family: var(--font-family-sans);
-    width: 100%;
-    padding: 0.85rem 1rem;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-card);
-    color: var(--text-main);
-    font-size: 1rem;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-textarea:focus, input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-

@@ -1,54 +1,58 @@
 import { NavLink } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTheme } from "../hooks/ThemeContext";
 import "../styles/Navbar.css";
-import "../styles/global.css";
+import "../styles/ProfileDropdown.css";
 import { supabase } from "../supabaseClient";
 import { Session } from "@supabase/supabase-js";
 
 type UserRole = "student" | "teacher" | "admin" | null;
 
-export default function Navbar({ session }: { session: Session | null }) {
+interface NavbarProps {
+  session: Session | null;
+  userRole: UserRole;
+}
+
+// --- SVG Icons --- //
+const UserIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const LogoutIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+export default function Navbar({ session, userRole }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
-  const [role, setRole] = useState<UserRole>(null);
+  const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const avatarUrl = session?.user?.user_metadata?.avatar_url;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setDropdownOpen(false);
   };
 
   useEffect(() => {
-    const fetchRole = async () => {
-      if (!session) {
-        setRole(null);
-        return;
-      }
-
-      const userId = session.user.id;
-
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .single();
-
-      if (!error && profile?.role) {
-        setRole(profile.role as UserRole);
-        return;
-      }
-
-      const metaRole = (session.user.user_metadata as any)?.role;
-      if (metaRole) {
-        setRole(metaRole as UserRole);
-      } else {
-        setRole(null);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
       }
     };
-
-    fetchRole();
-  }, [session]);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const renderLinks = () => {
-    if (role === "teacher" || role === "admin") {
+    if (userRole === "teacher" || userRole === "admin") {
       return (
         <>
           <NavLink to="/teacher/panel">لوحة المستخدمين</NavLink>
@@ -56,8 +60,6 @@ export default function Navbar({ session }: { session: Session | null }) {
         </>
       );
     }
-
-    // الطالب
     return (
       <>
         <NavLink to="/">الموضوعات</NavLink>
@@ -66,7 +68,7 @@ export default function Navbar({ session }: { session: Session | null }) {
     );
   };
 
-  const renderRoleLabel = () => {
+  const getRoleDisplayName = (role: UserRole) => {
     if (role === "admin") return "مسؤول";
     if (role === "teacher") return "معلم";
     return "طالب";
@@ -81,7 +83,7 @@ export default function Navbar({ session }: { session: Session | null }) {
           </NavLink>
         </div>
 
-        <div className="navbar-links">{renderLinks()}</div>
+        <div className="navbar-links">{session && renderLinks()}</div>
 
         <div className="navbar-actions">
           <button onClick={toggleTheme} className="theme-toggle">
@@ -89,12 +91,26 @@ export default function Navbar({ session }: { session: Session | null }) {
           </button>
 
           {session && (
-            <>
-              <div className="user-pill">{renderRoleLabel()}</div>
-              <button onClick={handleLogout} className="logout-button">
-                تسجيل الخروج
+            <div className={`profile-dropdown ${isDropdownOpen ? 'open' : ''}`} ref={dropdownRef}>
+              <button onClick={() => setDropdownOpen(!isDropdownOpen)} className="profile-dropdown-button">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="profile-avatar-image" />
+                ) : (
+                  <UserIcon />
+                )}
               </button>
-            </>
+
+              <div className={`profile-dropdown-content ${isDropdownOpen ? 'show' : ''}`}>
+                <div className="dropdown-user-info">
+                  <div className="user-email">{session.user.email}</div>
+                  <div className="user-role">{getRoleDisplayName(userRole)}</div>
+                </div>
+                <button onClick={handleLogout} className="logout-button-item">
+                  <LogoutIcon />
+                  <span>تسجيل الخروج</span>
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

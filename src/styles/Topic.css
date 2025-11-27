@@ -1,73 +1,162 @@
+/* src/styles/Topic.css */
+
 .topic-page {
-  padding: 2rem 1.5rem;
+  padding: 1.5rem;
+  max-width: 950px;
+  margin: 0 auto;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 }
 
-.topic-header {
+.topic-main-header {
   text-align: center;
   margin-bottom: 2rem;
 }
 
-.topic-grade {
-  background-color: var(--primary);
-  color: #fff;
-  padding: 4px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  display: inline-block;
+.topic-main-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.topic-section.card {
+  margin-bottom: 2rem;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section-title .icon {
+  margin-left: 1rem; /* RTL */
+  font-size: 1.6rem;
+}
+
+/* Introduction Card */
+.intro-card .intro-paragraph {
+  line-height: 1.8;
+  font-size: 1.1rem;
   margin-bottom: 1rem;
 }
 
-.topic-header h1 {
-  font-size: 26px;
-  font-weight: 800;
+/* Steps Grid */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.step-card {
+  background-color: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.step-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.step-icon {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin-left: 0.75rem; /* RTL */
+}
+
+.step-number {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.step-title {
+  font-size: 1.2rem;
+  font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
-.topic-header .topic-description {
-  color: var(--text-muted);
-  font-size: 15px;
-  line-height: 1.8;
-  max-width: 620px;
-  margin: auto;
+.options-list {
+  padding-right: 20px; /* RTL */
+  margin-top: 1rem;
+  font-size: 0.95rem;
 }
 
-.topic-layout {
-  display: grid;
-  gap: 2rem;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  margin-top: 2rem;
+.options-list li {
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
 }
 
-.topic-section .section-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 1rem;
+/* Activities List */
+.activities-list {
+  list-style: none;
+  padding: 0;
 }
 
-.topic-section .section-text {
-  font-size: 15px;
-  line-height: 1.9;
-  color: var(--text-main);
-}
-
-.questions-list {
-  margin-top: 0.5rem;
-  padding-right: 1rem;
-  color: var(--text-main);
-  line-height: 1.8;
-}
-
-.topic-actions {
-  margin-top: 3rem;
+.activities-list li {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-.fade-in {
-  opacity: 0;
-  animation: fadeIn var(--animate-duration) var(--animate-ease) forwards;
+  align-items: center;
+  font-size: 1.1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
-@keyframes fadeIn {
-  to { opacity: 1; }
+.activities-list li:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  color: var(--primary-color);
+  font-size: 1.3rem;
+  margin-left: 1.5rem; /* RTL */
+}
+
+/* Page Actions */
+.page-actions {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px dashed var(--border-color);
+}
+
+.cta-button {
+  font-size: 1.2rem;
+  padding: 0.9rem 2.5rem;
+  border-radius: 30px;
+  box-shadow: 0 4px 15px var(--primary-shadow);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.cta-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px var(--primary-shadow);
+}
+
+.cta-button .fas {
+    margin-right: 0.75rem; /* RTL */
+}
+
+.not-found-container {
+  text-align: center;
+  padding: 4rem;
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
 }
