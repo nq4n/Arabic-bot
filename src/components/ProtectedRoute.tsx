@@ -1,31 +1,32 @@
 import { Navigate } from "react-router-dom";
-import { ReactNode } from "react";
+import { ReactElement } from "react";
+import type { UserRole } from "../App"; // or copy the type if this import causes issues
 
-type Props = {
-  requiredRole?: string;
-  userRole: string | null;
-  children: ReactNode;
-};
+interface ProtectedRouteProps {
+  userRole: UserRole;          // "student" | "teacher" | "admin" | null
+  requiredRole?: UserRole[];   // allowed roles list (optional)
+  children: ReactElement;
+}
 
-export default function ProtectedRoute({ requiredRole, userRole, children }: Props) {
-  // If the user is not logged in, redirect to the login page.
+export default function ProtectedRoute({
+  userRole,
+  requiredRole,
+  children,
+}: ProtectedRouteProps) {
+  // 1) Not logged in -> go to login
   if (!userRole) {
     return <Navigate to="/login" replace />;
   }
 
-  // If a specific role is required, check if the user has that role.
-  // We also allow the 'admin' to access 'teacher' routes.
-  if (requiredRole) {
-    const isAuthorized = 
-      userRole === requiredRole || 
-      (requiredRole === 'teacher' && userRole === 'admin');
+  // 2) If there is a requiredRole list, check if userRole is allowed
+  if (requiredRole && !requiredRole.includes(userRole)) {
+    // decide default page based on role
+    const defaultPath =
+      userRole === "admin" || userRole === "teacher" ? "/teacher" : "/";
 
-    if (!isAuthorized) {
-      // If not authorized, redirect to the main page.
-      return <Navigate to="/" replace />;
-    }
+    return <Navigate to={defaultPath} replace />;
   }
 
-  // If all checks pass, render the children components.
-  return <>{children}</>;
+  // 3) Authorized -> render content
+  return children;
 }

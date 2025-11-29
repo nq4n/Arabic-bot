@@ -1,16 +1,30 @@
 import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
-import { useNavigate } from "react-router-dom";
+import "../styles/Login.css"; // Reuse the login styles for consistency
+import { useTheme } from "../hooks/ThemeContext";
 
-export default function FirstLoginChangePassword() {
+// The component receives this prop from App.tsx
+type Props = {
+  onPasswordChanged: () => void;
+};
+
+const ThemeToggle = () => {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <button onClick={toggleTheme} className="theme-toggle-button">
+      {theme === "light" ? "🌙" : "☀️"}
+    </button>
+  );
+};
+
+
+export default function FirstLoginChangePassword({ onPasswordChanged }: Props) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const navigate = useNavigate();
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,54 +43,44 @@ export default function FirstLoginChangePassword() {
     setLoading(true);
 
     try {
-      // 1) جلب المستخدم الحالي
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        setError("انتهت الجلسة، الرجاء تسجيل الدخول مرة أخرى.");
-        return;
-      }
-
-      // 2) تحديث كلمة المرور
+      // 1. Update the user's password in Supabase Auth
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
       if (updateError) {
-        console.error(updateError);
-
-        if ((updateError as any).status === 422) {
-          setError(
-            "كلمة المرور الجديدة يجب أن تكون مختلفة عن القديمة وتحقق شروط الأمان."
-          );
-        } else {
-          setError("تعذّر تغيير كلمة المرور، حاول مرة أخرى.");
-        }
-        return;
+        // This can happen if the new password is the same as the old one, for example.
+        throw updateError;
       }
 
-      // 3) تحديث البروفايل: must_change_password = false
+      // 2. Get the user to update the 'profiles' table
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+          throw new Error("User not found after password update.");
+      }
+      
+      // 3. Set 'must_change_password' to false in the public profiles table
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ must_change_password: false })
         .eq("id", user.id);
 
       if (profileError) {
-        console.error(profileError);
-        setError(
-          "تم تغيير كلمة المرور، لكن حدث خطأ في تحديث بيانات الحساب."
-        );
-        return;
+        // This is a secondary error, the main password change succeeded.
+        // We can log it, but the user can proceed.
+        console.error("Failed to update profile after password change:", profileError);
       }
 
-      // 4) نجاح → رجوع للصفحة الرئيسية
-      navigate("/");
-    } catch (err) {
+      setSuccess(true);
+      // Call the callback from App.tsx after a short delay
+      setTimeout(() => {
+        onPasswordChanged();
+      }, 1500);
+
+    } catch (err: any) {
       console.error(err);
-      setError("حدث خطأ غير متوقع.");
+      setError(err.message || "فشل تحديث كلمة المرور. حاول مرة أخرى.");
     } finally {
       setLoading(false);
     }
@@ -84,91 +88,72 @@ export default function FirstLoginChangePassword() {
 
   return (
     <div className="login-page" dir="rtl">
-      <section className="login-container">
-        <div className="login-card card">
-          <header className="login-header">
-            <div className="login-brand">
-              <span className="login-brand-title">مداد</span>
-            </div>
-            <h2>تعيين كلمة مرور جديدة</h2>
-            <p className="login-subtitle">
-              هذه أول مرة تسجّل الدخول، الرجاء تعيين كلمة مرور خاصة بك.
-            </p>
-          </header>
-
-          <form
-            onSubmit={handleSubmit}
-            className="login-form"
-            style={{ maxWidth: 400, marginTop: 16 }}
-          >
-            {error && <p className="login-error">{error}</p>}
-
-            {/* كلمة المرور الجديدة */}
-            <div className="input-group">
-              <label htmlFor="newPassword">كلمة المرور الجديدة</label>
-              <div className="password-wrapper">
-                <input
-                  id="newPassword"
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() => setShowNewPassword((prev) => !prev)}
-                  aria-label={
-                    showNewPassword
-                      ? "إخفاء كلمة المرور"
-                      : "إظهار كلمة المرور"
-                  }
-                >
-                  {showNewPassword ? "👁️‍🗨️" : "👁️"}
-                </button>
-              </div>
-            </div>
-
-            {/* تأكيد كلمة المرور */}
-            <div className="input-group">
-              <label htmlFor="confirmPassword">تأكيد كلمة المرور</label>
-              <div className="password-wrapper">
-                <input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() =>
-                    setShowConfirmPassword((prev) => !prev)
-                  }
-                  aria-label={
-                    showConfirmPassword
-                      ? "إخفاء كلمة المرور"
-                      : "إظهار كلمة المرور"
-                  }
-                >
-                  {showConfirmPassword ? "👁️‍🗨️" : "👁️"}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="login-submit-btn"
-            >
-              {loading ? "جاري الحفظ..." : "حفظ كلمة المرور"}
-            </button>
-          </form>
+        <div className="theme-toggle-container">
+            <ThemeToggle />
         </div>
-      </section>
+        
+        <div className="login-intro">
+            <h1 style={{fontFamily: "title",fontSize: "200px",margin: "0",lineHeight: "0.5",padding: "0" }}>مداد</h1>
+            <p style={{ marginTop: "0px", fontSize: "18px", color: "#555" }}>
+                منصّة تطوير الكتابة العربية لتحسين مهارات الطلاب في التعبير الكتابي.
+            </p>
+        </div>
+        
+        <div className="card login-card">
+            <header className="login-header">
+                <h2>تعيين كلمة مرور جديدة</h2>
+                <p className="login-subtitle">
+                    لأسباب تتعلق بالأمان، يرجى تعيين كلمة مرور جديدة لحسابك.
+                </p>
+            </header>
+
+            {error && <p className="login-error">{error}</p>}
+            {success && <p style={{color: 'green', textAlign: 'center'}}>تم تحديث كلمة المرور بنجاح! جاري تسجيل الدخول...</p>}
+
+            <form onSubmit={handleSubmit} className="login-form">
+                <div className="input-group">
+                    <label htmlFor="newPassword">كلمة المرور الجديدة</label>
+                    <div className="password-wrapper">
+                        <input
+                            id="newPassword"
+                            type={showPassword ? "text" : "password"}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            required
+                            placeholder="••••••••"
+                        />
+                         <button
+                            type="button"
+                            className="password-toggle"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                          >
+                            {showPassword ? "👁️‍🗨️" : "👁️"}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="input-group">
+                    <label htmlFor="confirmPassword">تأكيد كلمة المرور</label>
+                    <input
+                        id="confirmPassword"
+                        type={showPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        placeholder="••••••••"
+                    />
+                </div>
+
+                <button
+                    type="submit"
+                    disabled={loading || success}
+                    className="login-submit-btn"
+                >
+                    {loading ? "جاري التحديث..." : "تحديث كلمة المرور والمتابعة"}
+                </button>
+            </form>
+        </div>
     </div>
   );
 }

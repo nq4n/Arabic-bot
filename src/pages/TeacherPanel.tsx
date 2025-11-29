@@ -131,19 +131,24 @@ export default function TeacherPanel() {
           }
 
           try {
-            const { error: signUpError } = await supabase.auth.signUp({
-              email,
-              password,
-              options: { data: { username, role } },
+            const { data, error } = await supabase.functions.invoke("create-user", {
+              body: {
+                email,
+                password,
+                username,
+                role,
+              },
             });
-            if (signUpError) {
-              errorList.push(`${email}: ${signUpError.message}`);
+          
+            if (error) {
+              errorList.push(`${email}: ${error.message}`);
             } else {
               createdCount++;
             }
           } catch (e: any) {
             errorList.push(`${email}: ${e.message}`);
           }
+          
         }
 
         setUploading(false);
@@ -171,32 +176,57 @@ export default function TeacherPanel() {
     setAddingUser(true);
     setFormError(null);
     setSuccessMessage(null);
-
+  
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: newEmail,
-        password: newPassword,
-        options: { data: { username: newUsername, role: newRole } },
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          email: newEmail,
+          password: newPassword,
+          username: newUsername,
+          role: newRole,
+        },
       });
-
-      if (signUpError) {
-        setFormError(`تعذّر إنشاء المستخدم: ${signUpError.message}`);
+  
+      console.log("create-user response:", { data, error });
+  
+      // لو فيه مشكلة في الاتصال نفسه أو status مش 2xx
+      if (error) {
+        setFormError(`تعذّر الاتصال بوظيفة السيرفر: ${error.message}`);
         return;
       }
-
-      setSuccessMessage("تم إنشاء المستخدم بنجاح ✅");
+  
+      const body = data as any;
+  
+      if (!body?.success) {
+        setFormError(
+          `تعذّر إنشاء المستخدم: ${body?.error ?? "سبب غير معروف"}`
+        );
+        return;
+      }
+  
+      // نجاح
+      if (body.profileCreated === false && body.profileError) {
+        // حالة نادرة: المستخدم موجود في Auth لكن فيه مشكلة بسيطة في profiles
+        setSuccessMessage(
+          `تم إنشاء المستخدم، لكن حدثت مشكلة في حفظ البيانات الإضافية: ${body.profileError}`
+        );
+      } else {
+        setSuccessMessage("تم إنشاء المستخدم بنجاح ✅");
+      }
+  
       setNewEmail("");
       setNewUsername("");
       setNewPassword("123456789");
       setNewRole("student");
+  
       setTimeout(() => loadData(), 1000);
     } catch (err: any) {
-      console.error(err);
-      setFormError(`حدث خطأ غير متوقع: ${err.message}`);
+      setFormError(`فشل الاتصال بوظيفة السيرفر: ${err.message}`);
     } finally {
       setAddingUser(false);
     }
   };
+  
 
   // ===== تغيير الصلاحيات =====
   const handleChangeRole = async (userId: string, newRole: UserRole) => {

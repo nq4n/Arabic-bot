@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { useTheme } from "../hooks/ThemeContext";
 import "../styles/Login.css";
@@ -19,14 +18,12 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // We no longer need the navigate hook here for redirection
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    // --- FIX: Simplified login logic. No more redirection from here. ---
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -35,12 +32,9 @@ export default function Login() {
     setLoading(false);
 
     if (signInError) {
-      // The onAuthStateChange in App.tsx will not fire if the sign-in fails,
-      // so we need to handle the error message here.
       setError("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
     }
-    // On successful sign-in, the onAuthStateChange listener in App.tsx will trigger,
-    // updating the session and role, and handling the redirection.
+    // On success, the onAuthStateChange in App.tsx will handle the rest.
   };
 
   return (

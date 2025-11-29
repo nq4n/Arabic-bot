@@ -1,14 +1,18 @@
+@font-face {
+  font-family: 'title';
+  src: url('/fonts/title.otf') format('opentype');
+}
 
 :root {
   --font-family: "Cairo", system-ui, sans-serif;
   
   /* Light Theme */
-  --primary: #1b6ca8;
-  --primary-dark: #133b5c;
-  --primary-hover: #135a91;
+  --primary: #87CEEB; /* Sky Blue */
+  --primary-dark: #00008B; /* Dark Blue */
+  --primary-hover: #ADD8E6; /* Light Blue */
   --secondary: #6c757d;
   --accent: #dc3545;
-  --bg-main: #f5f6f7;
+  --bg-main: linear-gradient(to top, #FFFFFF, #E0FFFF); /* White to Light Cyan */
   --bg-card:#ffffff; 
   --bg-secondary: #ffffff;
   --text-main: #0a2540;
@@ -35,10 +39,9 @@ body {
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-main);
+  background: var(--bg-main);
   color: var(--text-main);
   transition: background-color 0.3s, color 0.3s;
-  background: radial-gradient(circle at top left, rgba(19, 59, 92, 0.08), transparent 60%), var(--bg-main);
 }
 
 .container {
