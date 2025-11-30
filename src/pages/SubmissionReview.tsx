@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import type { User } from '@supabase/supabase-js';
 import type { AIResponseType } from '../services/aiEvaluationService';
 import { rubrics } from '../data/rubrics';
-import { topics } from '../data/topics';
+import { topics, WritingSection } from '../data/topics';
 import '../styles/SubmissionReview.css';
 import '../styles/Tabs.css';
 
@@ -35,7 +34,6 @@ export default function SubmissionReview() {
 
   // --- STATE MANAGEMENT ---
   const [submission, setSubmission] = useState<Submission | null>(null);
-  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +41,7 @@ export default function SubmissionReview() {
 
   // State for teacher's form
   const [teacherFeedback, setTeacherFeedback] = useState('');
-  const [teacherScores, setTeacherScores] = useState<{ [key: string]: number }>({});
+  const [teacherScores, setTeacherScores] = useState<{ [key: string]: { score: number } }>({});
   const [isSaving, setIsSaving] = useState(false);
 
   // --- DATA FETCHING ---
@@ -55,7 +53,6 @@ export default function SubmissionReview() {
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) throw new Error('يجب عليك تسجيل الدخول لعرض هذه الصفحة.');
-      setUser(session.user);
 
       const [profileRes, submissionRes] = await Promise.all([
         supabase.from('profiles').select('role').eq('id', session.user.id).single(),
@@ -93,14 +90,14 @@ export default function SubmissionReview() {
   const handleTeacherScoreChange = (criterionId: string, score: string) => {
     const newScore = parseInt(score, 10);
     const maxScore = rubric?.criteria.find(c => c.id === criterionId)?.levels[0]?.score || 5;
-    setTeacherScores(prev => ({ ...prev, [criterionId]: Math.max(0, Math.min(isNaN(newScore) ? 0 : newScore, maxScore)) }));
+    setTeacherScores(prev => ({ ...prev, [criterionId]: { score: Math.max(0, Math.min(isNaN(newScore) ? 0 : newScore, maxScore)) } }));
   };
 
   const handleTeacherSubmit = async () => {
     if (!submission || !rubric) return;
     setIsSaving(true);
 
-    const totalScore = Object.values(teacherScores).reduce((sum, score) => sum + score, 0);
+    const totalScore = Object.values(teacherScores).reduce((sum, item) => sum + item.score, 0);
 
     const teacherResponse: TeacherResponseType = {
         feedback: teacherFeedback,
@@ -162,7 +159,7 @@ export default function SubmissionReview() {
                   {rubric.criteria.map(criterion => (
                       <div key={criterion.id} className='form-group teacher-score-group'>
                           <label htmlFor={`ts-${criterion.id}`}>{criterion.name}</label>
-                          <input type='number' id={`ts-${criterion.id}`} value={teacherScores[criterion.id] || ''} onChange={e => handleTeacherScoreChange(criterion.id, e.target.value)} max={criterion.levels[0].score} min={0} />
+                          <input type='number' id={`ts-${criterion.id}`} value={teacherScores[criterion.id]?.score || ''} onChange={e => handleTeacherScoreChange(criterion.id, e.target.value)} max={criterion.levels[0].score} min={0} />
                           <span>/ {criterion.levels[0].score}</span>
                       </div>
                   ))}
@@ -212,7 +209,7 @@ export default function SubmissionReview() {
                 <h2><i className='fas fa-pen-nib'></i> كتابة الطالب</h2>
                 {Object.entries(submission.submission_data).map(([key, value]) => (
                     <div key={key} className='writing-section-display'>
-                        <h4>{topic?.writingSections?.find(s => s.id === key)?.title || 'النص الرئيسي'}</h4>
+                        <h4>{topic?.writingSections?.find((s: WritingSection) => s.id === key)?.title || 'النص الرئيسي'}</h4>
                         <p>{value}</p>
                     </div>
                 ))}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
-import Papa, { ParseResult, PapaError } from "papaparse";
+import Papa from "papaparse";
+import type { ParseResult, PapaError } from "papaparse";
 import "../styles/global.css";
 import "../styles/Navbar.css";
 
@@ -168,7 +169,7 @@ export default function TeacherPanel() {
     setSuccessMessage(null);
   
     try {
-      const { data, error } = await supabase.functions.invoke("create-user", {
+      const { data: _data, error } = await supabase.functions.invoke("create-user", {
         body: {
           email: newEmail,
           password: newPassword,
@@ -181,7 +182,7 @@ export default function TeacherPanel() {
         throw new Error(`تعذّر الاتصال بوظيفة السيرفر: ${error.message}`);
       }
   
-      const body = data as any;
+      const body = _data as any;
   
       if (!body?.success) {
         throw new Error(`تعذّر إنشاء المستخدم: ${body?.error ?? "سبب غير معروف"}`);

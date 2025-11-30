@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import { topics } from "../data/topics";
+import { topics, WritingSection } from "../data/topics";
 import { rubrics } from "../data/rubrics";
-import { getAIAnalysis, AIResponseType } from "../services/aiEvaluationService";
+import { getAIAnalysis } from "../services/aiEvaluationService";
 import "../styles/Evaluate.css";
 import { Session } from "@supabase/supabase-js";
 
@@ -16,7 +16,7 @@ export default function Evaluate() {
   const rubric = rubrics.find((r) => r.topicId === topicId);
 
   const initialWritingValues = topic?.writingSections
-    ? topic.writingSections.reduce((acc, section) => ({ ...acc, [section.id]: "" }), {})
+    ? topic.writingSections.reduce((acc: WritingValues, section: WritingSection) => ({ ...acc, [section.id]: "" }), {})
     : { main: "" };
   const [writingValues, setWritingValues] = useState<WritingValues>(initialWritingValues);
 
@@ -122,7 +122,7 @@ export default function Evaluate() {
       )}
 
       <div className="card evaluation-area">
-        {sectionsToRender.map(section => (
+        {sectionsToRender.map((section: WritingSection) => (
             <div key={section.id} className="writing-section">
                 <label htmlFor={section.id}>{section.title}</label>
                 <textarea

@@ -9,7 +9,7 @@ type Submission = {
   created_at: string;
   ai_grade: number | null;
   teacher_response: { rubric_breakdown: { [key: string]: { score: number } } } | null;
-  profiles: { username: string } | null; // Corrected to 'username'
+  profiles: { username: string }; // Corrected to be a single object
 };
 
 export default function Submissions() {
@@ -36,7 +36,14 @@ export default function Submissions() {
           console.error('Error fetching submissions:', fetchError);
           throw fetchError;
         }
-        setSubmissions(data || []);
+
+        // The data from Supabase needs to be transformed to match the Submission type
+        const formattedData = data.map(item => ({
+          ...item,
+          profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles,
+        }));
+
+        setSubmissions(formattedData || []);
       } catch (e: any) {
         setError(`Failed to fetch submissions: ${e.message}`);
       } finally {
