@@ -65,6 +65,13 @@ export default function LessonReview() {
        {/* Final Action Button */}
       <div className="page-actions">
          <button
+            className="button button-secondary"
+            onClick={() => navigate(-1)}
+          >
+            <i className="fas fa-arrow-right"></i>
+            رجوع
+          </button>
+         <button
             className="button button-primary cta-button"
             onClick={() => navigate(`/evaluate/${topic.id}`)}
           >

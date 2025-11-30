@@ -1,48 +1,44 @@
-import { useEffect, useState } from "react";
-import { supabase } from "../supabaseClient";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
+import '../styles/Submissions.css';
 
 type Submission = {
   id: number;
-  topic_id: number;
-  student_id: string;
-  content: string;
+  topic_title: string;
   created_at: string;
-  score_ai: number | null;
-  score_teacher: number | null;
-  profiles: { full_name: string } | null;
-  topics: { title: string } | null;
+  ai_grade: number | null;
+  teacher_response: { rubric_breakdown: { [key: string]: { score: number } } } | null;
+  profiles: { username: string } | null; // Corrected to 'username'
 };
 
 export default function Submissions() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSubmissions = async () => {
-      setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("submissions")
+        const { data, error: fetchError } = await supabase
+          .from('submissions')
           .select(`
-            id,
-            topic_id,
-            student_id,
-            content,
-            created_at,
-            score_ai,
-            score_teacher,
-            profiles ( full_name ),
-            topics ( title )
-          `);
+            id, 
+            topic_title, 
+            created_at, 
+            ai_grade, 
+            teacher_response,
+            profiles ( username ) 
+          `)
+          .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error("Error fetching submissions:", error);
-        } else {
-          setSubmissions(data || []);
+        if (fetchError) {
+          console.error('Error fetching submissions:', fetchError);
+          throw fetchError;
         }
-      } catch (e) {
-        console.error("Exception when fetching submissions:", e);
+        setSubmissions(data || []);
+      } catch (e: any) {
+        setError(`Failed to fetch submissions: ${e.message}`);
       } finally {
         setLoading(false);
       }
@@ -51,42 +47,59 @@ export default function Submissions() {
     fetchSubmissions();
   }, []);
 
+  const calculateTeacherScore = (response: Submission['teacher_response']) => {
+      if (!response || !response.rubric_breakdown) return null;
+      const totalScore = Object.values(response.rubric_breakdown).reduce((total, item) => total + (item.score || 0), 0);
+      return totalScore;
+  }
+
   return (
-    <div className="teacher-panel" dir="rtl">
-      <header className="teacher-panel-header">
-        <h1>التسليمات</h1>
+    <div className='submissions-page' dir='rtl'>
+      <header className='submissions-header'>
+        <h1>كل التسليمات</h1>
         <p>عرض وتقييم تسليمات الطلاب.</p>
       </header>
 
-      <section className="card" style={{ padding: "1.5rem" }}>
+      <section className='card submissions-list'>
         {loading ? (
-          <p>جاري تحميل التسليمات...</p>
+          <p>...جاري تحميل التسليمات</p>
+        ) : error ? (
+            <p className='error-message'>{error}</p>
         ) : (
-          <div className="table-container">
-            <table className="custom-table">
+          <div className='table-container'>
+            <table className='custom-table'>
               <thead>
                 <tr>
                   <th>الطالب</th>
                   <th>الموضوع</th>
+                  <th>تاريخ التسليم</th>
                   <th>تقييم الذكاء الاصطناعي</th>
                   <th>تقييم المعلم</th>
-                  <th>عرض</th>
+                  <th>الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
-                {submissions.map((sub) => (
-                  <tr key={sub.id}>
-                    <td>{sub.profiles?.full_name || "غير معروف"}</td>
-                    <td>{sub.topics?.title || "غير معروف"}</td>
-                    <td>{sub.score_ai ?? "-"}</td>
-                    <td>{sub.score_teacher ?? "-"}</td>
-                    <td>
-                      <Link to={`/evaluate/${sub.topic_id}/${sub.id}`} className="view-button">
-                        عرض
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                {submissions.length === 0 ? (
+                    <tr><td colSpan={6}>لا توجد تسليمات لعرضها.</td></tr>
+                ) : (
+                    submissions.map((sub) => {
+                        const teacherScore = calculateTeacherScore(sub.teacher_response);
+                        return (
+                          <tr key={sub.id}>
+                            <td>{sub.profiles?.username || 'غير معروف'}</td>
+                            <td>{sub.topic_title}</td>
+                            <td>{new Date(sub.created_at).toLocaleDateString('ar')}</td>
+                            <td>{sub.ai_grade !== null ? `${sub.ai_grade}/100` : '-'}</td>
+                            <td>{teacherScore !== null ? `${teacherScore}/100` : 'لم يُقيّم بعد'}</td>
+                            <td>
+                              <Link to={`/submission/${sub.id}`} className='button button-small'>
+                                عرض وتقييم
+                              </Link>
+                            </td>
+                          </tr>
+                        )
+                    })
+                )}
               </tbody>
             </table>
           </div>

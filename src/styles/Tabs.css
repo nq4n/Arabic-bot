@@ -1,0 +1,54 @@
+/*
+  Tabs Component Styles (v2)
+  This version uses !important to force color overrides on a themed system.
+*/
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tabs button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px; /* Enforce pill shape */
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s, color 0.2s, filter 0.2s;
+  
+  /* 
+    FORCE FIX FOR INACTIVE TAB:
+    The theme provides a light background. We override the theme's
+    low-contrast text color with a dark, readable one.
+  */
+  color: #1f2937 !important; /* Using a standard dark gray for high contrast */
+}
+
+/* 
+  FORCE FIX FOR ACTIVE TAB:
+  The theme provides a dark background. We override the theme's
+  text color with a light one for high contrast.
+*/
+.tabs button.active {
+  color: #ffffff !important; /* Pure white for maximum readability */
+}
+
+.tabs button:hover:not(.active) {
+  filter: brightness(95%);
+}
+
+.tab-content {
+  padding-top: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .tabs {
+    overflow-x: auto;
+  }
+  .tabs button {
+    white-space: nowrap;
+  }
+}

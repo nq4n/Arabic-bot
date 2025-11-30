@@ -1,91 +1,151 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import { topics } from "../data/topics";
+import { writingRubrics } from "../data/rubrics";
+import { getAIAnalysis, AIResponseType } from "../services/aiEvaluationService";
 import "../styles/Evaluate.css";
+import { Session } from "@supabase/supabase-js";
 
-// نوع بيانات لنتيجة التقييم
-type EvaluationResult = {
-  score: number;
-  feedback: string;
-  suggestions: string[];
-};
+type WritingValues = { [key: string]: string };
 
 export default function Evaluate() {
   const navigate = useNavigate();
-  const { topicId } = useParams();
+  const { topicId } = useParams<{ topicId: string }>();
+  const topic = topics.find((t) => t.id === topicId);
+  const rubric = writingRubrics.find((r) => r.topicId === topicId);
 
-  const [text, setText] = useState("");
+  const initialWritingValues = topic?.writingSections
+    ? topic.writingSections.reduce((acc, section) => ({ ...acc, [section.id]: "" }), {})
+    : { main: "" };
+  const [writingValues, setWritingValues] = useState<WritingValues>(initialWritingValues);
+
   const [isEvaluating, setIsEvaluating] = useState(false);
-  const [result, setResult] = useState<EvaluationResult | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+  }, []);
+
+  const handleInputChange = (id: string, value: string) => {
+    setWritingValues((prev) => ({ ...prev, [id]: value }));
+  };
 
   const handleEvaluate = async () => {
-    if (!text.trim()) {
-      alert("الرجاء إدخال النص أولاً.");
+    if (!session) {
+      alert("الرجاء تسجيل الدخول أولاً للمتابعة.");
       return;
     }
+    if (!topic || !rubric) {
+      alert("لم يتم العثور على الموضوع أو معايير التقييم. لا يمكن المتابعة.");
+      return;
+    }
+
+    const isTextProvided = Object.values(writingValues).some(value => value.trim() !== "");
+    if (!isTextProvided) {
+      alert("الرجاء إدخال النص أولاً في قسم واحد على الأقل.");
+      return;
+    }
+
     setIsEvaluating(true);
-    setResult(null); // مسح النتائج السابقة
 
-    // --- محاكاة لطلب تقييم من الذكاء الاصطناعي ---
-    // لاحقًا، سنستبدل هذا بطلب API حقيقي
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      // 1. Get the real AI analysis
+      const aiResult = await getAIAnalysis(writingValues, rubric);
 
-    const mockResult: EvaluationResult = {
-      score: 85,
-      feedback: "عمل رائع! نصك منظم بشكل جيد ويعبر عن الفكرة بوضوح.",
-      suggestions: [
-        "حاول استخدام مفردات أكثر تنوعًا لإثراء النص.",
-        'يمكنك إضافة مثال شخصي لتدعيم فكرتك في الفقرة الثانية. ',
-        'تأكد من علامات الترقيم في نهاية كل جملة. ',
-      ],
-    };
-    // --- نهاية المحاكاة ---
+      // 2. Save submission with the correct schema and get the new ID
+      const { data: newSubmission, error: submissionError } = await supabase
+        .from("submissions")
+        .insert({
+          student_id: session.user.id,
+          topic_title: topic.title, // Use topic_title instead of topic_id
+          submission_data: writingValues,
+          ai_response: aiResult,
+          ai_grade: aiResult.score
+        })
+        .select("id")
+        .single();
 
-    setResult(mockResult);
-    setIsEvaluating(false);
+      if (submissionError) {
+        // Throw the specific error from Supabase to be caught below
+        throw submissionError;
+      }
+      
+      // 3. Navigate to the new submission review page on success
+      if (newSubmission) {
+          navigate(`/submission/${newSubmission.id}`);
+      }
+
+    } catch (error: any) {
+      // Catch and log the specific error
+      console.error("Evaluation process failed:", error);
+      alert(`فشلت عملية التقييم. يرجى المحاولة مرة أخرى. الخطأ: ${error.message}`);
+    } finally {
+      setIsEvaluating(false);
+    }
   };
+
+  if (!topic) {
+    return <div className="evaluate-page" dir="rtl">الموضوع غير موجود</div>;
+  }
+
+  const sectionsToRender = topic.writingSections || [{ id: "main", title: "النص الرئيسي", placeholder: "اكتب النص هنا..." }];
 
   return (
     <div className="evaluate-page" dir="rtl">
       <header className="evaluate-header">
-        <h1>تقييم النص</h1>
-        <p>اكتب أو الصق النص الذي أعددته للحصول على تقييم فوري.</p>
+        <h1>تقييم الكتابة: {topic.title}</h1>
+        <p>املأ الأقسام أدناه واحصل على تقييم فوري بناءً على المعايير الموضحة.</p>
       </header>
 
+      {rubric && (
+        <section className="card rubric-area">
+          <h2><i className="fas fa-tasks"></i> معايير التقييم</h2>
+          <div className="rubric-criteria">
+            {rubric.criteria.map((criterion) => (
+              <details key={criterion.id} className="criterion">
+                <summary><strong>{criterion.name}</strong></summary>
+                <div className="criterion-details">
+                  <p>{criterion.description}</p>
+                  <ul>
+                    {criterion.levels.map(level => (
+                      <li key={level.id}><strong>{level.label}:</strong> {level.description}</li>
+                    ))}
+                  </ul>
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="card evaluation-area">
-        <textarea
-          className="text-editor"
-          placeholder="أدخل النص هنا..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={15}
-        ></textarea>
-        <button onClick={handleEvaluate} disabled={isEvaluating} className="button">
+        {sectionsToRender.map(section => (
+            <div key={section.id} className="writing-section">
+                <label htmlFor={section.id}>{section.title}</label>
+                <textarea
+                    id={section.id}
+                    className="text-editor"
+                    placeholder={section.placeholder}
+                    value={writingValues[section.id] || ''}
+                    onChange={(e) => handleInputChange(section.id, e.target.value)}
+                    rows={section.id === 'main' ? 15 : 5}
+                    disabled={isEvaluating}
+                ></textarea>
+            </div>
+        ))}
+        <button onClick={handleEvaluate} disabled={isEvaluating} className="button button-primary cta-button">
           {isEvaluating ? "...جاري التقييم" : "قيّم النص الآن"}
         </button>
       </div>
 
-      {result && (
-        <section className="card results-area">
-          <h2>نتيجة التقييم</h2>
-          <div className="score">{result.score}/100</div>
-          <h3><i className="fas fa-comment-dots"></i> ملاحظات عامة</h3>
-          <p>{result.feedback}</p>
-          <h3><i className="fas fa-lightbulb"></i> اقتراحات للتحسين</h3>
-          <ul>
-            {result.suggestions.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {isEvaluating && <div className="loading-indicator"><div className="spinner"></div><p>...يتم الآن تحليل النص بواسطة الذكاء الاصطناعي</p></div>}
 
       <div className="page-actions">
-        <button
-          className="button button-light"
-          onClick={() => navigate(`/lesson-review/${topicId}`)}
-        >
-          العودة إلى المراجعة
-        </button>
+        <button className="button button-secondary" onClick={() => navigate(-1)}><i className="fas fa-arrow-right"></i> رجوع</button>
+        <button className="button button-light" onClick={() => navigate(`/my-submissions`)}>عرض كل كتاباتي</button>
       </div>
     </div>
   );

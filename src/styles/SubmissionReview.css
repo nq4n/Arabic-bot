@@ -1,0 +1,185 @@
+/* src/styles/SubmissionReview.css */
+
+.submission-review-page .review-header {
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+.submission-review-page .review-header h1 {
+  font-size: 2.2rem;
+  color: var(--color-primary);
+}
+
+.submission-review-page .review-header p {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+}
+
+.review-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .review-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.writing-display-area, .feedback-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.writing-display-area h2, .feedback-column h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-primary);
+  margin-bottom: 0;
+}
+
+.writing-section-display {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1rem;
+}
+
+.writing-section-display:last-child {
+  border-bottom: none;
+}
+
+.writing-section-display h4 {
+  color: var(--color-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.writing-section-display p {
+  white-space: pre-wrap; /* Preserves formatting */
+  line-height: 1.7;
+  color: var(--color-text-main);
+  background-color: var(--color-background);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+}
+
+/* Feedback Areas */
+.ai-feedback-area {
+  border-left: 4px solid var(--color-primary-light);
+}
+
+.teacher-feedback-view-area {
+  border-left: 4px solid var(--color-success);
+  background-color: var(--color-background-alt);
+}
+
+.teacher-grading-area {
+  border-left: 4px solid var(--color-accent);
+}
+
+.ai-feedback-area h2 {
+    color: var(--color-primary);
+}
+.teacher-feedback-view-area h2 {
+    color: var(--color-success);
+}
+.teacher-grading-area h2 {
+    color: var(--color-accent);
+}
+
+.score {
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-align: center;
+  margin: 0.5rem 0 1rem 0;
+}
+
+.ai-score { color: var(--color-primary); }
+
+.ai-feedback-area h4, .teacher-feedback-view-area h4 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.ai-feedback-area ul {
+  list-style-type: disc;
+  padding-right: 1.5rem; /* RTL padding */
+}
+
+.rubric-feedback-display {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.rubric-item-display {
+    font-size: 0.95rem;
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    background-color: var(--color-background);
+}
+
+.rubric-item-display strong {
+    color: var(--color-text-primary);
+}
+
+/* Teacher Grading Form */
+.teacher-grading-area {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.teacher-grading-area .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.teacher-grading-area .form-group label {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.teacher-grading-area textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.teacher-score-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background-color: var(--color-background-alt);
+    border-radius: var(--border-radius);
+}
+
+.teacher-score-group label {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.teacher-score-group input {
+    width: 60px;
+    text-align: center;
+    font-size: 1.1rem;
+    margin: 0 0.5rem;
+}
+
+.teacher-score-group span {
+    color: var(--color-text-secondary);
+}
+
+.page-actions {
+    margin-top: 2rem;
+    text-align: center;
+}
