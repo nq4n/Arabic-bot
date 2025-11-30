@@ -24,6 +24,7 @@ export type Activity = {
 export type WritingSection = {
   id: string;
   title: string;
+  placeholder?: string;
   description: string;
   rubricId?: string; // اختياري لربط القسم بملف rubrics لاحقًا
 };

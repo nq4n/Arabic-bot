@@ -122,7 +122,7 @@ export default function Evaluate() {
       )}
 
       <div className="card evaluation-area">
-        {sectionsToRender.map((section: WritingSection) => (
+        {sectionsToRender.map((section) => (
             <div key={section.id} className="writing-section">
                 <label htmlFor={section.id}>{section.title}</label>
                 <textarea
