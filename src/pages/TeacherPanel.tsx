@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
-import Papa from "papaparse";
+import Papa, { ParseResult, PapaError } from "papaparse";
 import "../styles/global.css";
 import "../styles/Navbar.css";
 
@@ -22,6 +22,14 @@ type Submission = {
 type UserWithStats = AppUser & {
   submissionsCount: number;
 };
+
+// Define how one row of your CSV looks
+interface CsvRow {
+  email: string;
+  username: string;
+  role: UserRole;
+  password: string;
+}
 
 export default function TeacherPanel() {
   const [users, setUsers] = useState<UserWithStats[]>([]);
@@ -54,18 +62,12 @@ export default function TeacherPanel() {
         .select("id, username, email, role, must_change_password")
         .order("username", { ascending: true });
 
-      console.log("PROFILES DATA:", profiles);
-      console.log("PROFILES ERROR:", profilesError);
-
       if (profilesError) throw profilesError;
 
       // 2) جلب التسليمات لحساب عددها
       const { data: submissions, error: submissionsError } = await supabase
         .from("submissions")
         .select("id, student_id");
-
-      console.log("SUBMISSIONS DATA:", submissions);
-      console.log("SUBMISSIONS ERROR:", submissionsError);
 
       if (submissionsError) throw submissionsError;
 
@@ -86,7 +88,6 @@ export default function TeacherPanel() {
         submissionsCount: countsMap[p.id] || 0,
       }));
 
-      console.log("FINAL USER LIST:", list);
       setUsers(list);
     } catch (err: any) {
       console.error("Error loading data:", err);
@@ -115,11 +116,11 @@ export default function TeacherPanel() {
     setUploadSuccess(null);
     setFormError(null);
 
-    Papa.parse(file, {
+    Papa.parse<CsvRow>(file, {
       header: true,
       skipEmptyLines: true,
-      complete: async (results) => {
-        const usersToCreate = results.data as any[];
+      complete: async (results: ParseResult<CsvRow>) => {
+        const usersToCreate = results.data;
         let createdCount = 0;
         let errorList: string[] = [];
 
@@ -163,7 +164,7 @@ export default function TeacherPanel() {
           setTimeout(() => loadData(), 1500);
         }
       },
-      error: (err) => {
+      error: (err: PapaError) => {
         setUploadError(`حدث خطأ أثناء تحليل الملف: ${err.message}`);
         setUploading(false);
       },
