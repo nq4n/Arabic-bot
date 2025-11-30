@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import Papa from "papaparse";
-import type { ParseResult, ParseError } from "papaparse";
+import type { ParseResult } from "papaparse";
 import "../styles/global.css";
 import "../styles/Navbar.css";
 
