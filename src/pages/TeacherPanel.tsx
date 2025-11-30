@@ -155,7 +155,7 @@ export default function TeacherPanel() {
           setTimeout(() => loadData(), 1500);
         }
       },
-      error: (err: ParseError) => {
+      error: (err: any) => {
         setUploadError(`حدث خطأ أثناء تحليل الملف: ${err.message}`);
         setUploading(false);
       },
