@@ -14,29 +14,27 @@ export type AIResponseType = {
 };
 
 /**
- * Builds the system prompt to guide the AI's evaluation.
+ * Builds the system prompt to guide the AI\'s evaluation.
  * @param rubric The rubric for the specific topic.
  * @returns A string containing the detailed system prompt.
  */
 const buildSystemPrompt = (rubric: Rubric): string => {
+  // Simplified and safer score calculation
   const criteriaList = rubric.criteria
     .map((c: RubricCriterion) => {
-      const maxScore =
-        c.levels.find((l: RubricLevel) => l.id === "excellent")?.score ??
-        Math.max(...c.levels.map((l) => l.score));
+      // Use a default max score if 'excellent' is not found
+      const maxScore = c.levels.find((l: RubricLevel) => l.id === 'excellent')?.score || 5;
       return `- ${c.name} (ID: ${c.id}, Max Score: ${maxScore})`;
     })
-    .join("\n");
+    .join('\\n');
 
   const totalScore = rubric.criteria.reduce((sum: number, c: RubricCriterion) => {
-    const maxScore =
-      c.levels.find((l: RubricLevel) => l.id === "excellent")?.score ??
-      Math.max(...c.levels.map((l) => l.score));
+    const maxScore = c.levels.find((l: RubricLevel) => l.id === 'excellent')?.score || 5;
     return sum + maxScore;
   }, 0);
 
-  const firstId = rubric.criteria[0]?.id ?? "criterion_1";
-  const secondId = rubric.criteria[1]?.id ?? "criterion_2";
+  const firstId = rubric.criteria[0]?.id ?? 'criterion_1';
+  const secondId = rubric.criteria[1]?.id ?? 'criterion_2';
 
   return `
 أنت مساعد خبير في تقويم الكتابة العربية. مهمتك هي تقييم النص الذي يقدمه المستخدم بناءً على المعايير المحددة وإرجاع النتيجة بتنسيق JSON حصريًا.
@@ -57,7 +55,7 @@ ${criteriaList}
 1.  **JSON فقط:** يجب أن تكون الاستجابة بأكملها عبارة عن كائن JSON صالح بدون أي نص إضافي قبله أو بعده. لا تستخدم علامات markdown مثل \`\`\`json.
 2.  **دقة الحساب:** يجب أن يكون الحقل \`score\` الإجمالي هو المجموع الدقيق لجميع حقول \`score\` داخل \`rubric_breakdown\`.
 3.  **التقييم الموضوعي:** قم بتقييم النص بشكل عادل وموضوعي بناءً على المعايير المقدمة.
-`.trim();
+  `.trim();
 };
 
 /**
@@ -67,15 +65,15 @@ ${criteriaList}
  */
 const combineWritingValues = (writingValues: { [key: string]: string }): string => {
   return Object.entries(writingValues)
-    .map(([key, value]: [string, string]) => `--- ${key.toUpperCase()} ---\n${value}`)
-    .join("\n\n");
+    .map(([key, value]) => `--- ${key.toUpperCase()} ---\\n${value}`)
+    .join('\\n\\n');
 };
 
 /**
  * Calls the OpenAI API to get a rubric-based evaluation for the given text.
- * @param writingValues The student's written text.
+ * @param writingValues The student\'s written text.
  * @param rubric The rubric to evaluate against.
- * @returns A promise that resolves to the AI's structured feedback.
+ * @returns A promise that resolves to the AI\'s structured feedback.
  */
 export const getAIAnalysis = async (
   writingValues: { [key: string]: string },
@@ -84,43 +82,61 @@ export const getAIAnalysis = async (
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
   if (!apiKey) {
-    console.error("OpenAI API key is missing.");
-    throw new Error("VITE_OPENAI_API_KEY is not configured in your .env file.");
+    console.error('OpenAI API key is missing.');
+    throw new Error('VITE_OPENAI_API_KEY is not configured in your .env file.');
   }
 
   const systemPrompt = buildSystemPrompt(rubric);
   const userContent = combineWritingValues(writingValues);
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: 'gpt-4o-mini',
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent },
         ],
-        response_format: { type: "json_object" },
+        response_format: { type: 'json_object' },
         temperature: 0.4,
       }),
     });
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error("AI API Error:", response.status, errorBody);
+      console.error('AI API Error:', response.status, errorBody);
       throw new Error(`AI API request failed with status ${response.status}`);
     }
 
     const result = await response.json();
-    const content = JSON.parse(result.choices[0].message.content);
+    const messageContent = result.choices[0].message.content;
 
-    return content as AIResponseType;
+    // Robustly handle the AI response, which might be a string or an object
+    let content: AIResponseType;
+    if (typeof messageContent === 'string') {
+      try {
+        content = JSON.parse(messageContent);
+      } catch (e) {
+        console.error("Failed to parse AI response content:", e);
+        throw new Error("The AI returned an invalid JSON response.");
+      }
+    } else if (typeof messageContent === 'object' && messageContent !== null) {
+      content = messageContent; // It's already an object
+    } else {
+      console.error("Unexpected AI response format:", messageContent);
+      throw new Error("The AI returned an unexpected response format.");
+    }
+
+    return content;
+
   } catch (error) {
-    console.error("Failed to get AI analysis:", error);
-    throw new Error("The AI evaluation process failed. Please try again.");
+    console.error('Failed to get AI analysis:', error);
+    // Provide a more user-friendly error message
+    throw new Error('The AI evaluation process failed. Please check your connection or API key and try again.');
   }
 };

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { topics } from "../data/topics";
-import { writingRubrics } from "../data/rubrics";
+import { rubrics } from "../data/rubrics";
 import { getAIAnalysis, AIResponseType } from "../services/aiEvaluationService";
 import "../styles/Evaluate.css";
 import { Session } from "@supabase/supabase-js";
@@ -13,7 +13,7 @@ export default function Evaluate() {
   const navigate = useNavigate();
   const { topicId } = useParams<{ topicId: string }>();
   const topic = topics.find((t) => t.id === topicId);
-  const rubric = writingRubrics.find((r) => r.topicId === topicId);
+  const rubric = rubrics.find((r) => r.topicId === topicId);
 
   const initialWritingValues = topic?.writingSections
     ? topic.writingSections.reduce((acc, section) => ({ ...acc, [section.id]: "" }), {})

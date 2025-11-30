@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import type { AIResponseType } from '../services/aiEvaluationService';
-import { writingRubrics } from '../data/rubrics';
+import { rubrics } from '../data/rubrics';
 import { topics } from '../data/topics';
 import '../styles/SubmissionReview.css';
 import '../styles/Tabs.css';
@@ -48,7 +48,7 @@ export default function SubmissionReview() {
 
   // --- DATA FETCHING ---
   const topic = topics.find(t => t.title === submission?.topic_title);
-  const rubric = writingRubrics.find(r => r.topicId === topic?.id);
+  const rubric = rubrics.find(r => r.topicId === topic?.id);
 
   const fetchSubmissionAndProfile = useCallback(async () => {
     setLoading(true);

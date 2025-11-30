@@ -6,12 +6,17 @@ import "../styles/Navbar.css";
 
 type UserRole = "student" | "teacher" | "admin" | null;
 
-type AppUser = {
+// Define a clear type for user profiles from Supabase
+type Profile = {
   id: string;
   username: string | null;
   email: string | null;
-  role: string | null;
+  role: UserRole;
   must_change_password: boolean;
+};
+
+type UserWithStats = Profile & {
+  submissionsCount: number;
 };
 
 type Submission = {
@@ -19,11 +24,6 @@ type Submission = {
   student_id: string;
 };
 
-type UserWithStats = AppUser & {
-  submissionsCount: number;
-};
-
-// Define how one row of your CSV looks
 interface CsvRow {
   email: string;
   username: string;
@@ -36,13 +36,11 @@ export default function TeacherPanel() {
   const [loading, setLoading] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // رفع CSV
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
-  // إضافة مستخدم واحد
   const [newEmail, setNewEmail] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [newRole, setNewRole] = useState<UserRole>("student");
@@ -50,13 +48,11 @@ export default function TeacherPanel() {
   const [addingUser, setAddingUser] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // جلب البيانات من Supabase
   const loadData = useCallback(async () => {
     setLoading(true);
     setFormError(null);
 
     try {
-      // 1) جلب المستخدمين من جدول profiles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("id, username, email, role, must_change_password")
@@ -64,7 +60,6 @@ export default function TeacherPanel() {
 
       if (profilesError) throw profilesError;
 
-      // 2) جلب التسليمات لحساب عددها
       const { data: submissions, error: submissionsError } = await supabase
         .from("submissions")
         .select("id, student_id");
@@ -72,18 +67,14 @@ export default function TeacherPanel() {
       if (submissionsError) throw submissionsError;
 
       const subs = (submissions || []) as Submission[];
-
       const countsMap: Record<string, number> = {};
       subs.forEach((s) => {
         countsMap[s.student_id] = (countsMap[s.student_id] || 0) + 1;
       });
 
-      // 3) دمج البيانات
-      const list: UserWithStats[] = (profiles || []).map((p: any) => ({
-        id: p.id,
-        username: p.username,
-        email: p.email,
-        role: p.role,
+      // Use the new Profile type for better type safety
+      const list: UserWithStats[] = (profiles as Profile[] || []).map((p) => ({
+        ...p,
         must_change_password: p.must_change_password ?? false,
         submissionsCount: countsMap[p.id] || 0,
       }));
@@ -101,7 +92,6 @@ export default function TeacherPanel() {
     loadData();
   }, [loadData]);
 
-  // ===== رفع ملف CSV =====
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setFile(e.target.files[0]);
@@ -132,7 +122,7 @@ export default function TeacherPanel() {
           }
 
           try {
-            const { data, error } = await supabase.functions.invoke("create-user", {
+            const { error } = await supabase.functions.invoke("create-user", {
               body: {
                 email,
                 password,
@@ -171,7 +161,6 @@ export default function TeacherPanel() {
     });
   };
 
-  // ===== إضافة مستخدم يدوي =====
   const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAddingUser(true);
@@ -188,31 +177,21 @@ export default function TeacherPanel() {
         },
       });
   
-      console.log("create-user response:", { data, error });
-  
-      // لو فيه مشكلة في الاتصال نفسه أو status مش 2xx
       if (error) {
-        setFormError(`تعذّر الاتصال بوظيفة السيرفر: ${error.message}`);
-        return;
+        throw new Error(`تعذّر الاتصال بوظيفة السيرفر: ${error.message}`);
       }
   
       const body = data as any;
   
       if (!body?.success) {
-        setFormError(
-          `تعذّر إنشاء المستخدم: ${body?.error ?? "سبب غير معروف"}`
-        );
-        return;
+        throw new Error(`تعذّر إنشاء المستخدم: ${body?.error ?? "سبب غير معروف"}`);
       }
   
-      // نجاح
+      setSuccessMessage("تم إنشاء المستخدم بنجاح ✅");
       if (body.profileCreated === false && body.profileError) {
-        // حالة نادرة: المستخدم موجود في Auth لكن فيه مشكلة بسيطة في profiles
         setSuccessMessage(
           `تم إنشاء المستخدم، لكن حدثت مشكلة في حفظ البيانات الإضافية: ${body.profileError}`
         );
-      } else {
-        setSuccessMessage("تم إنشاء المستخدم بنجاح ✅");
       }
   
       setNewEmail("");
@@ -222,14 +201,12 @@ export default function TeacherPanel() {
   
       setTimeout(() => loadData(), 1000);
     } catch (err: any) {
-      setFormError(`فشل الاتصال بوظيفة السيرفر: ${err.message}`);
+      setFormError(err.message);
     } finally {
       setAddingUser(false);
     }
   };
   
-
-  // ===== تغيير الصلاحيات =====
   const handleChangeRole = async (userId: string, newRole: UserRole) => {
     if (!newRole) return;
     try {
@@ -389,116 +366,25 @@ export default function TeacherPanel() {
             >
               <thead>
                 <tr>
-                  <th
-                    style={{
-                      borderBottom: "1px solid #e5e7eb",
-                      padding: "0.5rem",
-                    }}
-                  >
-                    اسم المستخدم
-                  </th>
-                  <th
-                    style={{
-                      borderBottom: "1px solid #e5e7eb",
-                      padding: "0.5rem",
-                    }}
-                  >
-                    البريد الإلكتروني
-                  </th>
-                  <th
-                    style={{
-                      borderBottom: "1px solid #e5e7eb",
-                      padding: "0.5rem",
-                    }}
-                  >
-                    الصلاحية
-                  </th>
-                  <th
-                    style={{
-                      borderBottom: "1px solid #e5e7eb",
-                      padding: "0.5rem",
-                    }}
-                  >
-                    عدد التسليمات
-                  </th>
-                  <th
-                    style={{
-                      borderBottom: "1px solid #e5e7eb",
-                      padding: "0.5rem",
-                    }}
-                  >
-                    يحتاج تغيير كلمة المرور؟
-                  </th>
-                  <th
-                    style={{
-                      borderBottom: "1px solid #e5e7eb",
-                      padding: "0.5rem",
-                    }}
-                  >
-                    تعديل الصلاحيات
-                  </th>
+                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>اسم المستخدم</th>
+                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>البريد الإلكتروني</th>
+                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>الصلاحية</th>
+                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>عدد التسليمات</th>
+                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>يحتاج تغيير كلمة المرور؟</th>
+                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>تعديل الصلاحيات</th>
                 </tr>
               </thead>
 
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id}>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #f3f4f6",
-                        padding: "0.5rem",
-                      }}
-                    >
-                      {u.username || "—"}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #f3f4f6",
-                        padding: "0.5rem",
-                      }}
-                    >
-                      {u.email || "—"}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #f3f4f6",
-                        padding: "0.5rem",
-                      }}
-                    >
-                      {u.role === "admin"
-                        ? "مسؤول"
-                        : u.role === "teacher"
-                        ? "معلم"
-                        : "طالب"}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #f3f4f6",
-                        padding: "0.5rem",
-                      }}
-                    >
-                      {u.submissionsCount}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #f3f4f6",
-                        padding: "0.5rem",
-                      }}
-                    >
-                      {u.must_change_password ? "نعم" : "لا"}
-                    </td>
-                    <td
-                      style={{
-                        borderBottom: "1px solid #f3f4f6",
-                        padding: "0.5rem",
-                      }}
-                    >
-                      <select
-                        value={u.role || "student"}
-                        onChange={(e) =>
-                          handleChangeRole(u.id, e.target.value as UserRole)
-                        }
-                      >
+                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.username || "—"}</td>
+                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.email || "—"}</td>
+                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.role === "admin" ? "مسؤول" : u.role === "teacher" ? "معلم" : "طالب"}</td>
+                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.submissionsCount}</td>
+                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.must_change_password ? "نعم" : "لا"}</td>
+                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>
+                      <select value={u.role || "student"} onChange={(e) => handleChangeRole(u.id, e.target.value as UserRole)}>
                         <option value="student">طالب</option>
                         <option value="teacher">معلم</option>
                         <option value="admin">مسؤول</option>
