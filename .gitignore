@@ -1,0 +1,86 @@
+# ===========================
+# OS & Editor junk
+# ===========================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Other editors / tools
+.idea/
+*.iml
+
+# ===========================
+# Node / JavaScript projects
+# (React, Vite, Next, etc.)
+# ===========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json.*
+yarn.lock.*
+pnpm-lock.yaml.*
+
+# Build outputs
+dist/
+build/
+.out/
+.next/
+.cache/
+.vite/
+.eslintcache
+.stylelintcache
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# ===========================
+# Environment & secrets
+# ===========================
+.env
+.env.*
+!.env.example  # keep a template env file if you have one
+
+# ===========================
+# Logs & temp
+# ===========================
+logs/
+*.log
+*.log.*
+*.tmp
+*.temp
+tmp/
+temp/
+
+# ===========================
+# Bundlers / tools
+# ===========================
+.parcel-cache/
+.rollup.cache/
+webpack-stats.json
+
+# ===========================
+# TypeScript
+# ===========================
+*.tsbuildinfo
+
+# ===========================
+# Misc
+# ===========================
+*.bak
+*.swp
+*.swo
