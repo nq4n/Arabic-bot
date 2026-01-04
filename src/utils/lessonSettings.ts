@@ -16,8 +16,16 @@ export type LessonProgress = Record<
   }
 >;
 
+export type ActivityProgress = Record<
+  string,
+  {
+    completedActivityIds: number[];
+  }
+>;
+
 const VISIBILITY_STORAGE_KEY = "lesson_visibility_settings";
 const PROGRESS_STORAGE_KEY = "lesson_progress_settings";
+const ACTIVITY_STORAGE_KEY = "lesson_activity_progress";
 
 const safeParse = <T,>(value: string | null): T | null => {
   if (!value) return null;
@@ -54,6 +62,19 @@ const normalizeProgress = (
   topicIds.forEach((topicId) => {
     normalized[topicId] = {
       lessonCompleted: normalized[topicId]?.lessonCompleted ?? false,
+    };
+  });
+  return normalized;
+};
+
+const normalizeActivityProgress = (
+  raw: ActivityProgress | null,
+  topicIds: string[]
+): ActivityProgress => {
+  const normalized: ActivityProgress = { ...(raw || {}) };
+  topicIds.forEach((topicId) => {
+    normalized[topicId] = {
+      completedActivityIds: normalized[topicId]?.completedActivityIds ?? [],
     };
   });
   return normalized;
@@ -107,5 +128,31 @@ export const markLessonCompleted = (topicIds: string[], topicId: string) => {
     },
   };
   localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(updated));
+  return updated;
+};
+
+export const getActivityProgress = (topicIds: string[]): ActivityProgress => {
+  const stored = localStorage.getItem(ACTIVITY_STORAGE_KEY);
+  const parsed = safeParse<ActivityProgress>(stored);
+  return normalizeActivityProgress(parsed, topicIds);
+};
+
+export const toggleActivityCompletion = (
+  topicIds: string[],
+  topicId: string,
+  activityId: number
+) => {
+  const current = getActivityProgress(topicIds);
+  const currentIds = current[topicId]?.completedActivityIds ?? [];
+  const nextIds = currentIds.includes(activityId)
+    ? currentIds.filter((id) => id !== activityId)
+    : [...currentIds, activityId];
+  const updated: ActivityProgress = {
+    ...current,
+    [topicId]: {
+      completedActivityIds: nextIds,
+    },
+  };
+  localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(updated));
   return updated;
 };

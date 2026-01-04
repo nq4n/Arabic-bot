@@ -336,7 +336,7 @@ export default function TeacherPanel() {
           <input type="file" accept=".csv" onChange={handleFileChange} />
           <button
             onClick={handleFileUpload}
-            className="login-submit-btn"
+            className="button button-compact"
             disabled={uploading || !file}
           >
             {uploading ? "جاري الرفع..." : "رفع وإنشاء"}

@@ -144,6 +144,22 @@ export default function SubmissionReview() {
 
   const aiResponse = submission.ai_response;
   const isTeacher = profile?.role === 'teacher' || profile?.role === 'admin';
+  const evaluationTitle =
+    topic?.evaluationTask.mode === "discussion"
+      ? "مناقشة الطالب"
+      : topic?.evaluationTask.mode === "dialogue"
+        ? "حوار الطالب"
+        : topic?.evaluationTask.mode === "report"
+          ? "تقرير الطالب"
+          : "كتابة الطالب";
+  const evaluationTaskTitle =
+    topic?.evaluationTask.mode === "discussion"
+      ? "مهمة المناقشة"
+      : topic?.evaluationTask.mode === "dialogue"
+        ? "مهمة الحوار"
+        : topic?.evaluationTask.mode === "report"
+          ? "مهمة التقرير"
+          : "مهمة الكتابة";
 
   const renderAITab = () => (
       <section className='card ai-feedback-area'>
@@ -263,7 +279,12 @@ export default function SubmissionReview() {
 
         <div className='review-layout'>
             <section className='card writing-display-area'>
-                <h2><i className='fas fa-pen-nib'></i> كتابة الطالب</h2>
+                <h2><i className='fas fa-pen-nib'></i> {evaluationTitle}</h2>
+                {topic?.evaluationTask?.description && (
+                  <div className='evaluation-task-note'>
+                    <strong>{evaluationTaskTitle}:</strong> {topic.evaluationTask.description}
+                  </div>
+                )}
                 {Object.entries(submission.submission_data).map(([key, value]) => (
                     <div key={key} className='writing-section-display'>
                         <h4>{topic?.writingSections?.find((s: WritingSection) => s.id === key)?.title || 'النص الرئيسي'}</h4>
