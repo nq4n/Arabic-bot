@@ -1,5 +1,7 @@
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { topics } from "../data/topics";
+import { isLessonSectionActive, markLessonCompleted } from "../utils/lessonSettings";
 import "../styles/LessonReview.css"; 
 import Chat from '../components/Chat';
 
@@ -7,17 +9,58 @@ export default function LessonReview() {
   const { topicId } = useParams<{ topicId: string }>();
   const navigate = useNavigate();
   const topic = topics.find((t) => t.id === topicId);
+  const topicIds = useMemo(() => topics.map((t) => t.id), []);
 
   if (!topic) {
     return <div className="review-page">الموضوع غير موجود</div>;
+  }
+
+  const isReviewActive = isLessonSectionActive(topicIds, topic.id, "review");
+  const isEvaluationActive = isLessonSectionActive(topicIds, topic.id, "evaluation");
+
+  useEffect(() => {
+    markLessonCompleted(topicIds, topic.id);
+  }, [topic.id, topicIds]);
+
+  if (!isReviewActive) {
+    return (
+      <div className="review-page" dir="rtl">
+        <header className="review-header">
+          <h1>قسم المراجعة غير متاح حاليًا</h1>
+          <p>تم إيقاف هذا القسم من قبل المعلم. يرجى الرجوع لاحقًا.</p>
+        </header>
+        <div className="page-actions">
+          <button className="button button-secondary" onClick={() => navigate("/")}>
+            <i className="fas fa-arrow-right"></i>
+            العودة إلى قائمة المواضيع
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // 1. Assemble all relevant topic information into a single string for the AI.
   const topicContent = `
     عنوان الدرس: ${topic.title}
 
+    مقدمة الدرس:
+    - التهيئة: ${topic.lesson.introduction.tahdid}
+    - الأهمية: ${topic.lesson.introduction.importance}
+
     ملخص الخطوات:
     ${topic.lesson.steps.map(step => `- ${step.title}: ${step.description}`).join('\n')}
+
+    أنشطة تطبيقية:
+    ${topic.activities.list.map(activity => `- ${activity.description}`).join('\n')}
+
+    موضوعات مقترحة للكتابة:
+    ${topic.writingPrompts.list.map(prompt => `- ${prompt}`).join('\n')}
+
+    أسئلة للمراجعة:
+    ${topic.reviewQuestions.map(question => `- ${question.question} (الإجابة: ${question.answer})`).join('\n')}
+
+    مهمة التقييم الخاصة بالدرس:
+    ${topic.evaluationTask.description}
 
     نموذج تطبيقي للكتابة:
     ${topic.writingModel.content}
@@ -74,10 +117,15 @@ export default function LessonReview() {
          <button
             className="button button-primary cta-button"
             onClick={() => navigate(`/evaluate/${topic.id}`)}
+            disabled={!isEvaluationActive}
+            aria-disabled={!isEvaluationActive}
           >
             <i className="fas fa-feather-alt"></i>
             أنا مستعد، لنبدأ الكتابة!
           </button>
+          {!isEvaluationActive && (
+            <p className="muted-note">قسم الكتابة والتقييم غير متاح حاليًا لهذا الدرس.</p>
+          )}
       </div>
     </div>
   );

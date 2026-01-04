@@ -1,14 +1,33 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { topics } from "../data/topics";
+import { isLessonSectionActive, markLessonCompleted } from "../utils/lessonSettings";
 import "../styles/Topic.css";
 
 export default function Topic() {
   const { topicId } = useParams<{ topicId: string }>();
   const navigate = useNavigate();
   const topic = topics.find((t) => t.id === topicId);
+  const topicIds = topics.map((t) => t.id);
 
   if (!topic) {
     return <div className="topic-page">الموضوع غير موجود</div>;
+  }
+
+  const isLessonActive = isLessonSectionActive(topicIds, topic.id, "lesson");
+  const isReviewActive = isLessonSectionActive(topicIds, topic.id, "review");
+
+  if (!isLessonActive) {
+    return (
+      <div className="topic-page" dir="rtl">
+        <div className="not-found-container">
+          <h1>الدرس غير متاح حاليًا</h1>
+          <p>تم إيقاف هذا الدرس من قبل المعلم. يرجى الرجوع لاحقًا.</p>
+          <button className="button" onClick={() => navigate("/")}>
+            العودة إلى قائمة المواضيع
+          </button>
+        </div>
+      </div>
+    );
   }
   
   if (!topic.lesson.header) {
@@ -38,7 +57,7 @@ export default function Topic() {
       </section>
 
       <section className="topic-section card">
-        <h2 className="section-title"><i className="fas fa-shoe-prints icon"></i> ثانيًا: خطوات الوصف</h2>
+        <h2 className="section-title"><i className="fas fa-shoe-prints icon"></i> ثانيًا: خطوات الدرس</h2>
         <div className="steps-grid">
           {topic.lesson.steps.map((step) => (
             <div key={step.step} className="step-card">
@@ -76,11 +95,19 @@ export default function Topic() {
       <div className="page-actions">
         <button
           className="button button-primary cta-button"
-          onClick={() => navigate(`/lesson-review/${topic.id}`)}
+          onClick={() => {
+            markLessonCompleted(topicIds, topic.id);
+            navigate(`/lesson-review/${topic.id}`);
+          }}
+          disabled={!isReviewActive}
+          aria-disabled={!isReviewActive}
         >
           <i className="fas fa-arrow-left"></i>
           فهمت الدرس، لننتقل للمراجعة
         </button>
+        {!isReviewActive && (
+          <p className="muted-note">قسم المراجعة غير متاح حاليًا لهذا الدرس.</p>
+        )}
       </div>
     </div>
   );

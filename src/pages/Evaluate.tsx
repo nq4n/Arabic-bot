@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { topics, WritingSection } from "../data/topics";
 import { rubrics } from "../data/rubrics";
 import { getAIAnalysis } from "../services/aiEvaluationService";
+import { isLessonSectionActive } from "../utils/lessonSettings";
 import "../styles/Evaluate.css";
 import { Session } from "@supabase/supabase-js";
 
@@ -14,6 +15,7 @@ export default function Evaluate() {
   const { topicId } = useParams<{ topicId: string }>();
   const topic = topics.find((t) => t.id === topicId);
   const rubric = rubrics.find((r) => r.topicId === topicId);
+  const topicIds = useMemo(() => topics.map((t) => t.id), []);
 
   const initialWritingValues = topic?.writingSections
     ? topic.writingSections.reduce((acc: WritingValues, section: WritingSection) => ({ ...acc, [section.id]: "" }), {})
@@ -53,7 +55,12 @@ export default function Evaluate() {
 
     try {
       // 1. Get the real AI analysis
-      const aiResult = await getAIAnalysis(writingValues, rubric);
+      const aiResult = await getAIAnalysis(writingValues, rubric, {
+        topicTitle: topic.title,
+        evaluationTask: topic.evaluationTask.description,
+        evaluationMode: topic.evaluationTask.mode,
+        writingSections: topic.writingSections,
+      });
 
       // 2. Save submission with the correct schema and get the new ID
       const { data: newSubmission, error: submissionError } = await supabase
@@ -91,14 +98,53 @@ export default function Evaluate() {
     return <div className="evaluate-page" dir="rtl">الموضوع غير موجود</div>;
   }
 
+  if (!isLessonSectionActive(topicIds, topic.id, "evaluation")) {
+    return (
+      <div className="evaluate-page" dir="rtl">
+        <header className="evaluate-header">
+          <h1>قسم الكتابة والتقييم غير متاح حاليًا</h1>
+          <p>تم إيقاف هذا القسم من قبل المعلم. يرجى الرجوع لاحقًا.</p>
+        </header>
+        <div className="page-actions">
+          <button className="button button-secondary" onClick={() => navigate("/")}>
+            <i className="fas fa-arrow-right"></i> العودة إلى قائمة المواضيع
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const evaluationTitle =
+    topic.evaluationTask.mode === "discussion"
+      ? "تقييم المناقشة"
+      : topic.evaluationTask.mode === "dialogue"
+        ? "تقييم الحوار"
+        : topic.evaluationTask.mode === "report"
+          ? "تقييم التقرير"
+          : "تقييم الكتابة";
+
   const sectionsToRender = topic.writingSections || [{ id: "main", title: "النص الرئيسي", placeholder: "اكتب النص هنا..." }];
 
   return (
     <div className="evaluate-page" dir="rtl">
       <header className="evaluate-header">
-        <h1>تقييم الكتابة: {topic.title}</h1>
+        <h1>{evaluationTitle}: {topic.title}</h1>
         <p>املأ الأقسام أدناه واحصل على تقييم فوري بناءً على المعايير الموضحة.</p>
       </header>
+
+      <section className="card rubric-area">
+        <h2><i className="fas fa-clipboard-check"></i> {topic.evaluationTask.title}</h2>
+        <p>{topic.evaluationTask.description}</p>
+        {topic.evaluationTask.mode === "discussion" && (
+          <p className="text-note">هذه المهمة تركّز على وضوح الحجة والاحترام في عرض الرأي.</p>
+        )}
+        {topic.evaluationTask.mode === "dialogue" && (
+          <p className="text-note">هذه المهمة تركّز على سلاسة الحوار ووضوح الأصوات.</p>
+        )}
+        {topic.evaluationTask.mode === "report" && (
+          <p className="text-note">هذه المهمة تركّز على التنظيم والموضوعية في عرض المعلومات.</p>
+        )}
+      </section>
 
       {rubric && (
         <section className="card rubric-area">
@@ -125,6 +171,9 @@ export default function Evaluate() {
         {sectionsToRender.map((section) => (
             <div key={section.id} className="writing-section">
                 <label htmlFor={section.id}>{section.title}</label>
+                {section.description && (
+                  <p className="writing-section-description">{section.description}</p>
+                )}
                 <textarea
                     id={section.id}
                     className="text-editor"

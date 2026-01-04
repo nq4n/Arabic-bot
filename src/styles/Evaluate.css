@@ -37,6 +37,13 @@
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
+.writing-section-description {
+  margin: 0.5rem 0 0.75rem;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
 .text-editor:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-light-transparent);
@@ -130,6 +137,16 @@
 .rubric-area p {
   color: var(--color-text-secondary);
   margin-bottom: 1.5rem;
+}
+
+.text-note {
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  background-color: var(--color-background);
+  border-right: 3px solid var(--color-primary-light);
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 0;
 }
 
 .rubric-criteria {
