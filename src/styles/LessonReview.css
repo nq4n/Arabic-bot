@@ -111,21 +111,34 @@
 
 /* Final Page Action */
 .page-actions {
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-top: 3rem;
   padding-top: 2rem;
   border-top: 2px dashed var(--border-color);
 }
 
 .cta-button {
-  font-size: 1.2rem;
-  padding: 0.9rem 2.5rem;
+  font-size: 1.05rem;
+  padding: 0.75rem 2rem;
   border-radius: 30px;
   box-shadow: 0 4px 15px var(--primary-shadow);
   transition: transform 0.3s, box-shadow 0.3s;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .cta-button:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 20px var(--primary-shadow);
+}
+
+.muted-note {
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
 }
