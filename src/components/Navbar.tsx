@@ -52,7 +52,9 @@ const LogoutIcon = () => (
 export default function Navbar({ session, userRole }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
 
   const avatarUrl = session?.user?.user_metadata?.avatar_url;
 
@@ -72,6 +74,19 @@ export default function Navbar({ session, userRole }: NavbarProps) {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const isScrollingDown = currentScrollY > lastScrollY.current;
+      const shouldHide = isScrollingDown && currentScrollY > 80;
+      setIsHidden(shouldHide);
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const renderLinks = () => {
@@ -106,7 +121,7 @@ export default function Navbar({ session, userRole }: NavbarProps) {
     userRole === "teacher" || userRole === "admin" ? "/teacher" : "/";
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${isHidden ? "is-hidden" : ""}`}>
       <div className="navbar-container">
         <div className="navbar-logo">
           <NavLink to={logoTarget}>
