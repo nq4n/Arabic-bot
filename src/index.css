@@ -65,6 +65,18 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
+.App {
+  min-height: 100vh;
+}
+
+.App main {
+  padding: 2.5rem 2.5rem 2.5rem calc(2.5rem + var(--sidebar-width));
+}
+
+.App.login-view main {
+  padding: 2.5rem;
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
@@ -156,4 +168,18 @@ a:hover {
 
 .fade-in-page {
   animation: fadeIn 0.5s ease-out forwards;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --sidebar-width: 0px;
+  }
+
+  .App main {
+    padding: 5.5rem 1.5rem 2rem;
+  }
+
+  .App.login-view main {
+    padding: 2.5rem 1.5rem;
+  }
 }
