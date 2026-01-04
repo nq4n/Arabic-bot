@@ -112,6 +112,11 @@
   color: var(--text-secondary);
 }
 
+.topic-disabled-note {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
 .topic-status {
   display: flex;
   gap: 1rem;
