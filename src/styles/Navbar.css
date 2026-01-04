@@ -2,7 +2,7 @@
    NAVBAR — Premium Glass UI
 ============================ */
 .navbar {
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -20,18 +20,20 @@ body.dark .navbar {
 }
 
 .navbar-container {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 1.6rem;
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
+  height: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .navbar-logo {
   display: flex;
   align-items: center;
   gap: 10px;
+  justify-content: center;
 }
 
 .navbar-logo h1 {
@@ -40,12 +42,15 @@ body.dark .navbar {
   font-weight: 800;
   color: var(--text-main);
   margin: 0;
+  text-shadow: 0 8px 18px rgba(15, 23, 42, 0.22);
 }
 
 .navbar-links {
   display: flex;
-  align-items: center;
-  gap: 28px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px 0;
 }
 
 .navbar-links a {
@@ -58,28 +63,30 @@ body.dark .navbar {
 }
 
 .navbar-links a.active::after {
-  content: '';
+  content: "";
   position: absolute;
-  bottom: -6px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: var(--primary);
-  border-radius: 4px;
+  inset: 0;
+  border-radius: 999px;
+  border: 1px solid var(--primary);
+  box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.2);
 }
 
 .navbar-links a:hover {
   text-decoration: none !important;
+  transform: translateY(-1px);
+  background-color: rgba(15, 118, 110, 0.08);
 }
 
 .navbar-links a:hover::after {
-  width: 0 !important;
+  width: auto !important;
 }
 
 .navbar-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: center;
+  gap: 12px;
+  padding-bottom: 12px;
 }
 
 .theme-toggle {
@@ -110,4 +117,43 @@ body.dark .navbar {
 
 .navbar-logo a:hover {
   text-decoration: none !important;
+}
+
+@media (max-width: 900px) {
+  .navbar {
+    position: sticky;
+    top: 0;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    padding: 12px 16px;
+    border-left: none;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  }
+
+  .navbar::before {
+    inset: 8px;
+  }
+
+  .navbar-container {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .navbar-links {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    padding: 0;
+  }
+
+  .navbar-links a {
+    background: transparent;
+  }
+
+  .navbar-actions {
+    padding-bottom: 0;
+  }
 }
