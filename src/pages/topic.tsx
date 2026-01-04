@@ -167,13 +167,13 @@ export default function Topic() {
         <h1>{topic.lesson.header}</h1>
       </header>
 
-      <section className="topic-section card intro-card">
+      <section className="topic-section card intro-card sequential-section">
         <h2 className="section-title"><i className="fas fa-book-open icon"></i> أولاً: تهيئة</h2>
         <p className="intro-paragraph">{topic.lesson.introduction.tahdid}</p>
         <p className="intro-paragraph">{topic.lesson.introduction.importance}</p>
       </section>
 
-      <section className="topic-section card">
+      <section className="topic-section card sequential-section">
         <h2 className="section-title"><i className="fas fa-shoe-prints icon"></i> ثانيًا: خطوات الدرس</h2>
         <div className="steps-grid">
           {topic.lesson.steps.map((step) => (
@@ -196,7 +196,7 @@ export default function Topic() {
         </div>
       </section>
 
-      <section className="topic-section card">
+      <section className="topic-section card sequential-section">
         <h2 className="section-title"><i className="fas fa-pencil-ruler icon"></i> {topic.activities.header}</h2>
         {activityError && <p className="error-message">{activityError}</p>}
         <div className="activity-progress">

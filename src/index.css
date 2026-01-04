@@ -5,33 +5,52 @@
 
 :root {
   --font-family: "Cairo", system-ui, sans-serif;
-  
-  /* Light Theme */
-  --primary: #87CEEB; /* Sky Blue */
-  --primary-dark: #00008B; /* Dark Blue */
-  --primary-hover: #ADD8E6; /* Light Blue */
-  --secondary: #6c757d;
-  --accent: #dc3545;
-  --bg-main: linear-gradient(to top, #FFFFFF, #E0FFFF); /* White to Light Cyan */
-  --bg-card:#ffffff; 
-  --bg-secondary: #ffffff;
-  --text-main: #0a2540;
-  --text-muted: #5d6b82;
-  --border-color: rgba(148, 163, 184, 0.35);
-  --border-radius: 14px;
-  --card-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+
+  /* Light Theme - Arabic-inspired */
+  --primary: #0f766e;
+  --primary-dark: #0b4f4a;
+  --primary-hover: #15958a;
+  --secondary: #5b6470;
+  --accent: #d4a23b;
+  --accent-soft: #f5e7c2;
+  --bg-main: linear-gradient(135deg, #fbf5e8 0%, #f1f6f2 45%, #ecf4f8 100%);
+  --bg-card: #ffffff;
+  --bg-secondary: rgba(255, 255, 255, 0.92);
+  --bg-ornament: radial-gradient(circle at 20% 20%, rgba(212, 162, 59, 0.12), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(15, 118, 110, 0.12), transparent 55%);
+  --text-main: #1b1a17;
+  --text-muted: #5b6470;
+  --border-color: rgba(15, 23, 42, 0.12);
+  --border-radius: 16px;
+  --card-shadow: 0 22px 50px rgba(15, 23, 42, 0.12);
+
+  --bg-primary: var(--bg-card);
+  --primary-color: var(--primary);
+  --text-primary: var(--text-main);
+  --text-secondary: var(--text-muted);
 }
 
 [data-theme='dark'] {
-  --primary: #4dabf7;
-  --primary-dark: #1e88e5;
-  --primary-hover: #64b5f6;
-  --bg-main: #0a2540;
-  --bg-card: #141417;
-  --bg-secondary: #133b5c;
-  --text-main: #f5f6f7;
-  --text-muted: #a0aec0;
-  --border-color: rgba(255, 255, 255, 0.2);
+  --primary: #33d0c5;
+  --primary-dark: #1b8c86;
+  --primary-hover: #4de3d8;
+  --secondary: #9aa4b2;
+  --accent: #f2c05f;
+  --accent-soft: rgba(242, 192, 95, 0.18);
+  --bg-main: linear-gradient(135deg, #050b16 0%, #0a1b28 45%, #0c2232 100%);
+  --bg-card: #0f172a;
+  --bg-secondary: rgba(15, 23, 42, 0.92);
+  --bg-ornament: radial-gradient(circle at 20% 20%, rgba(51, 208, 197, 0.18), transparent 50%),
+    radial-gradient(circle at 80% 10%, rgba(242, 192, 95, 0.2), transparent 60%);
+  --text-main: #f8fafc;
+  --text-muted: #c0cad8;
+  --border-color: rgba(148, 163, 184, 0.25);
+  --card-shadow: 0 28px 65px rgba(2, 6, 23, 0.6);
+
+  --bg-primary: var(--bg-card);
+  --primary-color: var(--primary);
+  --text-primary: var(--text-main);
+  --text-secondary: var(--text-muted);
 }
 
 body {
@@ -40,6 +59,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg-main);
+  background-image: var(--bg-ornament), var(--bg-main);
+  background-attachment: fixed;
   color: var(--text-main);
   transition: background-color 0.3s, color 0.3s;
 }
@@ -56,6 +77,7 @@ body {
   padding: 1.5rem;
   box-shadow: var(--card-shadow);
   border: 1px solid var(--border-color);
+  backdrop-filter: blur(6px);
 }
 
 button, .button {
@@ -67,11 +89,12 @@ button, .button {
   color: #ffffff;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Reduced shadow */
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.25);
   transition: transform 0.1s ease, box-shadow 0.15s ease, filter 0.15s ease;
   text-align: center;
   display: inline-block;
   text-decoration: none;
+  letter-spacing: 0.2px;
 }
 
 .button-compact {
@@ -82,7 +105,7 @@ button, .button {
 
 button:hover, .button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.45);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
   filter: brightness(1.02);
   color: #ffffff;
   text-decoration: none;
@@ -95,12 +118,12 @@ button.secondary {
 textarea, input[type="text"], input[type="password"], input[type="email"] {
   width: 100%;
   border-radius: var(--border-radius);
-  border: 1px solid #e2e6ea;
+  border: 1px solid var(--border-color);
   padding: 9px 11px;
   font-size: 13px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-  background-color: #f9fafb;
+  background-color: var(--bg-card);
   color: var(--text-main);
   font-family: var(--font-family);
   box-sizing: border-box; /* Ensures padding doesn't affect width */
@@ -108,7 +131,7 @@ textarea, input[type="text"], input[type="password"], input[type="email"] {
 
 textarea:focus, input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 1px rgba(27, 108, 168, 0.35);
+  box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.35);
   background-color: var(--bg-secondary);
 }
 
