@@ -1,3 +1,4 @@
+import type { WritingSection } from "../data/topics";
 import type { Rubric, RubricCriterion, RubricLevel } from "../data/rubrics";
 
 // This defines the shape of the JSON response we expect from the AI.
@@ -18,13 +19,29 @@ export type AIResponseType = {
  * @param rubric The rubric for the specific topic.
  * @returns A string containing the detailed system prompt.
  */
-const buildSystemPrompt = (rubric: Rubric): string => {
+const buildSystemPrompt = (
+  rubric: Rubric,
+  context?: {
+    topicTitle?: string;
+    evaluationTask?: string;
+    evaluationMode?: "writing" | "discussion" | "report" | "dialogue";
+  }
+): string => {
   // Simplified and safer score calculation
   const criteriaList = rubric.criteria
     .map((c: RubricCriterion) => {
       // Use a default max score if 'excellent' is not found
       const maxScore = c.levels.find((l: RubricLevel) => l.id === 'excellent')?.score || 5;
       return `- ${c.name} (ID: ${c.id}, Max Score: ${maxScore})`;
+    })
+    .join('\\n');
+
+  const criteriaDetails = rubric.criteria
+    .map((criterion) => {
+      const levels = criterion.levels
+        .map((level) => `  - ${level.label} (${level.score}): ${level.description}`)
+        .join('\\n');
+      return `- ${criterion.name} (ID: ${criterion.id}): ${criterion.description}\\n${levels}`;
     })
     .join('\\n');
 
@@ -35,26 +52,45 @@ const buildSystemPrompt = (rubric: Rubric): string => {
 
   const firstId = rubric.criteria[0]?.id ?? 'criterion_1';
   const secondId = rubric.criteria[1]?.id ?? 'criterion_2';
+  const modeGuidance = context?.evaluationMode
+    ? `**طبيعة المهمة:** ركّز في التقييم على خصائص "${context.evaluationMode}"، مثل ${
+        context.evaluationMode === "discussion"
+          ? "قوة الحجة، احترام الرأي الآخر، وترتيب الأفكار المنطقية."
+          : context.evaluationMode === "dialogue"
+            ? "طبيعية الحوار، وضوح الأصوات، وتسلسل تبادل الكلام."
+            : context.evaluationMode === "report"
+              ? "الوضوح والموضوعية والتنظيم وفق هيكل التقرير."
+              : "سلامة التعبير والأسلوب وتسلسل الأفكار."
+      }`
+    : "";
 
   return `
 أنت مساعد خبير في تقويم الكتابة العربية. مهمتك هي تقييم النص الذي يقدمه المستخدم بناءً على المعايير المحددة وإرجاع النتيجة بتنسيق JSON حصريًا.
 
+${context?.topicTitle ? `**عنوان الدرس:** ${context.topicTitle}` : ""}
+${context?.evaluationTask ? `**مهمة التقييم الخاصة بالدرس:** ${context.evaluationTask}` : ""}
+${modeGuidance}
+
 **معايير التقييم (المجموع الكلي المحتمل: ${totalScore} نقطة):**
 ${criteriaList}
+
+**تفاصيل المعايير ومستوياتها:**
+${criteriaDetails}
 
 **تنسيق الإخراج المطلوب (JSON فقط):**
 الرجاء إرجاع كائن JSON صالح يحتوي على الحقول التالية:
 - \`score\`: رقم يمثل مجموع النقاط التي حصل عليها الطالب (من ${totalScore}).
-- \`feedback\`: سلسلة نصية تحتوي على ملاحظات عامة وبناءة حول النص.
+- \`feedback\`: سلسلة نصية تحتوي على ملاحظات عامة وبناءة حول النص، بأسلوب إنساني ودود يذكر نقاط القوة ثم جوانب التحسين.
 - \`suggestions\`: مصفوفة من السلاسل النصية، كل سلسلة هي اقتراح لتحسين النص.
 - \`rubric_breakdown\`: كائن (object) حيث كل مفتاح هو \`id\` أحد المعايير (مثل '${firstId}', '${secondId}', إلخ). يجب أن تكون قيمة كل مفتاح كائنًا آخر يحتوي على:
   - \`score\`: رقم يمثل النقاط الممنوحة لهذا المعيار.
-  - \`feedback\`: سلسلة نصية قصيرة تبرر النقاط الممنوحة لهذا المعيار المحدد.
+  - \`feedback\`: سلسلة نصية قصيرة تبرر النقاط الممنوحة لهذا المعيار المحدد مع الإشارة إلى مستوى الأداء الأقرب (مثل ممتاز/جيد/مقبول/ضعيف).
 
 **قواعد مهمة جداً:**
 1.  **JSON فقط:** يجب أن تكون الاستجابة بأكملها عبارة عن كائن JSON صالح بدون أي نص إضافي قبله أو بعده. لا تستخدم علامات markdown مثل \`\`\`json.
 2.  **دقة الحساب:** يجب أن يكون الحقل \`score\` الإجمالي هو المجموع الدقيق لجميع حقول \`score\` داخل \`rubric_breakdown\`.
 3.  **التقييم الموضوعي:** قم بتقييم النص بشكل عادل وموضوعي بناءً على المعايير المقدمة.
+4.  **الإنسانية والوضوح:** استخدم لغة بشرية واضحة ومشجعة، وقدّم ملاحظات تفصيلية مرتبطة بالمعايير.
   `.trim();
 };
 
@@ -63,9 +99,16 @@ ${criteriaList}
  * @param writingValues An object containing the text from different writing sections.
  * @returns A single formatted string.
  */
-const combineWritingValues = (writingValues: { [key: string]: string }): string => {
+const combineWritingValues = (
+  writingValues: { [key: string]: string },
+  sections?: WritingSection[]
+): string => {
   return Object.entries(writingValues)
-    .map(([key, value]) => `--- ${key.toUpperCase()} ---\\n${value}`)
+    .map(([key, value]) => {
+      const sectionTitle = sections?.find((section) => section.id === key)?.title;
+      const label = sectionTitle ? `${sectionTitle} (${key})` : key.toUpperCase();
+      return `--- ${label} ---\\n${value}`;
+    })
     .join('\\n\\n');
 };
 
@@ -77,7 +120,13 @@ const combineWritingValues = (writingValues: { [key: string]: string }): string 
  */
 export const getAIAnalysis = async (
   writingValues: { [key: string]: string },
-  rubric: Rubric
+  rubric: Rubric,
+  context?: {
+    topicTitle?: string;
+    evaluationTask?: string;
+    evaluationMode?: "writing" | "discussion" | "report" | "dialogue";
+    writingSections?: WritingSection[];
+  }
 ): Promise<AIResponseType> => {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
@@ -86,8 +135,8 @@ export const getAIAnalysis = async (
     throw new Error('VITE_OPENAI_API_KEY is not configured in your .env file.');
   }
 
-  const systemPrompt = buildSystemPrompt(rubric);
-  const userContent = combineWritingValues(writingValues);
+  const systemPrompt = buildSystemPrompt(rubric, context);
+  const userContent = combineWritingValues(writingValues, context?.writingSections);
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

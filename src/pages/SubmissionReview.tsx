@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import type { AIResponseType } from '../services/aiEvaluationService';
 import { rubrics } from '../data/rubrics';
+import type { RubricLevel } from '../data/rubrics';
 import { topics, WritingSection } from '../data/topics';
 import '../styles/SubmissionReview.css';
 import '../styles/Tabs.css';
@@ -42,6 +43,7 @@ export default function SubmissionReview() {
   // State for teacher's form
   const [teacherFeedback, setTeacherFeedback] = useState('');
   const [teacherScores, setTeacherScores] = useState<{ [key: string]: { score: number } }>({});
+  const [teacherSelections, setTeacherSelections] = useState<{ [key: string]: string }>({});
   const [isSaving, setIsSaving] = useState(false);
 
   // --- DATA FETCHING ---
@@ -72,7 +74,24 @@ export default function SubmissionReview() {
 
       if (subData.teacher_response) {
         setTeacherFeedback(subData.teacher_response.feedback || '');
-        setTeacherScores(subData.teacher_response.rubric_breakdown || {});
+        const breakdown = subData.teacher_response.rubric_breakdown || {};
+        setTeacherScores(breakdown);
+        const topicForSubmission = topics.find((t) => t.title === subData.topic_title);
+        const rubricForSubmission = rubrics.find((r) => r.topicId === topicForSubmission?.id);
+        if (rubricForSubmission) {
+          const selections = rubricForSubmission.criteria.reduce<Record<string, string>>(
+            (acc, criterion) => {
+              const score = breakdown[criterion.id]?.score;
+              const levelMatch = criterion.levels.find((level) => level.score === score);
+              if (levelMatch) {
+                acc[criterion.id] = levelMatch.id;
+              }
+              return acc;
+            },
+            {}
+          );
+          setTeacherSelections(selections);
+        }
       }
     } catch (e: any) {
       setError(e.message || 'حدث خطأ ما.');
@@ -87,10 +106,9 @@ export default function SubmissionReview() {
   }, [fetchSubmissionAndProfile]);
 
   // --- EVENT HANDLERS ---
-  const handleTeacherScoreChange = (criterionId: string, score: string) => {
-    const newScore = parseInt(score, 10);
-    const maxScore = rubric?.criteria.find(c => c.id === criterionId)?.levels[0]?.score || 5;
-    setTeacherScores(prev => ({ ...prev, [criterionId]: { score: Math.max(0, Math.min(isNaN(newScore) ? 0 : newScore, maxScore)) } }));
+  const handleTeacherLevelSelect = (criterionId: string, level: RubricLevel) => {
+    setTeacherSelections((prev) => ({ ...prev, [criterionId]: level.id }));
+    setTeacherScores((prev) => ({ ...prev, [criterionId]: { score: level.score } }));
   };
 
   const handleTeacherSubmit = async () => {
@@ -148,6 +166,10 @@ export default function SubmissionReview() {
 
   const renderTeacherTab = () => {
       if (isTeacher) {
+          const allCriteriaSelected = rubric.criteria.every((criterion) =>
+            teacherScores[criterion.id]?.score !== undefined
+          );
+          const levelHeaders = rubric.criteria[0]?.levels ?? [];
           return (
               <section className='card teacher-grading-area'>
                   <h2><i className='fas fa-marker'></i> نموذج تقييم المعلم</h2>
@@ -155,17 +177,52 @@ export default function SubmissionReview() {
                       <label htmlFor='teacher-feedback'>ملاحظات عامة</label>
                       <textarea id='teacher-feedback' value={teacherFeedback} onChange={e => setTeacherFeedback(e.target.value)} rows={4} />
                   </div>
-                  <h4>تقييم المعايير</h4>
-                  {rubric.criteria.map(criterion => (
-                      <div key={criterion.id} className='form-group teacher-score-group'>
-                          <label htmlFor={`ts-${criterion.id}`}>{criterion.name}</label>
-                          <input type='number' id={`ts-${criterion.id}`} value={teacherScores[criterion.id]?.score || ''} onChange={e => handleTeacherScoreChange(criterion.id, e.target.value)} max={criterion.levels[0].score} min={0} />
-                          <span>/ {criterion.levels[0].score}</span>
-                      </div>
-                  ))}
-                  <button onClick={handleTeacherSubmit} disabled={isSaving} className='button button-primary'>
+                  <h4>تقييم المعايير (اختر مستوى لكل معيار)</h4>
+                  <div className='rubric-selection-table-wrapper'>
+                    <table className='rubric-selection-table'>
+                      <thead>
+                        <tr>
+                          <th>المعيار</th>
+                          {levelHeaders.map((level) => (
+                            <th key={level.id}>
+                              {level.label}
+                              <span className='level-score'>({level.score})</span>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rubric.criteria.map((criterion) => (
+                          <tr key={criterion.id}>
+                            <td className='criterion-cell'>
+                              <strong>{criterion.name}</strong>
+                              <p>{criterion.description}</p>
+                            </td>
+                            {criterion.levels.map((level) => (
+                              <td key={level.id}>
+                                <label className='rubric-level-option'>
+                                  <input
+                                    type='radio'
+                                    name={`criterion-${criterion.id}`}
+                                    checked={teacherSelections[criterion.id] === level.id}
+                                    onChange={() => handleTeacherLevelSelect(criterion.id, level)}
+                                  />
+                                  <span className='rubric-level-label'>{level.label}</span>
+                                  <span className='rubric-level-description'>{level.description}</span>
+                                </label>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <button onClick={handleTeacherSubmit} disabled={isSaving || !allCriteriaSelected} className='button button-primary'>
                       {isSaving ? 'جاري الحفظ...' : 'حفظ التقييم'}
                   </button>
+                  {!allCriteriaSelected && (
+                    <p className='muted-note'>يرجى اختيار مستوى لكل معيار قبل حفظ التقييم.</p>
+                  )}
               </section>
           );
       }

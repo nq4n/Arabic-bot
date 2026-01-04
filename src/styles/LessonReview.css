@@ -129,3 +129,9 @@
     transform: translateY(-3px);
     box-shadow: 0 6px 20px var(--primary-shadow);
 }
+
+.muted-note {
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
