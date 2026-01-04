@@ -1,0 +1,95 @@
+/* src/styles/TeacherPanel.css */
+
+.lesson-visibility-card {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+}
+
+.lesson-visibility-header {
+  margin-bottom: 1rem;
+}
+
+.lesson-visibility-header h2 {
+  margin: 0 0 0.5rem;
+  color: var(--color-primary);
+}
+
+.lesson-visibility-header p {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.lesson-visibility-table-wrapper {
+  overflow-x: auto;
+}
+
+.lesson-visibility-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.lesson-visibility-table th,
+.lesson-visibility-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.lesson-visibility-table th:first-child,
+.lesson-visibility-table td:first-child {
+  text-align: right;
+  font-weight: 600;
+}
+
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.toggle-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-slider {
+  width: 44px;
+  height: 24px;
+  background-color: var(--color-border);
+  border-radius: 999px;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--color-success);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(-20px);
+}
+
+.toggle-label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.muted-note {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
