@@ -149,56 +149,55 @@
   margin-bottom: 0;
 }
 
-.rubric-criteria {
+.rubric-table-wrapper {
+  overflow-x: auto;
+}
+
+.rubric-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.rubric-table th,
+.rubric-table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.75rem;
+  vertical-align: top;
+  text-align: center;
+}
+
+.rubric-table th:first-child,
+.rubric-table td:first-child {
+  text-align: right;
+}
+
+.rubric-criterion-cell p {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.rubric-level-info {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.criterion {
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  overflow: hidden; /* Ensures the border-radius is respected by children */
-}
-
-.criterion summary {
-  padding: 1rem;
-  font-weight: bold;
-  background-color: var(--color-background);
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.criterion summary:hover {
-  background-color: var(--color-primary-light-transparent);
-}
-
-.criterion[open] summary {
-  background-color: var(--color-primary-light-transparent);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.criterion-details {
-  padding: 1.5rem;
-}
-
-.criterion-details p {
-  font-style: italic;
+  gap: 0.35rem;
+  font-size: 0.85rem;
   color: var(--color-text-secondary);
-  margin-bottom: 1rem;
 }
 
-.criterion-details ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.criterion-details li {
-  margin-bottom: 0.75rem;
-  padding-left: 1rem;
-  border-left: 3px solid var(--color-border);
-}
-
-.criterion-details li strong {
+.rubric-level-label {
+  font-weight: 600;
   color: var(--color-text-primary);
+}
+
+.rubric-level-description {
+  font-size: 0.8rem;
+}
+
+.rubric-level-score {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
 }

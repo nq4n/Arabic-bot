@@ -33,6 +33,15 @@ type Submission = {
   student_id: string;
 };
 
+type ActivitySubmission = {
+  id: number;
+  student_id: string;
+  topic_id: string;
+  activity_id: number;
+  response_text: string | null;
+  created_at: string;
+};
+
 interface CsvRow {
   email: string;
   username: string;
@@ -48,6 +57,7 @@ export default function TeacherPanel() {
   const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
     getLessonVisibility(topicIds)
   );
+  const [activitySubmissions, setActivitySubmissions] = useState<ActivitySubmission[]>([]);
 
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -79,6 +89,13 @@ export default function TeacherPanel() {
 
       if (submissionsError) throw submissionsError;
 
+      const { data: activityData, error: activityError } = await supabase
+        .from("activity_submissions")
+        .select("id, student_id, topic_id, activity_id, response_text, created_at")
+        .order("created_at", { ascending: false });
+
+      if (activityError) throw activityError;
+
       const subs = (submissions || []) as Submission[];
       const countsMap: Record<string, number> = {};
       subs.forEach((s) => {
@@ -93,6 +110,7 @@ export default function TeacherPanel() {
       }));
 
       setUsers(list);
+      setActivitySubmissions((activityData || []) as ActivitySubmission[]);
     } catch (err: any) {
       console.error("Error loading data:", err);
       setFormError(`حدث خطأ أثناء جلب البيانات: ${err.message}`);
@@ -303,6 +321,43 @@ export default function TeacherPanel() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="card lesson-visibility-card">
+        <div className="lesson-visibility-header">
+          <h2>تسليمات الأنشطة من الطلاب</h2>
+          <p>هنا تظهر الأنشطة التي أرسلها الطلاب للمعلمين.</p>
+        </div>
+        {loading ? (
+          <p>...جاري تحميل التسليمات</p>
+        ) : activitySubmissions.length === 0 ? (
+          <p className="muted-note">لا توجد تسليمات أنشطة بعد.</p>
+        ) : (
+          <div className="lesson-visibility-table-wrapper">
+            <table className="lesson-visibility-table">
+              <thead>
+                <tr>
+                  <th>الطالب</th>
+                  <th>الموضوع</th>
+                  <th>النشاط</th>
+                  <th>وصف الطالب</th>
+                  <th>التاريخ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activitySubmissions.map((submission) => (
+                  <tr key={submission.id}>
+                    <td>{users.find((u) => u.id === submission.student_id)?.username || "طالب"}</td>
+                    <td>{topics.find((t) => t.id === submission.topic_id)?.title || submission.topic_id}</td>
+                    <td>النشاط {submission.activity_id}</td>
+                    <td>{submission.response_text || "-"}</td>
+                    <td>{new Date(submission.created_at).toLocaleDateString("ar")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       {/* رفع CSV */}

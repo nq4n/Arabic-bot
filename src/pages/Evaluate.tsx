@@ -149,20 +149,38 @@ export default function Evaluate() {
       {rubric && (
         <section className="card rubric-area">
           <h2><i className="fas fa-tasks"></i> معايير التقييم</h2>
-          <div className="rubric-criteria">
-            {rubric.criteria.map((criterion) => (
-              <details key={criterion.id} className="criterion">
-                <summary><strong>{criterion.name}</strong></summary>
-                <div className="criterion-details">
-                  <p>{criterion.description}</p>
-                  <ul>
-                    {criterion.levels.map(level => (
-                      <li key={level.id}><strong>{level.label}:</strong> {level.description}</li>
+          <div className="rubric-table-wrapper">
+            <table className="rubric-table">
+              <thead>
+                <tr>
+                  <th>المعيار</th>
+                  {rubric.criteria[0]?.levels.map((level) => (
+                    <th key={level.id}>
+                      {level.label}
+                      <span className="rubric-level-score">({level.score})</span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rubric.criteria.map((criterion) => (
+                  <tr key={criterion.id}>
+                    <td className="rubric-criterion-cell">
+                      <strong>{criterion.name}</strong>
+                      <p>{criterion.description}</p>
+                    </td>
+                    {criterion.levels.map((level) => (
+                      <td key={level.id}>
+                        <div className="rubric-level-info">
+                          <span className="rubric-level-label">{level.label}</span>
+                          <span className="rubric-level-description">{level.description}</span>
+                        </div>
+                      </td>
                     ))}
-                  </ul>
-                </div>
-              </details>
-            ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}
