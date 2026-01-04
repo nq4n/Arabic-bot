@@ -57,13 +57,36 @@ export default function Topics() {
         <p>اختر موضوعًا لتبدأ رحلتك في عالم التعبير والإبداع.</p>
       </header>
 
+      <section className="topic-dashboard card">
+        <h2>لوحة التقدم</h2>
+        <p>ملخص تقدّمك العام في الدروس والتسليمات والتقييمات.</p>
+        <div className="topic-dashboard-grid">
+          <div className="topic-dashboard-item">
+            <span className="topic-dashboard-label">الدروس المكتملة</span>
+            <span className="topic-dashboard-value">
+              {Object.values(progressMap).filter((item) => item.lessonCompleted).length}/{topics.length}
+            </span>
+          </div>
+          <div className="topic-dashboard-item">
+            <span className="topic-dashboard-label">التسليمات</span>
+            <span className="topic-dashboard-value">
+              {Object.values(submissionStatus).filter((item) => item.hasSubmission).length}/{topics.length}
+            </span>
+          </div>
+          <div className="topic-dashboard-item">
+            <span className="topic-dashboard-label">التقييمات من المعلم</span>
+            <span className="topic-dashboard-value">
+              {Object.values(submissionStatus).filter((item) => item.hasRating).length}/{topics.length}
+            </span>
+          </div>
+        </div>
+      </section>
+
       <div className="topics-grid">
         {topics.map((topic) => {
           const lessonCompleted = progressMap[topic.id]?.lessonCompleted ?? false;
           const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
           const hasRating = submissionStatus[topic.id]?.hasRating ?? false;
-          const completionCount = [lessonCompleted, hasSubmission, hasRating].filter(Boolean).length;
-          const progressPercent = (completionCount / 3) * 100;
           const isLessonActive = isLessonSectionActive(topicIds, topic.id, "lesson");
 
           return (
@@ -71,19 +94,11 @@ export default function Topics() {
             <div className="card-content">
               <h2>{topic.title}</h2>
               <p>{topic.description}</p>
-              <div className="topic-progress">
-                <div className="topic-progress-header">
-                  <span>تقدمك في الدرس</span>
-                  <span>{isLoading ? "..." : `${completionCount}/3`}</span>
-                </div>
-                <div className="topic-progress-bar" aria-label="progress">
-                  <div className="topic-progress-fill" style={{ width: `${progressPercent}%` }}></div>
-                </div>
-                <ul className="topic-progress-steps">
-                  <li className={lessonCompleted ? "done" : ""}>الدرس</li>
-                  <li className={hasSubmission ? "done" : ""}>التسليم</li>
-                  <li className={hasRating ? "done" : ""}>التقييم</li>
-                </ul>
+              <div className="topic-status-summary">
+                <span className={lessonCompleted ? "done" : ""}>الدرس</span>
+                <span className={hasSubmission ? "done" : ""}>التسليم</span>
+                <span className={hasRating ? "done" : ""}>التقييم</span>
+                {isLoading && <span className="topic-status-loading">...</span>}
               </div>
             </div>
             <div className="card-actions">
