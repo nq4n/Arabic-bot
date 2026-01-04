@@ -5,7 +5,6 @@
 
 :root {
   --font-family: "Cairo", system-ui, sans-serif;
-  --sidebar-width: 260px;
 
   /* Light Theme - Arabic-inspired */
   --primary: #0f766e;
