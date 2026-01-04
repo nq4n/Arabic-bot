@@ -1,14 +1,45 @@
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { topics } from "../data/topics";
+import {
+  getActivityProgress,
+  isLessonSectionActive,
+  markLessonCompleted,
+  toggleActivityCompletion,
+} from "../utils/lessonSettings";
 import "../styles/Topic.css";
 
 export default function Topic() {
   const { topicId } = useParams<{ topicId: string }>();
   const navigate = useNavigate();
   const topic = topics.find((t) => t.id === topicId);
+  const topicIds = useMemo(() => topics.map((t) => t.id), []);
+  const [activityProgress, setActivityProgress] = useState(() =>
+    getActivityProgress(topicIds)
+  );
 
   if (!topic) {
     return <div className="topic-page">الموضوع غير موجود</div>;
+  }
+
+  const isLessonActive = isLessonSectionActive(topicIds, topic.id, "lesson");
+  const isReviewActive = isLessonSectionActive(topicIds, topic.id, "review");
+  const completedActivities =
+    activityProgress[topic.id]?.completedActivityIds ?? [];
+  const activityCount = topic.activities.list.length;
+
+  if (!isLessonActive) {
+    return (
+      <div className="topic-page" dir="rtl">
+        <div className="not-found-container">
+          <h1>الدرس غير متاح حاليًا</h1>
+          <p>تم إيقاف هذا الدرس من قبل المعلم. يرجى الرجوع لاحقًا.</p>
+          <button className="button" onClick={() => navigate("/")}>
+            العودة إلى قائمة المواضيع
+          </button>
+        </div>
+      </div>
+    );
   }
   
   if (!topic.lesson.header) {
@@ -38,7 +69,7 @@ export default function Topic() {
       </section>
 
       <section className="topic-section card">
-        <h2 className="section-title"><i className="fas fa-shoe-prints icon"></i> ثانيًا: خطوات الوصف</h2>
+        <h2 className="section-title"><i className="fas fa-shoe-prints icon"></i> ثانيًا: خطوات الدرس</h2>
         <div className="steps-grid">
           {topic.lesson.steps.map((step) => (
             <div key={step.step} className="step-card">
@@ -62,11 +93,32 @@ export default function Topic() {
 
       <section className="topic-section card">
         <h2 className="section-title"><i className="fas fa-pencil-ruler icon"></i> {topic.activities.header}</h2>
+        <div className="activity-progress">
+          <span>تقدمك في الأنشطة</span>
+          <span>{completedActivities.length}/{activityCount}</span>
+        </div>
         <ul className="activities-list">
           {topic.activities.list.map((activity) => (
             <li key={activity.activity}>
-                <i className={`${activity.icon} activity-icon`}></i>
-                <span>{activity.description}</span>
+                <label className="activity-item">
+                  <input
+                    type="checkbox"
+                    checked={completedActivities.includes(activity.activity)}
+                    onChange={() =>
+                      setActivityProgress(
+                        toggleActivityCompletion(
+                          topicIds,
+                          topic.id,
+                          activity.activity
+                        )
+                      )
+                    }
+                  />
+                  <span className="activity-text">
+                    <i className={`${activity.icon} activity-icon`}></i>
+                    {activity.description}
+                  </span>
+                </label>
             </li>
           ))}
         </ul>
@@ -76,11 +128,19 @@ export default function Topic() {
       <div className="page-actions">
         <button
           className="button button-primary cta-button"
-          onClick={() => navigate(`/lesson-review/${topic.id}`)}
+          onClick={() => {
+            markLessonCompleted(topicIds, topic.id);
+            navigate(`/lesson-review/${topic.id}`);
+          }}
+          disabled={!isReviewActive}
+          aria-disabled={!isReviewActive}
         >
           <i className="fas fa-arrow-left"></i>
           فهمت الدرس، لننتقل للمراجعة
         </button>
+        {!isReviewActive && (
+          <p className="muted-note">قسم المراجعة غير متاح حاليًا لهذا الدرس.</p>
+        )}
       </div>
     </div>
   );

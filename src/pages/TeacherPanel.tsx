@@ -1,9 +1,17 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import Papa from "papaparse";
 import type { ParseResult } from "papaparse";
+import { topics } from "../data/topics";
+import {
+  LessonSection,
+  LessonVisibility,
+  getLessonVisibility,
+  updateLessonVisibility,
+} from "../utils/lessonSettings";
 import "../styles/global.css";
 import "../styles/Navbar.css";
+import "../styles/TeacherPanel.css";
 
 type UserRole = "student" | "teacher" | "admin" | null;
 
@@ -36,6 +44,10 @@ export default function TeacherPanel() {
   const [users, setUsers] = useState<UserWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
+  const topicIds = useMemo(() => topics.map((topic) => topic.id), []);
+  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
+    getLessonVisibility(topicIds)
+  );
 
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -92,6 +104,10 @@ export default function TeacherPanel() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    setLessonVisibility(getLessonVisibility(topicIds));
+  }, [topicIds]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -226,6 +242,15 @@ export default function TeacherPanel() {
     }
   };
 
+  const handleVisibilityChange = (
+    topicId: string,
+    section: LessonSection,
+    value: boolean
+  ) => {
+    const updated = updateLessonVisibility(topicIds, topicId, section, value);
+    setLessonVisibility(updated);
+  };
+
   return (
     <div className="page" dir="rtl" style={{ padding: "2rem" }}>
       <h1 style={{ fontFamily: "title", marginBottom: "1rem" }}>
@@ -234,6 +259,51 @@ export default function TeacherPanel() {
       <p style={{ marginBottom: "1.5rem", color: "#4b5563" }}>
         من هنا يمكن للمعلم/المسؤول متابعة نشاط الطلاب، إضافة مستخدمين جدد، وتعديل الصلاحيات.
       </p>
+
+      <section className="card lesson-visibility-card">
+        <div className="lesson-visibility-header">
+          <h2>إدارة إتاحة الدروس للطلاب</h2>
+          <p>يمكنك تعطيل الدرس كاملًا أو إيقاف أجزاء من مسار الدرس مثل المراجعة أو التقييم.</p>
+        </div>
+        <div className="lesson-visibility-table-wrapper">
+          <table className="lesson-visibility-table">
+            <thead>
+              <tr>
+                <th>الموضوع</th>
+                <th>الدرس</th>
+                <th>المراجعة</th>
+                <th>الكتابة والتقييم</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topics.map((topic) => (
+                <tr key={topic.id}>
+                  <td>{topic.title}</td>
+                  {(["lesson", "review", "evaluation"] as LessonSection[]).map(
+                    (section) => (
+                      <td key={`${topic.id}-${section}`}>
+                        <label className="toggle-switch">
+                          <input
+                            type="checkbox"
+                            checked={lessonVisibility[topic.id]?.[section] ?? true}
+                            onChange={(e) =>
+                              handleVisibilityChange(topic.id, section, e.target.checked)
+                            }
+                          />
+                          <span className="toggle-slider" aria-hidden="true"></span>
+                          <span className="toggle-label">
+                            {lessonVisibility[topic.id]?.[section] ? "متاح" : "غير متاح"}
+                          </span>
+                        </label>
+                      </td>
+                    )
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       {/* رفع CSV */}
       <section
@@ -266,7 +336,7 @@ export default function TeacherPanel() {
           <input type="file" accept=".csv" onChange={handleFileChange} />
           <button
             onClick={handleFileUpload}
-            className="login-submit-btn"
+            className="button button-compact"
             disabled={uploading || !file}
           >
             {uploading ? "جاري الرفع..." : "رفع وإنشاء"}
