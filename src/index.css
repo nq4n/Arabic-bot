@@ -3,49 +3,87 @@
   src: url('/fonts/title.otf') format('opentype');
 }
 
+/* ============================
+   THEME TOKENS (Premium Arabic Glass)
+============================ */
 :root {
-  --font-family: "Cairo", system-ui, sans-serif;
+  --font-family: "Cairo", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 
-  /* Light Theme - Arabic-inspired */
+  /* Brand */
   --primary: #0f766e;
   --primary-dark: #0b4f4a;
   --primary-hover: #15958a;
-  --secondary: #5b6470;
-  --accent: #d4a23b;
-  --accent-soft: #f5e7c2;
-  --bg-main: linear-gradient(135deg, #fbf5e8 0%, #f1f6f2 45%, #ecf4f8 100%);
-  --bg-card: #ffffff;
-  --bg-secondary: rgba(255, 255, 255, 0.92);
-  --bg-ornament: radial-gradient(circle at 20% 20%, rgba(212, 162, 59, 0.12), transparent 45%),
-    radial-gradient(circle at 80% 10%, rgba(15, 118, 110, 0.12), transparent 55%);
-  --text-main: #1b1a17;
-  --text-muted: #5b6470;
-  --border-color: rgba(15, 23, 42, 0.12);
-  --border-radius: 16px;
-  --card-shadow: 0 22px 50px rgba(15, 23, 42, 0.12);
 
+  --accent: #d4a23b;
+  --accent-2: #f2d38a; /* subtle highlight */
+  --accent-soft: rgba(212, 162, 59, 0.16);
+
+  /* Neutrals */
+  --text-main: #121418;
+  --text-muted: #5b6470;
+
+  /* Surfaces */
+  --bg-card: rgba(255, 255, 255, 0.78);
+  --bg-secondary: rgba(255, 255, 255, 0.92);
+
+  /* Background (softer + richer) */
+  --bg-main: radial-gradient(1200px 600px at 15% 10%, rgba(212, 162, 59, 0.18), transparent 55%),
+             radial-gradient(900px 500px at 85% 0%, rgba(15, 118, 110, 0.16), transparent 55%),
+             linear-gradient(135deg, #fbf7ee 0%, #f3faf6 45%, #eef6fb 100%);
+
+  /* Borders + Radius */
+  --border-color: rgba(15, 23, 42, 0.12);
+  --border-strong: rgba(15, 23, 42, 0.18);
+  --border-radius: 18px;
+  --radius-sm: 12px;
+
+  /* Shadows */
+  --shadow-sm: 0 8px 18px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 18px 40px rgba(15, 23, 42, 0.14);
+  --shadow-lg: 0 28px 65px rgba(15, 23, 42, 0.16);
+
+  /* Focus */
+  --focus-ring: 0 0 0 4px rgba(15, 118, 110, 0.18);
+  --focus-ring-accent: 0 0 0 4px rgba(212, 162, 59, 0.22);
+
+  /* Layout helpers (keep your existing) */
   --bg-primary: var(--bg-card);
   --primary-color: var(--primary);
   --text-primary: var(--text-main);
   --text-secondary: var(--text-muted);
 }
 
+/* ============================
+   DARK THEME (More contrast + luxury)
+============================ */
 [data-theme='dark'] {
   --primary: #33d0c5;
   --primary-dark: #1b8c86;
   --primary-hover: #4de3d8;
-  --secondary: #9aa4b2;
+
   --accent: #f2c05f;
+  --accent-2: #ffdba0;
   --accent-soft: rgba(242, 192, 95, 0.18);
-  --bg-main: linear-gradient(135deg, #050b16 0%, #0a1b28 45%, #0c2232 100%);
-  --bg-card: #0f172a;
-  --bg-secondary: rgba(15, 23, 42, 0.92);
-  --bg-ornament: radial-gradient(circle at 20% 20%, rgba(51, 208, 197, 0.18), transparent 50%),
-    radial-gradient(circle at 80% 10%, rgba(242, 192, 95, 0.2), transparent 60%);
+
   --text-main: #f8fafc;
-  --text-muted: #c0cad8;
-  --border-color: rgba(148, 163, 184, 0.25);
-  --card-shadow: 0 28px 65px rgba(2, 6, 23, 0.6);
+  --text-muted: #b7c2d3;
+
+  --bg-card: rgba(15, 23, 42, 0.70);
+  --bg-secondary: rgba(15, 23, 42, 0.88);
+
+  --bg-main: radial-gradient(1200px 600px at 15% 10%, rgba(51, 208, 197, 0.16), transparent 60%),
+             radial-gradient(900px 500px at 85% 0%, rgba(242, 192, 95, 0.18), transparent 60%),
+             linear-gradient(135deg, #050b16 0%, #081a27 45%, #0a2536 100%);
+
+  --border-color: rgba(148, 163, 184, 0.20);
+  --border-strong: rgba(148, 163, 184, 0.30);
+
+  --shadow-sm: 0 10px 22px rgba(2, 6, 23, 0.45);
+  --shadow-md: 0 22px 50px rgba(2, 6, 23, 0.55);
+  --shadow-lg: 0 34px 85px rgba(2, 6, 23, 0.65);
+
+  --focus-ring: 0 0 0 4px rgba(51, 208, 197, 0.18);
+  --focus-ring-accent: 0 0 0 4px rgba(242, 192, 95, 0.22);
 
   --bg-primary: var(--bg-card);
   --primary-color: var(--primary);
@@ -53,16 +91,18 @@
   --text-secondary: var(--text-muted);
 }
 
+/* ============================
+   BASE
+============================ */
 body {
   margin: 0;
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
   background: var(--bg-main);
-  background-image: var(--bg-ornament), var(--bg-main);
-  background-attachment: fixed;
   color: var(--text-main);
-  transition: background-color 0.3s, color 0.3s;
+  transition: background 0.35s ease, color 0.25s ease;
 }
 
 .App {
@@ -83,30 +123,53 @@ body {
   padding: 2rem;
 }
 
+/* ============================
+   CARD (More premium glass)
+============================ */
 .card {
-  background-color: var(--bg-secondary);
+  background: var(--bg-secondary);
   border-radius: var(--border-radius);
   padding: 1.5rem;
-  box-shadow: var(--card-shadow);
   border: 1px solid var(--border-color);
-  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
+/* Optional: subtle hover lift */
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* ============================
+   BUTTONS (Richer + consistent)
+============================ */
 button, .button {
   cursor: pointer;
   padding: 10px 18px;
   border-radius: 999px;
-  border: none;
-  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  border: 1px solid rgba(255,255,255,0.14);
+
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0)) ,
+    linear-gradient(135deg, var(--primary-dark), var(--primary));
   color: #ffffff;
+
   font-size: 14px;
-  font-weight: 700;
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.25);
-  transition: transform 0.1s ease, box-shadow 0.15s ease, filter 0.15s ease;
-  text-align: center;
-  display: inline-block;
-  text-decoration: none;
+  font-weight: 800;
   letter-spacing: 0.2px;
+
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18);
+  transition: transform 0.12s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
 }
 
 .button-compact {
@@ -117,36 +180,85 @@ button, .button {
 
 button:hover, .button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
-  filter: brightness(1.02);
+  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.28);
+  filter: brightness(1.03);
   color: #ffffff;
   text-decoration: none;
 }
 
-button.secondary {
-  background: var(--secondary);
+button:active, .button:active {
+  transform: translateY(0px) scale(0.99);
 }
 
+button:focus-visible, .button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring), 0 22px 50px rgba(15, 23, 42, 0.18);
+}
+
+/* Secondary button */
+button.secondary, .button.secondary {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0)) ,
+    linear-gradient(135deg, rgba(91,100,112,0.85), rgba(91,100,112,0.65));
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+[data-theme='dark'] button.secondary,
+[data-theme='dark'] .button.secondary {
+  color: var(--text-main);
+}
+
+/* Accent button (gold) if you want */
+button.accent, .button.accent {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0)) ,
+    linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #1b1a17;
+}
+
+button.accent:focus-visible, .button.accent:focus-visible {
+  box-shadow: var(--focus-ring-accent), 0 22px 50px rgba(15, 23, 42, 0.18);
+}
+
+/* ============================
+   INPUTS (Cleaner + better focus)
+============================ */
 textarea, input[type="text"], input[type="password"], input[type="email"] {
   width: 100%;
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
-  padding: 9px 11px;
+  padding: 10px 12px;
   font-size: 13px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-  background-color: var(--bg-card);
+
+  background: var(--bg-card);
   color: var(--text-main);
   font-family: var(--font-family);
-  box-sizing: border-box; /* Ensures padding doesn't affect width */
+  box-sizing: border-box;
+
+  box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
+  transition: border-color 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 textarea:focus, input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.35);
-  background-color: var(--bg-secondary);
+  border-color: rgba(15, 118, 110, 0.55);
+  box-shadow: var(--focus-ring);
+  background: var(--bg-secondary);
 }
 
+textarea::placeholder, input::placeholder {
+  color: rgba(91, 100, 112, 0.75);
+}
+
+[data-theme='dark'] textarea::placeholder,
+[data-theme='dark'] input::placeholder {
+  color: rgba(183, 194, 211, 0.75);
+}
+
+/* ============================
+   LINKS
+============================ */
 a {
   color: var(--primary);
   text-decoration: none;
@@ -156,24 +268,23 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Added for Fade-In Animation */
+/* ============================
+   PAGE FADE
+============================ */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .fade-in-page {
   animation: fadeIn 0.5s ease-out forwards;
 }
 
+/* ============================
+   RESPONSIVE
+============================ */
 @media (max-width: 900px) {
-  :root {
-    --sidebar-width: 0px;
-  }
+  :root { --sidebar-width: 0px; }
 
   .App main {
     padding: 5.5rem 1.5rem 2rem;

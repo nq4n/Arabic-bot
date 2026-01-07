@@ -123,7 +123,7 @@ export default function Evaluate() {
           ? "تقييم التقرير"
           : "تقييم الكتابة";
 
-  const sectionsToRender = topic.writingSections || [{ id: "main", title: "النص الرئيسي", placeholder: "اكتب النص هنا..." }];
+  const sectionsToRender = topic.writingSections || [{ id: "main", title: "النص الرئيسي", placeholder: "اكتب النص هنا...", description: "" }];
 
   return (
     <div className="evaluate-page" dir="rtl">

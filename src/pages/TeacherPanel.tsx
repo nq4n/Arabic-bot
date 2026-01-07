@@ -271,9 +271,12 @@ export default function TeacherPanel() {
 
   return (
     <div className="page" dir="rtl" style={{ padding: "2rem" }}>
-      <h1 style={{ fontFamily: "title", marginBottom: "1rem" }}>
-        لوحة إدارة المستخدمين
-      </h1>
+      
+      <div className='submissions-page' dir='rtl'>
+      <header className='submissions-header'>
+        <h1>لوحة إدارة المستخدمين</h1>
+      </header>
+      </div>
       <p style={{ marginBottom: "1.5rem", color: "#4b5563" }}>
         من هنا يمكن للمعلم/المسؤول متابعة نشاط الطلاب، إضافة مستخدمين جدد، وتعديل الصلاحيات.
       </p>

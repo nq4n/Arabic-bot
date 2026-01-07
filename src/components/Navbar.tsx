@@ -79,9 +79,30 @@ export default function Navbar({ session, userRole }: NavbarProps) {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      const isScrollingDown = currentScrollY > lastScrollY.current;
-      const shouldHide = isScrollingDown && currentScrollY > 80;
-      setIsHidden(shouldHide);
+      const scrollDelta = currentScrollY - lastScrollY.current;
+
+      // Ignore small scroll fluctuations
+      if (Math.abs(scrollDelta) < 5) {
+        return;
+      }
+
+      // Always show navbar when at the top of the page.
+      if (currentScrollY < 90) {
+        setIsHidden(false);
+        lastScrollY.current = currentScrollY;
+        return;
+      }
+
+      const isScrollingDown = scrollDelta > 0;
+
+      // Hide navbar only when scrolling down.
+      if (isScrollingDown) {
+        setIsHidden(true);
+      } else {
+        // Show navbar when scrolling up.
+        setIsHidden(false);
+      }
+
       lastScrollY.current = currentScrollY;
     };
 

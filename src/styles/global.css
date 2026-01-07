@@ -7,6 +7,7 @@
 
 
 :root {
+  --nav-h: 72px; /* change if your navbar is taller/shorter */
   --bg-main: #F3F4F6;
   --bg-card: #FFFFFF;
   --text-main: #1F2937;
@@ -41,8 +42,13 @@ body.dark {
 }
 
 html {
+  box-sizing: border-box;
   direction: rtl;
   lang: "ar";
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
 }
 
 body {
@@ -62,5 +68,6 @@ body {
 
 main {
   flex-grow: 1;
-  padding: 2rem;
+  padding: 2rem 16px;
+  padding-top: 72px; /* Fixed value to debug overlap */
 }
