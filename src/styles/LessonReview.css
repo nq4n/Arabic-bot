@@ -10,6 +10,9 @@
 .review-header {
   text-align: center;
   margin-bottom: 2.5rem;
+  margin-top: 5%;
+  font-size: 2.5rem;
+  color: var(--primary-color);
 }
 
 .review-header h1 {

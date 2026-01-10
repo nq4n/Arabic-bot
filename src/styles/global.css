@@ -69,5 +69,5 @@ body {
 main {
   flex-grow: 1;
   padding: 2rem 16px;
-  padding-top: 72px; /* Fixed value to debug overlap */
+  padding-top: var(--nav-h);
 }

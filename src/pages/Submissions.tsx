@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { rubrics } from '../data/rubrics';
+import { topics } from '../data/topics';
 import '../styles/Submissions.css';
 
 type Submission = {
@@ -8,7 +10,7 @@ type Submission = {
   topic_title: string;
   created_at: string;
   ai_grade: number | null;
-  teacher_response: { rubric_breakdown: { [key: string]: { score: number } } } | null;
+  teacher_response: { rubric_breakdown: { [key: string]: { score: number } }, total_score: number } | null;
   profiles: { username: string }; // Corrected to be a single object
 };
 
@@ -55,9 +57,8 @@ export default function Submissions() {
   }, []);
 
   const calculateTeacherScore = (response: Submission['teacher_response']) => {
-      if (!response || !response.rubric_breakdown) return null;
-      const totalScore = Object.values(response.rubric_breakdown).reduce((total, item) => total + (item.score || 0), 0);
-      return totalScore;
+      if (!response || response.total_score === undefined) return null; 
+      return response.total_score;
   }
 
   return (
@@ -91,13 +92,19 @@ export default function Submissions() {
                 ) : (
                     submissions.map((sub) => {
                         const teacherScore = calculateTeacherScore(sub.teacher_response);
+                        const topic = topics.find(t => t.title === sub.topic_title);
+                        const rubricForTopic = topic ? rubrics.find(r => r.topicId === topic.id) : undefined;
+                        const maxTotalScore = rubricForTopic ? 
+                            rubricForTopic.criteria.reduce((sum, c) => sum + (c.levels.find(l => l.id === 'excellent')?.score || 0), 0)
+                            : 100; // Default to 100 if rubric not found
+
                         return (
                           <tr key={sub.id}>
                             <td>{sub.profiles?.username || 'غير معروف'}</td>
                             <td>{sub.topic_title}</td>
                             <td>{new Date(sub.created_at).toLocaleDateString('ar')}</td>
-                            <td>{sub.ai_grade !== null ? `${sub.ai_grade}/100` : '-'}</td>
-                            <td>{teacherScore !== null ? `${teacherScore}/100` : 'لم يُقيّم بعد'}</td>
+                            <td>{sub.ai_grade !== null ? `${sub.ai_grade}/${maxTotalScore}` : '-'}</td>
+                            <td>{teacherScore !== null ? `${teacherScore}/${maxTotalScore}` : 'لم يُقيّم بعد'}</td>
                             <td>
                               <Link to={`/submission/${sub.id}`} className='button button-small'>
                                 عرض وتقييم

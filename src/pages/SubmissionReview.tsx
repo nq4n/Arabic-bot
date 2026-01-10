@@ -22,6 +22,7 @@ type Submission = {
 type TeacherResponseType = {
   feedback: string;
   rubric_breakdown: { [key: string]: { score: number } };
+  total_score: number;
 };
 
 type Profile = {
@@ -120,11 +121,12 @@ export default function SubmissionReview() {
     const teacherResponse: TeacherResponseType = {
         feedback: teacherFeedback,
         rubric_breakdown: teacherScores,
+        total_score: totalScore,
     };
 
     const { error: updateError } = await supabase
         .from('submissions')
-        .update({ teacher_response: teacherResponse, teacher_grade: totalScore })
+        .update({ teacher_response: teacherResponse })
         .eq('id', submission.id);
     
     if (updateError) {
@@ -194,44 +196,25 @@ export default function SubmissionReview() {
                       <textarea id='teacher-feedback' value={teacherFeedback} onChange={e => setTeacherFeedback(e.target.value)} rows={4} />
                   </div>
                   <h4>تقييم المعايير (اختر مستوى لكل معيار)</h4>
-                  <div className='rubric-selection-table-wrapper'>
-                    <table className='rubric-selection-table'>
-                      <thead>
-                        <tr>
-                          <th>المعيار</th>
-                          {levelHeaders.map((level) => (
-                            <th key={level.id}>
-                              {level.label}
-                              <span className='level-score'>({level.score})</span>
-                            </th>
+                  <div className='rubric-criteria-selection'>
+                    {rubric.criteria.map((criterion) => (
+                      <div key={criterion.id} className='criterion-block'>
+                        <h3>{criterion.name}</h3>
+                        <p className='criterion-description'>{criterion.description}</p>
+                        <div className='level-options'>
+                          {criterion.levels.map((level) => (
+                            <div
+                              key={level.id}
+                              className={`level-box ${teacherSelections[criterion.id] === level.id ? 'selected' : ''}`}
+                              onClick={() => handleTeacherLevelSelect(criterion.id, level)}
+                            >
+                              <span className='level-label'>{level.label} ({level.score})</span>
+                              <span className='level-description'>{level.description}</span>
+                            </div>
                           ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rubric.criteria.map((criterion) => (
-                          <tr key={criterion.id}>
-                            <td className='criterion-cell'>
-                              <strong>{criterion.name}</strong>
-                              <p>{criterion.description}</p>
-                            </td>
-                            {criterion.levels.map((level) => (
-                              <td key={level.id}>
-                                <label className='rubric-level-option'>
-                                  <input
-                                    type='radio'
-                                    name={`criterion-${criterion.id}`}
-                                    checked={teacherSelections[criterion.id] === level.id}
-                                    onChange={() => handleTeacherLevelSelect(criterion.id, level)}
-                                  />
-                                  <span className='rubric-level-label'>{level.label}</span>
-                                  <span className='rubric-level-description'>{level.description}</span>
-                                </label>
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   <button onClick={handleTeacherSubmit} disabled={isSaving || !allCriteriaSelected} className='button button-primary'>
                       {isSaving ? 'جاري الحفظ...' : 'حفظ التقييم'}
@@ -244,7 +227,7 @@ export default function SubmissionReview() {
       }
 
       if (submission.teacher_response) {
-          const totalTeacherScore = Object.values(submission.teacher_response.rubric_breakdown).reduce((sum, item) => sum + item.score, 0);
+          const totalTeacherScore = submission.teacher_response.total_score;
           return (
               <section className='card teacher-feedback-view-area'>
                   <h2><i className='fas fa-chalkboard-teacher'></i> تقييم المعلم</h2>

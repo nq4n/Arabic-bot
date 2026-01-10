@@ -8,7 +8,7 @@ type Submission = {
   topic_title: string;
   created_at: string;
   ai_grade: number | null;
-  teacher_response: { rubric_breakdown: { [key: string]: { score: number } } } | null;
+  teacher_response: { rubric_breakdown: { [key: string]: { score: number } }, total_score: number } | null;
 };
 
 export default function MySubmissions() {
@@ -22,10 +22,7 @@ export default function MySubmissions() {
       console.log('Attempting to fetch session...');
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      console.log('Session object:', session);
-      if (sessionError) {
-        console.error('Error fetching session:', sessionError);
-      }
+     
 
       if (sessionError || !session) {
         setError('You must be logged in to view your submissions.');
@@ -60,8 +57,8 @@ export default function MySubmissions() {
   }, []);
 
   const calculateTeacherScore = (response: Submission['teacher_response']) => {
-      if (!response || !response.rubric_breakdown) return null;
-      return Object.values(response.rubric_breakdown).reduce((total, item) => total + item.score, 0);
+      if (!response || response.total_score === undefined) return null; 
+      return response.total_score;
   }
 
   return (

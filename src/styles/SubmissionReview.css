@@ -33,6 +33,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  position: relative; /* Ensure it scrolls with the page and doesn't get stuck */
 }
 
 .writing-display-area h2, .feedback-column h2 {
@@ -194,67 +195,94 @@
     text-align: center;
 }
 
-.rubric-selection-table-wrapper {
-    overflow-x: auto;
-}
-
-.rubric-selection-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.95rem;
-}
-
-.rubric-selection-table th,
-.rubric-selection-table td {
-    border-bottom: 1px solid var(--color-border);
-    padding: 0.75rem;
-    vertical-align: top;
-    text-align: center;
-}
-
-.rubric-selection-table th:first-child,
-.rubric-selection-table td:first-child {
-    text-align: right;
-}
-
-.rubric-selection-table .level-score {
-    display: block;
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-    margin-top: 0.25rem;
-}
-
-.criterion-cell p {
-    margin: 0.5rem 0 0;
-    color: var(--color-text-secondary);
-    font-size: 0.85rem;
-}
-
-.rubric-level-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.85rem;
-    color: var(--color-text-secondary);
-}
-
-.rubric-level-option input {
-    accent-color: var(--color-accent);
-}
-
-.rubric-level-label {
-    font-weight: 600;
-    color: var(--color-text-primary);
-}
-
-.rubric-level-description {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-}
 
 .muted-note {
     margin-top: 0.75rem;
     color: var(--color-text-secondary);
     font-size: 0.9rem;
+}
+
+/* New Rubric Selection Styles */
+.rubric-criteria-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.criterion-block {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.criterion-block h3 {
+  font-size: 1.3rem;
+  color: var(--primary);
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+}
+
+.criterion-description {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  line-height: 1.6;
+}
+
+.level-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive grid for levels */
+  gap: 0.75rem;
+}
+
+.level-box {
+  background-color: var(--bg-main); /* Lighter background for unselected */
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px; /* Ensure boxes have some height */
+}
+
+.level-box:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.level-box.selected {
+  background-color: var(--primary);
+  color: var(--primary-icon); /* Text color for selected box */
+  border-color: var(--primary);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+.level-box.selected .level-label,
+.level-box.selected .level-description {
+  color: var(--primary-icon); /* Ensure text is readable on dark background */
+}
+
+.level-label {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+.level-description {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text-muted);
 }
