@@ -15,11 +15,13 @@
   --primary: #1E40AF;
   --accent: #3B82F6;
   --border-color: #E5E7EB;
+  --border-color-light: #F3F4F6; /* Lighter border color */
   --primary-icon: #FFFFFF; /* Color for icons on primary background */
 
   --font-family-sans: 'Tajawal', sans-serif;
   --border-radius: 12px;
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-small: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* Subtle shadow */
 
   --destructive: #D93025;
   --destructive-hover-bg: #FEE2E2;
@@ -58,6 +60,49 @@ body {
   margin: 0;
   padding: 0;
   line-height: 1.7;
+}
+
+/* Base button styles */
+.button {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  border: 1px solid transparent;
+  background-color: var(--primary);
+  color: var(--primary-icon);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.button:hover {
+  background-color: var(--accent);
+}
+
+.button:disabled {
+  background-color: var(--border-color);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* Destructive button style */
+.button-destructive {
+  background-color: var(--destructive);
+}
+
+.button-destructive:hover {
+  background-color: var(--destructive-hover-bg);
+  color: var(--destructive-hover-text);
+}
+
+/* Compact button style */
+.button-compact {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem; /* Smaller font size */
 }
 
 #root {

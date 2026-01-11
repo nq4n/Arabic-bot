@@ -12,6 +12,7 @@ import {
 import "../styles/global.css";
 import "../styles/Navbar.css";
 import "../styles/TeacherPanel.css";
+import { User } from "@supabase/supabase-js";
 
 type UserRole = "student" | "teacher" | "admin" | null;
 
@@ -50,6 +51,8 @@ interface CsvRow {
 }
 
 export default function TeacherPanel() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>(null);
   const [users, setUsers] = useState<UserWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
@@ -62,7 +65,7 @@ export default function TeacherPanel() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess, ] = useState<string | null>(null);
 
   const [newEmail, setNewEmail] = useState("");
   const [newUsername, setNewUsername] = useState("");
@@ -70,6 +73,9 @@ export default function TeacherPanel() {
   const [newPassword, setNewPassword] = useState("123456789");
   const [addingUser, setAddingUser] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserWithStats | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -122,6 +128,29 @@ export default function TeacherPanel() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error("Error fetching user:", error);
+      } else if (data?.user) {
+        setCurrentUser(data.user);
+        // Fetch profile to get the role
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .single();
+        if (profileError) {
+          console.error("Error fetching user role:", profileError);
+        } else if (profileData) {
+          setCurrentUserRole(profileData.role);
+        }
+      }
+    };
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     setLessonVisibility(getLessonVisibility(topicIds));
@@ -203,29 +232,35 @@ export default function TeacherPanel() {
     setSuccessMessage(null);
   
     try {
+      const body: any = {
+        email: newEmail,
+        password: newPassword,
+        username: newUsername,
+        role: newRole,
+      };
+
+      if (currentUserRole === "teacher" && newRole === "student") {
+        body.addedBy = currentUser?.id;
+      }
+
       const { data: _data, error } = await supabase.functions.invoke("create-user", {
-        body: {
-          email: newEmail,
-          password: newPassword,
-          username: newUsername,
-          role: newRole,
-        },
+        body,
       });
   
       if (error) {
         throw new Error(`تعذّر الاتصال بوظيفة السيرفر: ${error.message}`);
       }
   
-      const body = _data as any;
+      const responseBody = _data as any;
   
-      if (!body?.success) {
-        throw new Error(`تعذّر إنشاء المستخدم: ${body?.error ?? "سبب غير معروف"}`);
+      if (!responseBody?.success) {
+        throw new Error(`تعذّر إنشاء المستخدم: ${responseBody?.error ?? "سبب غير معروف"}`);
       }
   
       setSuccessMessage("تم إنشاء المستخدم بنجاح ✅");
-      if (body.profileCreated === false && body.profileError) {
+      if (responseBody.profileCreated === false && responseBody.profileError) {
         setSuccessMessage(
-          `تم إنشاء المستخدم، لكن حدثت مشكلة في حفظ البيانات الإضافية: ${body.profileError}`
+          `تم إنشاء المستخدم، لكن حدثت مشكلة في حفظ البيانات الإضافية: ${responseBody.profileError}`
         );
       }
   
@@ -242,8 +277,59 @@ export default function TeacherPanel() {
     }
   };
   
+  const handleDeleteClick = (user: UserWithStats) => {
+    setUserToDelete(user);
+    setShowConfirmDelete(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+
+    setLoading(true);
+    setFormError(null);
+
+    try {
+      // Admin can delete any user.
+      // Teacher can only delete students they added (this logic will be in the backend)
+      const { data: responseBody, error } = await supabase.functions.invoke("delete-user", {
+        body: {
+          user_id: userToDelete.id, // The edge function expects 'user_id'
+        },
+      });
+
+      if (error) {
+        throw new Error(`تعذّر الاتصال بوظيفة السيرفر: ${error.message}`);
+      }
+
+      if (responseBody?.error) {
+        throw new Error(`فشل حذف المستخدم: ${responseBody.error} ${responseBody.details ? `(${responseBody.details})` : ""}`);
+      }
+
+      setSuccessMessage(`تم حذف المستخدم ${userToDelete.username} بنجاح.`);
+      loadData(); // Reload data after deletion
+    } catch (err: any) {
+      setFormError(`فشل حذف المستخدم: ${err.message}`);
+    } finally {
+      setShowConfirmDelete(false);
+      setUserToDelete(null);
+      setLoading(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmDelete(false);
+    setUserToDelete(null);
+  };
+  
   const handleChangeRole = async (userId: string, newRole: UserRole) => {
     if (!newRole) return;
+
+    // Only admins can change roles
+    if (currentUserRole !== "admin") {
+      setFormError("ليس لديك صلاحية لتغيير الأدوار.");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("profiles")
@@ -281,198 +367,227 @@ export default function TeacherPanel() {
         من هنا يمكن للمعلم/المسؤول متابعة نشاط الطلاب، إضافة مستخدمين جدد، وتعديل الصلاحيات.
       </p>
 
-      <section className="card lesson-visibility-card">
-        <div className="lesson-visibility-header">
-          <h2>إدارة إتاحة الدروس للطلاب</h2>
-          <p>يمكنك تعطيل الدرس كاملًا أو إيقاف أجزاء من مسار الدرس مثل المراجعة أو التقييم.</p>
-        </div>
-        <div className="lesson-visibility-table-wrapper">
-          <table className="lesson-visibility-table">
-            <thead>
-              <tr>
-                <th>الموضوع</th>
-                <th>الدرس</th>
-                <th>المراجعة</th>
-                <th>الكتابة والتقييم</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topics.map((topic) => (
-                <tr key={topic.id}>
-                  <td>{topic.title}</td>
+      <div className="teacher-cards-container">
+        <section className="card lesson-visibility-card">
+          <div className="lesson-visibility-header">
+            <h2>إدارة إتاحة الدروس للطلاب</h2>
+            <p>
+              يمكنك تعطيل الدرس كاملًا أو إيقاف أجزاء من مسار الدرس مثل المراجعة
+              أو التقييم.
+            </p>
+          </div>
+          <div className="topics-grid">
+            {topics.map((topic) => (
+              <div key={topic.id} className="topic-grid-item">
+                <h3 className="topic-title">{topic.title}</h3>
+                <div className="topic-sections">
                   {(["lesson", "review", "evaluation"] as LessonSection[]).map(
                     (section) => (
-                      <td key={`${topic.id}-${section}`}>
+                      <div key={`${topic.id}-${section}`} className="topic-section-item">
+                        <label className="topic-section-label">
+                          {section === "lesson" && "الدرس"}
+                          {section === "review" && "المراجعة"}
+                          {section === "evaluation" && "الكتابة والتقييم"}
+                        </label>
                         <label className="toggle-switch">
                           <input
                             type="checkbox"
                             checked={lessonVisibility[topic.id]?.[section] ?? true}
                             onChange={(e) =>
-                              handleVisibilityChange(topic.id, section, e.target.checked)
+                              handleVisibilityChange(
+                                topic.id,
+                                section,
+                                e.target.checked
+                              )
                             }
                           />
                           <span className="toggle-slider" aria-hidden="true"></span>
                           <span className="toggle-label">
-                            {lessonVisibility[topic.id]?.[section] ? "متاح" : "غير متاح"}
+                            {lessonVisibility[topic.id]?.[section]
+                              ? "متاح"
+                              : "غير متاح"}
                           </span>
                         </label>
-                      </td>
+                      </div>
                     )
                   )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      <section className="card lesson-visibility-card">
-        <div className="lesson-visibility-header">
-          <h2>تسليمات الأنشطة من الطلاب</h2>
-          <p>هنا تظهر الأنشطة التي أرسلها الطلاب للمعلمين.</p>
-        </div>
-        {loading ? (
-          <p>...جاري تحميل التسليمات</p>
-        ) : activitySubmissions.length === 0 ? (
-          <p className="muted-note">لا توجد تسليمات أنشطة بعد.</p>
-        ) : (
-          <div className="lesson-visibility-table-wrapper">
-            <table className="lesson-visibility-table">
-              <thead>
-                <tr>
-                  <th>الطالب</th>
-                  <th>الموضوع</th>
-                  <th>النشاط</th>
-                  <th>وصف الطالب</th>
-                  <th>التاريخ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activitySubmissions.map((submission) => (
-                  <tr key={submission.id}>
-                    <td>{users.find((u) => u.id === submission.student_id)?.username || "طالب"}</td>
-                    <td>{topics.find((t) => t.id === submission.topic_id)?.title || submission.topic_id}</td>
-                    <td>النشاط {submission.activity_id}</td>
-                    <td>{submission.response_text || "-"}</td>
-                    <td>{new Date(submission.created_at).toLocaleDateString("ar")}</td>
+        <section className="card lesson-visibility-card">
+          <div className="lesson-visibility-header">
+            <h2>تسليمات الأنشطة من الطلاب</h2>
+            <p>هنا تظهر الأنشطة التي أرسلها الطلاب للمعلمين.</p>
+          </div>
+          {loading ? (
+            <p>...جاري تحميل التسليمات</p>
+          ) : activitySubmissions.length === 0 ? (
+            <p className="muted-note">لا توجد تسليمات أنشطة بعد.</p>
+          ) : (
+            <div className="lesson-visibility-table-wrapper">
+              <table className="lesson-visibility-table">
+                <thead>
+                  <tr>
+                    <th>الطالب</th>
+                    <th>الموضوع</th>
+                    <th>النشاط</th>
+                    <th>وصف الطالب</th>
+                    <th>التاريخ</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {activitySubmissions.map((submission) => (
+                    <tr key={submission.id}>
+                      <td>
+                        {users.find((u) => u.id === submission.student_id)
+                          ?.username || "طالب"}
+                      </td>
+                      <td>
+                        {topics.find((t) => t.id === submission.topic_id)
+                          ?.title || submission.topic_id}
+                      </td>
+                      <td>النشاط {submission.activity_id}</td>
+                      <td>{submission.response_text || "-"}</td>
+                      <td>
+                        {new Date(submission.created_at).toLocaleDateString(
+                          "ar"
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
 
-      {/* رفع CSV */}
-      <section
-        className="card"
-        style={{ marginBottom: "2rem", padding: "1.5rem" }}
-      >
-        <h2 style={{ marginBottom: "1rem" }}>رفع مستخدمين من ملف</h2>
-        <p
-          style={{
-            marginBottom: "0.75rem",
-            fontSize: "0.9rem",
-            color: "#6b7280",
-          }}
+      <div className="teacher-cards-container">
+        {/* رفع CSV */}
+        <section
+          className="card"
+          style={{ marginBottom: "0", padding: "1.5rem" }}
         >
-          ارفع ملف CSV يحتوي على الأعمدة:{" "}
-          <code>email</code>, <code>username</code>, <code>role</code>,{" "}
-          <code>password</code>.
-        </p>
-        {uploadError && (
-          <p className="login-error" style={{ marginBottom: "0.75rem" }}>
-            {uploadError}
-          </p>
-        )}
-        {uploadSuccess && (
-          <p style={{ color: "green", marginBottom: "0.75rem" }}>
-            {uploadSuccess}
-          </p>
-        )}
-        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <input type="file" accept=".csv" onChange={handleFileChange} />
-          <button
-            onClick={handleFileUpload}
-            className="button button-compact"
-            disabled={uploading || !file}
+          <h2 style={{ marginBottom: "1rem" }}>رفع مستخدمين من ملف</h2>
+          <p
+            style={{
+              marginBottom: "0.75rem",
+              fontSize: "0.9rem",
+              color: "var(--text-muted)",
+            }}
           >
-            {uploading ? "جاري الرفع..." : "رفع وإنشاء"}
-          </button>
-        </div>
-      </section>
-
-      {/* إضافة مستخدم جديد */}
-      <section
-        className="card"
-        style={{ marginBottom: "2rem", padding: "1.5rem" }}
-      >
-        <h2 style={{ marginBottom: "1rem" }}>إضافة مستخدم جديد</h2>
-        {formError && <p className="login-error">{formError}</p>}
-        {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
-
-        <form
-          onSubmit={handleCreateUser}
-          className="login-form"
-          style={{ maxWidth: 500 }}
-        >
-          <div className="input-group">
-            <label htmlFor="newEmail">البريد الإلكتروني</label>
-            <input
-              id="newEmail"
-              type="email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              required
-              placeholder="student@example.com"
-            />
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="newUsername">اسم المستخدم</label>
-            <input
-              id="newUsername"
-              type="text"
-              value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              required
-              placeholder="s123456 أو اسم مختصر"
-            />
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="newRole">نوع المستخدم</label>
-            <select
-              id="newRole"
-              value={newRole || "student"}
-              onChange={(e) => setNewRole(e.target.value as UserRole)}
+            ارفع ملف CSV يحتوي على الأعمدة:{" "}
+            <code>email</code>, <code>username</code>, <code>role</code>,{" "}
+            <code>password</code>.
+          </p>
+          {uploadError && (
+            <p className="login-error" style={{ marginBottom: "0.75rem" }}>
+              {uploadError}
+            </p>
+          )}
+          {uploadSuccess && (
+            <p style={{ color: "green", marginBottom: "0.75rem" }}>
+              {uploadSuccess}
+            </p>
+          )}
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <input type="file" accept=".csv" onChange={handleFileChange} />
+            <button
+              onClick={handleFileUpload}
+              className="button button-compact"
+              disabled={uploading || !file}
             >
-              <option value="student">طالب</option>
-              <option value="teacher">معلم</option>
-              <option value="admin">مسؤول</option>
-            </select>
+              {uploading ? "جاري الرفع..." : "رفع وإنشاء"}
+            </button>
           </div>
+        </section>
 
-          <div className="input-group">
-            <label htmlFor="newPassword">كلمة المرور المبدئية</label>
-            <input
-              id="newPassword"
-              type="text"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-            />
-          </div>
+        {/* إضافة مستخدم جديد */}
+        <section
+          className="card"
+          style={{ marginBottom: "0", padding: "1.5rem" }}
+        >
+          <h2 style={{ marginBottom: "1rem" }}>إضافة مستخدم جديد</h2>
+          {formError && <p className="login-error">{formError}</p>}
+          {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
 
-          <button
-            type="submit"
-            className="login-submit-btn"
-            disabled={addingUser}
+          <form
+            onSubmit={handleCreateUser}
+            className="login-form"
+            style={{ maxWidth: 500 }}
           >
-            {addingUser ? "جاري الإنشاء..." : "إنشاء المستخدم"}
-          </button>
-        </form>
-      </section>
+            <div className="input-group">
+              <label htmlFor="newEmail">البريد الإلكتروني</label>
+              <input
+                id="newEmail"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                required
+                placeholder="student@example.com"
+              />
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="newUsername">اسم المستخدم</label>
+              <input
+                id="newUsername"
+                type="text"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                required
+                placeholder="s123456 أو اسم مختصر"
+              />
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="newRole">نوع المستخدم</label>
+              {currentUserRole === "admin" ? (
+                <select
+                  id="newRole"
+                  value={newRole || "student"}
+                  onChange={(e) => setNewRole(e.target.value as UserRole)}
+                >
+                  <option value="student">طالب</option>
+                  <option value="teacher">معلم</option>
+                  <option value="admin">مسؤول</option>
+                </select>
+              ) : (
+                <select
+                  id="newRole"
+                  value={"student"}
+                  onChange={(e) => setNewRole(e.target.value as UserRole)}
+                  disabled // Teachers can only add students
+                >
+                  <option value="student">طالب</option>
+                </select>
+              )}
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="newPassword">كلمة المرور المبدئية</label>
+              <input
+                id="newPassword"
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="button button-compact"
+              disabled={addingUser}
+            >
+              {addingUser ? "جاري الإنشاء..." : "إنشاء المستخدم"}
+            </button>
+          </form>
+        </section>
+      </div>
 
       {/* جدول المستخدمين */}
       <section className="card" style={{ padding: "1.5rem" }}>
@@ -501,6 +616,7 @@ export default function TeacherPanel() {
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>عدد التسليمات</th>
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>يحتاج تغيير كلمة المرور؟</th>
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>تعديل الصلاحيات</th>
+                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>حذف</th>
                 </tr>
               </thead>
 
@@ -513,11 +629,26 @@ export default function TeacherPanel() {
                     <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.submissionsCount}</td>
                     <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.must_change_password ? "نعم" : "لا"}</td>
                     <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>
-                      <select value={u.role || "student"} onChange={(e) => handleChangeRole(u.id, e.target.value as UserRole)}>
-                        <option value="student">طالب</option>
-                        <option value="teacher">معلم</option>
-                        <option value="admin">مسؤول</option>
-                      </select>
+                      {currentUserRole === "admin" ? (
+                        <select value={u.role || "student"} onChange={(e) => handleChangeRole(u.id, e.target.value as UserRole)}>
+                          <option value="student">طالب</option>
+                          <option value="teacher">معلم</option>
+                          <option value="admin">مسؤول</option>
+                        </select>
+                      ) : (
+                        <span>{u.role === "admin" ? "مسؤول" : u.role === "teacher" ? "معلم" : "طالب"}</span>
+                      )}
+                    </td>
+                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>
+                      {(currentUserRole === "admin" || (currentUserRole === "teacher" && u.role === "student")) && (
+                        <button
+                          className="button button-compact button-destructive"
+                          onClick={() => handleDeleteClick(u)}
+                          disabled={loading}
+                        >
+                          حذف
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -526,6 +657,23 @@ export default function TeacherPanel() {
           </div>
         )}
       </section>
+
+      {showConfirmDelete && userToDelete && (
+        <div className="modal-backdrop">
+          <div className="modal-content card" dir="rtl">
+            <h3>تأكيد الحذف</h3>
+            <p>هل أنت متأكد أنك تريد حذف المستخدم {userToDelete.username} ({userToDelete.email})؟</p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "1rem", marginTop: "1.5rem" }}>
+              <button className="button button-compact" onClick={cancelDelete}>
+                إلغاء
+              </button>
+              <button className="button button-compact button-destructive" onClick={confirmDelete} disabled={loading}>
+                {loading ? "جاري الحذف..." : "تأكيد الحذف"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

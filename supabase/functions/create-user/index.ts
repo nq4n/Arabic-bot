@@ -13,18 +13,29 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   },
 });
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders, status: 200 });
+  }
+
   if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
   }
 
   try {
-    const { email, password, username, role } = await req.json();
+    const { email, password, username, role, addedBy } = await req.json();
 
     if (!email || !password || !role) {
       return new Response(
         JSON.stringify({ error: "email, password, role مطلوبة" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -49,15 +60,29 @@ serve(async (req) => {
     const user = data.user;
 
     // 2) إضافة صف في جدول profiles (لو عندك الجدول)
+    const profileInsertData: {
+      id: string;
+      email: string;
+      username: string;
+      role: string;
+      must_change_password: boolean;
+      added_by_teacher_id?: string | null; // Make it optional
+    } = {
+      id: user.id,
+      email,
+      username,
+      role,
+      must_change_password: true, // أو false حسب نظامك
+    };
+
+    // If the new user is a student and addedBy is provided, record the teacher's ID
+    if (role === "student" && addedBy) {
+      profileInsertData.added_by_teacher_id = addedBy;
+    }
+
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .insert({
-        id: user.id,
-        email,
-        username,
-        role,
-        must_change_password: true, // أو false حسب نظامك
-      });
+      .insert(profileInsertData);
 
     if (profileError) {
       console.error("Profile insert error:", profileError);
