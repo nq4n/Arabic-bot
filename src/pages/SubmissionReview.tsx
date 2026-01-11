@@ -17,6 +17,7 @@ type Submission = {
   ai_response: AIResponseType;
   teacher_response: TeacherResponseType | null;
   created_at: string;
+  teacher_grade: number | null;
 };
 
 type TeacherResponseType = {
@@ -124,19 +125,18 @@ export default function SubmissionReview() {
         total_score: totalScore,
     };
 
-    const { error: updateError } = await supabase
-        .from('submissions')
-        .update({ teacher_response: teacherResponse })
-        .eq('id', submission.id);
-    
-    if (updateError) {
-        alert('حدث خطأ أثناء حفظ تقييمك.');
-        console.error(updateError);
-    } else {
-        alert('تم حفظ التقييم بنجاح!');
-        setSubmission(prev => prev ? { ...prev, teacher_response: teacherResponse } : null);
-    }
-    setIsSaving(false);
+            const { error: updateError } = await supabase
+                .from('submissions')
+                .update({ teacher_response: teacherResponse, teacher_grade: totalScore })
+                .eq('id', submission.id);
+        
+            if (updateError) {
+                alert('حدث خطأ أثناء حفظ تقييمك.');
+                console.error(updateError);
+            } else {
+                alert('تم حفظ التقييم بنجاح!');
+                setSubmission(prev => prev ? { ...prev, teacher_response: teacherResponse, teacher_grade: totalScore } : null);
+            }    setIsSaving(false);
   };
 
   // --- RENDER LOGIC ---
@@ -227,11 +227,14 @@ export default function SubmissionReview() {
       }
 
       if (submission.teacher_response) {
-          const totalTeacherScore = submission.teacher_response.total_score;
+          const totalTeacherScore = submission.teacher_grade;
           return (
               <section className='card teacher-feedback-view-area'>
                   <h2><i className='fas fa-chalkboard-teacher'></i> تقييم المعلم</h2>
-                  <div className='score teacher-score'>{totalTeacherScore}/{rubric.criteria.reduce((acc, crit) => acc + crit.levels[0].score, 0)}</div>
+                  <div className='score teacher-score'>
+                      {totalTeacherScore !== null ? totalTeacherScore : 'لم يحدد'}
+                      /{rubric.criteria.reduce((acc, crit) => acc + crit.levels[0].score, 0)}
+                  </div>
                   {submission.teacher_response.feedback && <p><strong>ملاحظات المعلم:</strong> {submission.teacher_response.feedback}</p>}
                   <h4>تقييم حسب المعايير:</h4>
                   <div className='rubric-feedback-display'>
