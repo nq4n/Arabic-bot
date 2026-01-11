@@ -1,5 +1,9 @@
 /* src/styles/SubmissionReview.css */
 
+.submission-review-page {
+  padding: 2rem;
+}
+
 .submission-review-page .review-header {
   border-bottom: 2px solid var(--color-border);
   padding-bottom: 1rem;
@@ -18,7 +22,7 @@
 
 .review-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 2rem;
   align-items: start;
 }
@@ -29,7 +33,7 @@
   }
 }
 
-.writing-display-area, .feedback-column {
+.writing-display-area {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -75,6 +79,12 @@
   color: var(--color-text-secondary);
   margin-bottom: 1rem;
   line-height: 1.7;
+}
+
+.ai-feedback-area,
+.teacher-feedback-view-area,
+.teacher-grading-area {
+  min-width: 320px;
 }
 
 /* Feedback Areas */
@@ -150,6 +160,42 @@
     flex-direction: column;
 }
 
+.criteria-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  margin-bottom: 1rem;
+}
+
+.criteria-nav button {
+  background-color: var(--color-background-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.criteria-nav button:hover:not(:disabled) {
+  background-color: var(--color-border);
+}
+
+.criteria-nav button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.criteria-nav span {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
 .teacher-grading-area .form-group label {
     font-weight: bold;
     margin-bottom: 0.5rem;
@@ -205,9 +251,29 @@
 /* New Rubric Selection Styles */
 .rubric-criteria-selection {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  overflow-x: auto;
   gap: 1.5rem;
   margin-top: 1rem;
+  padding-bottom: 1rem; /* Space for scrollbar */
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch; /* Momentum scrolling on iOS */
+}
+
+/* Optional: Style scrollbar for a cleaner look */
+.rubric-criteria-selection::-webkit-scrollbar {
+  height: 8px;
+}
+.rubric-criteria-selection::-webkit-scrollbar-track {
+  background: var(--color-background);
+  border-radius: 4px;
+}
+.rubric-criteria-selection::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 4px;
+}
+.rubric-criteria-selection::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-light);
 }
 
 .criterion-block {
@@ -216,6 +282,8 @@
   border-radius: var(--border-radius);
   padding: 1.25rem;
   box-shadow: var(--shadow);
+  flex: 0 0 90%; /* Each card takes 90% of the container width */
+  scroll-snap-align: start; /* Snap to the start of each card */
 }
 
 .criterion-block h3 {

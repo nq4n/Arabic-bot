@@ -58,6 +58,12 @@ export type RubricLevel = {
               score: 1,
               description: "لا يذكر عناصر واضحة، أو الوصف غير مرتبط بمنظر طبيعي محدد.",
             },
+            {
+              id: 'not-mentioned',
+              score: 0,
+              label: 'غير مذكور',
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -88,6 +94,12 @@ export type RubricLevel = {
               label: "ضعيف",
               score: 1,
               description: "ألفاظ ضعيفة أو مكررة، ولا توجد صور تعبيرية تقريبًا.",
+            },
+            {
+              id: 'not-mentioned',
+              score: 0,
+              label: 'غير مذكور',
+              description: 'المعيار غير مذكور في الكتابة'
             },
           ],
         },
@@ -120,6 +132,12 @@ export type RubricLevel = {
               score: 1,
               description: "أفكار عشوائية بلا تسلسل، يصعب متابعة الوصف.",
             },
+            {
+              id: 'not-mentioned',
+              score: 0,
+              label: 'غير مذكور',
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -151,6 +169,12 @@ export type RubricLevel = {
               score: 1,
               description: "كثير من الأخطاء تجعل فهم النص صعبًا.",
             },
+            {
+              id: 'not-mentioned',
+              score: 0,
+              label: 'غير مذكور',
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -181,6 +205,12 @@ export type RubricLevel = {
               label: "ضعيف",
               score: 1,
               description: "لا يحدث النص أي تأثير أو انطباع واضح لدى القارئ.",
+            },
+            {
+              id: 'not-mentioned',
+              score: 0,
+              label: 'غير مذكور',
+              description: 'المعيار غير مذكور في الكتابة'
             },
           ],
         },
@@ -223,6 +253,12 @@ export type RubricLevel = {
               score: 1,
               description: "القضية غير واضحة للقارئ أو غير محددة.",
             },
+            {
+              id: 'not-mentioned',
+              score: 0,
+              label: 'غير مذكور',
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -253,6 +289,12 @@ export type RubricLevel = {
               label: "ضعيف",
               score: 1,
               description: "لا يذكر أسبابًا واضحة أو آثارًا مرتبطة بالقضية.",
+            },
+            {
+              id: 'not-mentioned',
+              score: 0,
+              label: 'غير مذكور',
+              description: 'المعيار غير مذكور في الكتابة'
             },
           ],
         },
@@ -285,6 +327,12 @@ export type RubricLevel = {
               score: 1,
               description: "لا توجد حجج واضحة، النص مجرد رأي غير مدعوم.",
             },
+            {
+              id: 'not-mentioned',
+              score: 0,
+              label: 'غير مذكور',
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -316,6 +364,12 @@ export type RubricLevel = {
               score: 1,
               description: "أسلوب هجومي أو متعصب، لا يظهر أي تقبل لآراء مختلفة.",
             },
+            {
+              id: 'not-mentioned',
+              score: 0,
+              label: 'غير مذكور',
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -346,6 +400,12 @@ export type RubricLevel = {
               label: "ضعيف",
               score: 1,
               description: "لا توجد خاتمة حقيقية أو لا تُذكر أي حلول.",
+            },
+            {
+              id: 'not-mentioned',
+              score: 0,
+              label: 'غير مذكور',
+              description: 'المعيار غير مذكور في الكتابة'
             },
           ],
         },
@@ -388,6 +448,13 @@ export type RubricLevel = {
               score: 1,
               description: "لا يظهر هدف التقرير أو سبب كتابته.",
             },
+            {
+              id: 'not-mentioned',
+              
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -418,6 +485,13 @@ export type RubricLevel = {
               label: "ضعيف",
               score: 1,
               description: "لا يتضح تقسيم النص إلى مقدمة وعرض وخاتمة.",
+            },
+            {
+              id: 'not-mentioned',
+              
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
             },
           ],
         },
@@ -450,6 +524,13 @@ export type RubricLevel = {
               score: 1,
               description: "معلومات قليلة أو غير صحيحة، لا تُقدّم صورة واضحة عن الموضوع.",
             },
+            {
+              id: 'not-mentioned',
+              
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -481,6 +562,13 @@ export type RubricLevel = {
               score: 1,
               description: "النص أقرب إلى موضوع تعبيري عادي وليس تقريرًا موضوعيًا.",
             },
+            {
+              id: 'not-mentioned',
+              
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -511,6 +599,13 @@ export type RubricLevel = {
               label: "ضعيف",
               score: 1,
               description: "فوضى في تنظيم الجمل والفقرات، مما يصعّب متابعة التقرير.",
+            },
+            {
+              id: 'not-mentioned',
+              
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
             },
           ],
         },
@@ -553,6 +648,12 @@ export type RubricLevel = {
               score: 1,
               description: "لا تظهر فكرة رئيسة واضحة، أو الموضوع متفكك.",
             },
+            {
+              id: 'not-mentioned',
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -583,6 +684,13 @@ export type RubricLevel = {
               label: "ضعيف",
               score: 1,
               description: "لا يظهر في النص أي بعد شخصي أو شعور واضح.",
+            },
+            {
+              id: 'not-mentioned',
+              
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
             },
           ],
         },
@@ -615,6 +723,13 @@ export type RubricLevel = {
               score: 1,
               description: "أفكار مبعثرة، من الصعب تتبع تسلسل الموضوع.",
             },
+            {
+              id: 'not-mentioned',
+
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -646,6 +761,13 @@ export type RubricLevel = {
               score: 1,
               description: "أسلوب ضعيف يفتقد الدقة أو فيه تكرار مزعج.",
             },
+            {
+              id: 'not-mentioned',
+              
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -676,6 +798,13 @@ export type RubricLevel = {
               label: "ضعيف",
               score: 1,
               description: "أخطاء كثيرة تجعل النص صعب الفهم.",
+            },
+            {
+              id: 'not-mentioned',
+              
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
             },
           ],
         },
@@ -718,6 +847,13 @@ export type RubricLevel = {
               score: 1,
               description: "الشخصيات غير محددة، أو لا يمكن تمييز من يتكلم.",
             },
+            {
+              id: 'not-mentioned',
+              
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -748,6 +884,12 @@ export type RubricLevel = {
               label: "ضعيف",
               score: 1,
               description: "الحوار مشتت ولا يظهر فيه موضوع رئيس.",
+            },
+            {
+              id: 'not-mentioned',
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
             },
           ],
         },
@@ -780,6 +922,12 @@ export type RubricLevel = {
               score: 1,
               description: "الجمل غير منطقية أو لا تشبه أسلوب الحوار بين أشخاص حقيقيين.",
             },
+            {
+              id: 'not-mentioned',
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -811,6 +959,12 @@ export type RubricLevel = {
               score: 1,
               description: "الحوار يبدأ وينتهي فجأة دون تمهيد أو خاتمة.",
             },
+            {
+              id: 'not-mentioned',
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
+            },
           ],
         },
         {
@@ -841,6 +995,13 @@ export type RubricLevel = {
               label: "ضعيف",
               score: 1,
               description: "اختلاط في المتحدثين وعدم استخدام علامات الترقيم تقريبًا.",
+            },
+            {
+              id: 'not-mentioned',
+              
+              label: 'غير مذكور',
+              score: 0,
+              description: 'المعيار غير مذكور في الكتابة'
             },
           ],
         },
