@@ -85,3 +85,4 @@ webpack-stats.json
 *.swp
 *.swo
 /node_modules
+.env
