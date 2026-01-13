@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { topics } from "../data/topics"; // استيراد البيانات الجديدة
 import { supabase } from "../supabaseClient";
-import { getLessonProgress, isLessonSectionActive } from "../utils/lessonSettings";
+import { getActivityProgress, getLessonProgress, isLessonSectionActive } from "../utils/lessonSettings";
 import "../styles/Topics.css";
 
 export default function Topics() {
   const navigate = useNavigate();
   const topicIds = useMemo(() => topics.map((topic) => topic.id), []);
   const [progressMap, setProgressMap] = useState(() => getLessonProgress(topicIds));
+  const [activityProgress, setActivityProgress] = useState(() => getActivityProgress(topicIds));
   const [submissionStatus, setSubmissionStatus] = useState<Record<string, { hasSubmission: boolean; hasRating: boolean }>>({});
   const [isLoading, setIsLoading] = useState(true);
   const topicImages: Record<string, string> = {
@@ -56,6 +57,7 @@ export default function Topics() {
 
       setSubmissionStatus(statusMap);
       setProgressMap(getLessonProgress(topicIds));
+      setActivityProgress(getActivityProgress(topicIds));
       setIsLoading(false);
     };
 
@@ -94,6 +96,67 @@ export default function Topics() {
         </div>
       </section>
 
+      <section className="topic-points card">
+        <div className="topic-points-header">
+          <div>
+            <h2>نقاطي في الدروس</h2>
+            <p>احصل على نقاطك من إنجاز الدروس والأنشطة وتسليم الكتابات.</p>
+          </div>
+          <div className="topic-points-summary">
+            إجمالي النقاط
+            <strong>
+              {topics.reduce((total, topic) => {
+                const completedLesson = progressMap[topic.id]?.lessonCompleted ?? false;
+                const completedActivities =
+                  activityProgress[topic.id]?.completedActivityIds?.length ?? 0;
+                const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
+                const lessonPoints = completedLesson ? 20 : 0;
+                const activityPoints = completedActivities * 5;
+                const submissionPoints = hasSubmission ? 10 : 0;
+                return total + lessonPoints + activityPoints + submissionPoints;
+              }, 0)}{" "}
+              نقطة
+            </strong>
+          </div>
+        </div>
+        <div className="topic-points-grid">
+          {topics.map((topic) => {
+            const completedLesson = progressMap[topic.id]?.lessonCompleted ?? false;
+            const completedActivities = activityProgress[topic.id]?.completedActivityIds?.length ?? 0;
+            const totalActivities = topic.activities.list.length;
+            const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
+            const lessonPoints = completedLesson ? 20 : 0;
+            const activityPoints = completedActivities * 5;
+            const submissionPoints = hasSubmission ? 10 : 0;
+            const totalPoints = lessonPoints + activityPoints + submissionPoints;
+
+            return (
+              <div key={topic.id} className="topic-points-row">
+                <div>
+                  <h3>{topic.title}</h3>
+                  <p>{topic.description}</p>
+                </div>
+                <div className="topic-points-meta">
+                  <span className={completedLesson ? "done" : "pending"}>
+                    {completedLesson ? "تم إكمال الدرس" : "لم يُكمل الدرس"}
+                  </span>
+                  <span>
+                    الأنشطة: {completedActivities}/{totalActivities}
+                  </span>
+                  <span className={hasSubmission ? "done" : "pending"}>
+                    {hasSubmission ? "تم التسليم" : "لم يتم التسليم"}
+                  </span>
+                </div>
+                <div className="topic-points-score">
+                  <span>المجموع</span>
+                  <strong>{totalPoints} نقطة</strong>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       <div className="topics-grid">
         {topics.map((topic) => {
           const lessonCompleted = progressMap[topic.id]?.lessonCompleted ?? false;
@@ -103,15 +166,17 @@ export default function Topics() {
           const topicImage = topicImages[topic.id];
 
           return (
-          <div key={topic.id} className="card topic-card">
-            {topicImage && (
-              <div
-                className="topic-card-image"
-                style={{ backgroundImage: `url(${topicImage})` }}
-                role="img"
-                aria-label={`صورة توضيحية لموضوع ${topic.title}`}
-              />
-            )}
+          <div
+            key={topic.id}
+            className="card topic-card"
+            style={
+              topicImage
+                ? ({ ["--topic-image" as string]: `url(${topicImage})` } as CSSProperties)
+                : undefined
+            }
+            role="img"
+            aria-label={`بطاقة موضوع ${topic.title}`}
+          >
             <div className="card-content">
               <h2>{topic.title}</h2>
               <p>{topic.description}</p>
