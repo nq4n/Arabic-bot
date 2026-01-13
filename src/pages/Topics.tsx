@@ -96,64 +96,31 @@ export default function Topics() {
         </div>
       </section>
 
-      <section className="topic-points card">
-        <div className="topic-points-header">
-          <div>
-            <h2>نقاطي في الدروس</h2>
-            <p>احصل على نقاطك من إنجاز الدروس والأنشطة وتسليم الكتابات.</p>
-          </div>
-          <div className="topic-points-summary">
-            إجمالي النقاط
-            <strong>
-              {topics.reduce((total, topic) => {
-                const completedLesson = progressMap[topic.id]?.lessonCompleted ?? false;
-                const completedActivities =
-                  activityProgress[topic.id]?.completedActivityIds?.length ?? 0;
-                const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
-                const lessonPoints = completedLesson ? 20 : 0;
-                const activityPoints = completedActivities * 5;
-                const submissionPoints = hasSubmission ? 10 : 0;
-                return total + lessonPoints + activityPoints + submissionPoints;
-              }, 0)}{" "}
-              نقطة
-            </strong>
-          </div>
+      <section className="topic-points-summary card">
+        <div>
+          <h2>ملخص النقاط</h2>
+          <p>اعرف إجمالي نقاطك الحالية وانتقل إلى لوحة النقاط الكاملة.</p>
         </div>
-        <div className="topic-points-grid">
-          {topics.map((topic) => {
-            const completedLesson = progressMap[topic.id]?.lessonCompleted ?? false;
-            const completedActivities = activityProgress[topic.id]?.completedActivityIds?.length ?? 0;
-            const totalActivities = topic.activities.list.length;
-            const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
-            const lessonPoints = completedLesson ? 20 : 0;
-            const activityPoints = completedActivities * 5;
-            const submissionPoints = hasSubmission ? 10 : 0;
-            const totalPoints = lessonPoints + activityPoints + submissionPoints;
-
-            return (
-              <div key={topic.id} className="topic-points-row">
-                <div>
-                  <h3>{topic.title}</h3>
-                  <p>{topic.description}</p>
-                </div>
-                <div className="topic-points-meta">
-                  <span className={completedLesson ? "done" : "pending"}>
-                    {completedLesson ? "تم إكمال الدرس" : "لم يُكمل الدرس"}
-                  </span>
-                  <span>
-                    الأنشطة: {completedActivities}/{totalActivities}
-                  </span>
-                  <span className={hasSubmission ? "done" : "pending"}>
-                    {hasSubmission ? "تم التسليم" : "لم يتم التسليم"}
-                  </span>
-                </div>
-                <div className="topic-points-score">
-                  <span>المجموع</span>
-                  <strong>{totalPoints} نقطة</strong>
-                </div>
-              </div>
-            );
-          })}
+        <div className="topic-points-total">
+          <span>إجمالي النقاط</span>
+          <strong>
+            {topics.reduce((total, topic) => {
+              const completedLesson = progressMap[topic.id]?.lessonCompleted ?? false;
+              const completedActivities =
+                activityProgress[topic.id]?.completedActivityIds?.length ?? 0;
+              const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
+              const lessonPoints = completedLesson ? 20 : 0;
+              const activityPoints = completedActivities * 5;
+              const submissionPoints = hasSubmission ? 10 : 0;
+              return total + lessonPoints + activityPoints + submissionPoints;
+            }, 0)}{" "}
+            نقطة
+          </strong>
+        </div>
+        <div className="topic-points-action">
+          <button className="button" onClick={() => navigate("/progress")}>
+            عرض لوحة النقاط
+          </button>
         </div>
       </section>
 
