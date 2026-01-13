@@ -45,6 +45,13 @@ export default function Login() {
 
       <div className="login-intro">
         <h1 style={{fontFamily: "title",fontSize: "200px",margin: "0",lineHeight: "0.5",padding: "0" }}>مداد</h1>
+        <div className="login-welcome">
+          <h2>مرحبًا بكم في منصّة مداد</h2>
+          <p>
+            ابدأ رحلتك في تطوير مهارات التعبير الكتابي مع دروس منظمة، وأنشطة تفاعلية،
+            وتغذية راجعة داعمة.
+          </p>
+        </div>
         <p style={{
           marginTop: "0px",
           fontSize: "18px",

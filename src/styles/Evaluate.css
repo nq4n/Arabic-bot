@@ -4,6 +4,10 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem;
+  background: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
+    url("https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=80")
+      center/cover;
+  border-radius: 24px;
 }
 
 .evaluate-header h1 {
@@ -200,4 +204,15 @@
   font-size: 0.8rem;
   color: var(--color-text-secondary);
   margin-top: 0.25rem;
+}
+
+@media (max-width: 700px) {
+  .evaluate-page {
+    padding: 1.5rem;
+  }
+
+  .rubric-table th,
+  .rubric-table td {
+    font-size: 0.85rem;
+  }
 }

@@ -24,6 +24,8 @@ import TeacherPanel from "./pages/TeacherPanel";
 import MySubmissions from "./pages/MySubmissions";
 import Submissions from "./pages/Submissions";
 import SubmissionReview from "./pages/SubmissionReview"; 
+import StudentProgress from "./pages/StudentProgress";
+import AboutUs from "./pages/AboutUs";
 import FirstLoginChangePassword from "./components/FirstLoginChangePassword";
 
 export type UserRole = "student" | "teacher" | "admin" | null;
@@ -195,6 +197,30 @@ const AppContent = () => {
                 requiredRole={["teacher", "admin"]}
               >
                 <Submissions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/progress"
+            element={
+              <ProtectedRoute
+                userRole={userRole}
+                isRoleLoading={isRoleLoading}
+                requiredRole={["student", "teacher", "admin"]}
+              >
+                <StudentProgress />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/about"
+            element={
+              <ProtectedRoute
+                userRole={userRole}
+                isRoleLoading={isRoleLoading}
+                requiredRole={["student", "teacher", "admin"]}
+              >
+                <AboutUs />
               </ProtectedRoute>
             }
           />
