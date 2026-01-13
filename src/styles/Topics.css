@@ -71,6 +71,8 @@
   border-radius: 8px;
   overflow: hidden;
   transition: box-shadow 0.3s, transform 0.3s;
+  min-height: 100%;
+  background-color: var(--bg-secondary);
 }
 
 .topic-card:hover {
@@ -80,6 +82,20 @@
 
 .card-content {
   padding: 1.5rem;
+}
+
+.topic-card-image {
+  height: 160px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.topic-card-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.1), rgba(15, 23, 42, 0.55));
 }
 
 .card-content h2 {
@@ -127,6 +143,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .topic-disabled-note {
@@ -150,4 +167,18 @@
 
 .topic-status input[type="radio"] {
   accent-color: var(--primary-color);
+}
+
+@media (max-width: 900px) {
+  .topics-page {
+    padding: 1.5rem;
+  }
+
+  .topics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-actions {
+    justify-content: flex-start;
+  }
 }

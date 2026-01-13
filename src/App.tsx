@@ -25,8 +25,7 @@ import MySubmissions from "./pages/MySubmissions";
 import Submissions from "./pages/Submissions";
 import SubmissionReview from "./pages/SubmissionReview"; 
 import StudentProgress from "./pages/StudentProgress";
-import Info from "./pages/Info";
-import Resources from "./pages/Resources";
+import AboutUs from "./pages/AboutUs";
 import FirstLoginChangePassword from "./components/FirstLoginChangePassword";
 
 export type UserRole = "student" | "teacher" | "admin" | null;
@@ -214,26 +213,14 @@ const AppContent = () => {
             }
           />
           <Route
-            path="/info"
+            path="/about"
             element={
               <ProtectedRoute
                 userRole={userRole}
                 isRoleLoading={isRoleLoading}
                 requiredRole={["student", "teacher", "admin"]}
               >
-                <Info />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/resources"
-            element={
-              <ProtectedRoute
-                userRole={userRole}
-                isRoleLoading={isRoleLoading}
-                requiredRole={["student", "teacher", "admin"]}
-              >
-                <Resources />
+                <AboutUs />
               </ProtectedRoute>
             }
           />
