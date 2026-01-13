@@ -118,6 +118,9 @@ export default function Navbar({ session, userRole }: NavbarProps) {
           <NavLink to="/teacher">لوحة المستخدمين</NavLink>
           {/* use same submissions route used for students */}
           <NavLink to="/submissions">التسليمات</NavLink>
+          <NavLink to="/progress">نقاط الطلاب</NavLink>
+          <NavLink to="/resources">الروابط</NavLink>
+          <NavLink to="/info">المعلومات</NavLink>
         </>
       );
     }
@@ -127,6 +130,9 @@ export default function Navbar({ session, userRole }: NavbarProps) {
           الموضوعات
         </NavLink>
         <NavLink to="/my-submissions">تسليماتي</NavLink>
+        <NavLink to="/progress">نقاطي</NavLink>
+        <NavLink to="/resources">الروابط</NavLink>
+        <NavLink to="/info">المعلومات</NavLink>
       </>
     );
   };

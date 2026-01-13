@@ -1,0 +1,130 @@
+.progress-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: var(--text-primary);
+  background: linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.9)),
+    url("https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1600&q=80")
+      center/cover;
+  border-radius: 24px;
+}
+
+.progress-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.progress-header h1 {
+  font-size: 2.4rem;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.progress-header p {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+}
+
+.progress-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.progress-total {
+  font-size: 2rem;
+  color: var(--primary-color);
+  margin: 0.5rem 0 0;
+}
+
+.progress-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.progress-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.progress-loading {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.progress-table-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.progress-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) minmax(180px, 1.2fr) minmax(120px, 0.6fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+}
+
+.progress-description {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.progress-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.progress-score {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-end;
+}
+
+.progress-score strong {
+  font-size: 1.3rem;
+  color: var(--primary-color);
+}
+
+.progress-metrics .done {
+  color: #198754;
+  font-weight: 600;
+}
+
+.progress-metrics .pending {
+  color: #d97706;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .progress-page {
+    padding: 1.5rem;
+  }
+
+  .progress-row {
+    grid-template-columns: 1fr;
+    text-align: right;
+  }
+
+  .progress-score {
+    align-items: flex-start;
+  }
+}
