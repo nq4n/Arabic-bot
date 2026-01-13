@@ -90,6 +90,20 @@
   padding: 1.5rem;
 }
 
+.topic-card-image {
+  height: 160px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.topic-card-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.1), rgba(15, 23, 42, 0.55));
+}
+
 .card-content h2 {
   margin-top: 0;
   margin-bottom: 0.75rem;
