@@ -2,7 +2,7 @@
 
 .topic-page {
   padding: 1.5rem;
-  max-width: 950px;
+  max-width: 2400px;
   margin: 0 auto;
   color: var(--text-primary);
   background: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
@@ -14,12 +14,80 @@
 .topic-main-header {
   text-align: center;
   margin-bottom: 2rem;
+  margin-top: 50px;
 }
 
 .topic-main-header h1 {
   font-size: 2.5rem;
   font-weight: 700;
   color: var(--primary-color);
+}
+
+.topic-content-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem 3rem;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.topic-content-wrapper > * {
+  margin-bottom: 0;
+  flex: 1 1 320px;
+  min-width: 300px;
+}
+
+/* Focus effect on individual cards */
+.topic-content-wrapper .topic-section.card {
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.topic-content-wrapper:hover .topic-section.card {
+  opacity: 0.45;
+  filter: blur(3px);
+  transform: scale(0.2);
+}
+
+.topic-content-wrapper .topic-section.card:hover {
+  opacity: 1;
+  filter: none;
+  transform: scale(1);
+  box-shadow: var(--shadow-lg);
+}
+
+.vertical-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.video-section {
+  background-color: var(--bg-primary);
+  border: 1px dashed var(--primary-color);
+}
+
+.video-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #2d3748;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.video-placeholder .fa-play-circle {
+  font-size: 4rem;
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.video-placeholder:hover .fa-play-circle {
+  color: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
 }
 
 .topic-section.card {

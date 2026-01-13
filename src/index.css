@@ -27,9 +27,7 @@
   --bg-secondary: rgba(255, 255, 255, 0.92);
 
   /* Background (softer + richer) */
-  --bg-main: radial-gradient(1200px 600px at 15% 10%, rgba(212, 162, 59, 0.18), transparent 55%),
-             radial-gradient(900px 500px at 85% 0%, rgba(15, 118, 110, 0.16), transparent 55%),
-             linear-gradient(135deg, #fbf7ee 0%, #f3faf6 45%, #eef6fb 100%);
+  --bg-main: linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)), url('/bg.png');
 
   /* Borders + Radius */
   --border-color: rgba(15, 23, 42, 0.12);
@@ -71,9 +69,7 @@
   --bg-card: rgba(15, 23, 42, 0.70);
   --bg-secondary: rgba(15, 23, 42, 0.88);
 
-  --bg-main: radial-gradient(1200px 600px at 15% 10%, rgba(51, 208, 197, 0.16), transparent 60%),
-             radial-gradient(900px 500px at 85% 0%, rgba(242, 192, 95, 0.18), transparent 60%),
-             linear-gradient(135deg, #050b16 0%, #081a27 45%, #0a2536 100%);
+  --bg-main: linear-gradient(rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.88)), url('/bg.png');
 
   --border-color: rgba(148, 163, 184, 0.20);
   --border-strong: rgba(148, 163, 184, 0.30);
