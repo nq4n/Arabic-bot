@@ -11,6 +11,18 @@ export default function Topics() {
   const [progressMap, setProgressMap] = useState(() => getLessonProgress(topicIds));
   const [submissionStatus, setSubmissionStatus] = useState<Record<string, { hasSubmission: boolean; hasRating: boolean }>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const topicImages: Record<string, string> = {
+    "landscape-description":
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+    "discussing-issue":
+      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80",
+    "report-writing":
+      "https://images.unsplash.com/photo-1491841573634-28140fc7ced7?auto=format&fit=crop&w=1200&q=80",
+    "free-expression":
+      "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1200&q=80",
+    "dialogue-text":
+      "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1200&q=80",
+  };
 
   useEffect(() => {
     const fetchProgress = async () => {
@@ -88,9 +100,18 @@ export default function Topics() {
           const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
           const hasRating = submissionStatus[topic.id]?.hasRating ?? false;
           const isLessonActive = isLessonSectionActive(topicIds, topic.id, "lesson");
+          const topicImage = topicImages[topic.id];
 
           return (
           <div key={topic.id} className="card topic-card">
+            {topicImage && (
+              <div
+                className="topic-card-image"
+                style={{ backgroundImage: `url(${topicImage})` }}
+                role="img"
+                aria-label={`صورة توضيحية لموضوع ${topic.title}`}
+              />
+            )}
             <div className="card-content">
               <h2>{topic.title}</h2>
               <p>{topic.description}</p>
