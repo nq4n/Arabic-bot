@@ -1,0 +1,111 @@
+.about-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: var(--text-primary);
+}
+
+.about-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.about-header h1 {
+  font-size: 2.4rem;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.about-header p {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+}
+
+.about-section {
+  margin-bottom: 2.5rem;
+}
+
+.about-section h2 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.about-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.about-team-card h3 {
+  margin: 0 0 0.5rem;
+  color: var(--primary-color);
+}
+
+.about-team-card h4 {
+  margin: 0 0 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.about-team-card p {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.about-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.about-link-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.about-link-card h3 {
+  margin: 0;
+}
+
+.about-link-card p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.about-link-card a {
+  align-self: flex-start;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.about-link-card a:hover {
+  text-decoration: underline;
+}
+
+.about-note {
+  text-align: center;
+}
+
+.about-note h2 {
+  margin-top: 0;
+  color: var(--primary-color);
+}
+
+.about-note p {
+  margin: 0.5rem 0 1rem;
+  color: var(--text-secondary);
+}
+
+.about-email {
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+@media (max-width: 700px) {
+  .about-page {
+    padding: 1.5rem;
+  }
+}

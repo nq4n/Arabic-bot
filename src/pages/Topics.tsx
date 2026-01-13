@@ -1,16 +1,29 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { topics } from "../data/topics"; // استيراد البيانات الجديدة
 import { supabase } from "../supabaseClient";
-import { getLessonProgress, isLessonSectionActive } from "../utils/lessonSettings";
+import { getActivityProgress, getLessonProgress, isLessonSectionActive } from "../utils/lessonSettings";
 import "../styles/Topics.css";
 
 export default function Topics() {
   const navigate = useNavigate();
   const topicIds = useMemo(() => topics.map((topic) => topic.id), []);
   const [progressMap, setProgressMap] = useState(() => getLessonProgress(topicIds));
+  const [activityProgress, setActivityProgress] = useState(() => getActivityProgress(topicIds));
   const [submissionStatus, setSubmissionStatus] = useState<Record<string, { hasSubmission: boolean; hasRating: boolean }>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const topicImages: Record<string, string> = {
+    "landscape-description":
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+    "discussing-issue":
+      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80",
+    "report-writing":
+      "https://images.unsplash.com/photo-1491841573634-28140fc7ced7?auto=format&fit=crop&w=1200&q=80",
+    "free-expression":
+      "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1200&q=80",
+    "dialogue-text":
+      "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1200&q=80",
+  };
 
   useEffect(() => {
     const fetchProgress = async () => {
@@ -44,6 +57,7 @@ export default function Topics() {
 
       setSubmissionStatus(statusMap);
       setProgressMap(getLessonProgress(topicIds));
+      setActivityProgress(getActivityProgress(topicIds));
       setIsLoading(false);
     };
 
@@ -82,15 +96,87 @@ export default function Topics() {
         </div>
       </section>
 
+      <section className="topic-points card">
+        <div className="topic-points-header">
+          <div>
+            <h2>نقاطي في الدروس</h2>
+            <p>احصل على نقاطك من إنجاز الدروس والأنشطة وتسليم الكتابات.</p>
+          </div>
+          <div className="topic-points-summary">
+            إجمالي النقاط
+            <strong>
+              {topics.reduce((total, topic) => {
+                const completedLesson = progressMap[topic.id]?.lessonCompleted ?? false;
+                const completedActivities =
+                  activityProgress[topic.id]?.completedActivityIds?.length ?? 0;
+                const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
+                const lessonPoints = completedLesson ? 20 : 0;
+                const activityPoints = completedActivities * 5;
+                const submissionPoints = hasSubmission ? 10 : 0;
+                return total + lessonPoints + activityPoints + submissionPoints;
+              }, 0)}{" "}
+              نقطة
+            </strong>
+          </div>
+        </div>
+        <div className="topic-points-grid">
+          {topics.map((topic) => {
+            const completedLesson = progressMap[topic.id]?.lessonCompleted ?? false;
+            const completedActivities = activityProgress[topic.id]?.completedActivityIds?.length ?? 0;
+            const totalActivities = topic.activities.list.length;
+            const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
+            const lessonPoints = completedLesson ? 20 : 0;
+            const activityPoints = completedActivities * 5;
+            const submissionPoints = hasSubmission ? 10 : 0;
+            const totalPoints = lessonPoints + activityPoints + submissionPoints;
+
+            return (
+              <div key={topic.id} className="topic-points-row">
+                <div>
+                  <h3>{topic.title}</h3>
+                  <p>{topic.description}</p>
+                </div>
+                <div className="topic-points-meta">
+                  <span className={completedLesson ? "done" : "pending"}>
+                    {completedLesson ? "تم إكمال الدرس" : "لم يُكمل الدرس"}
+                  </span>
+                  <span>
+                    الأنشطة: {completedActivities}/{totalActivities}
+                  </span>
+                  <span className={hasSubmission ? "done" : "pending"}>
+                    {hasSubmission ? "تم التسليم" : "لم يتم التسليم"}
+                  </span>
+                </div>
+                <div className="topic-points-score">
+                  <span>المجموع</span>
+                  <strong>{totalPoints} نقطة</strong>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       <div className="topics-grid">
         {topics.map((topic) => {
           const lessonCompleted = progressMap[topic.id]?.lessonCompleted ?? false;
           const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
           const hasRating = submissionStatus[topic.id]?.hasRating ?? false;
           const isLessonActive = isLessonSectionActive(topicIds, topic.id, "lesson");
+          const topicImage = topicImages[topic.id];
 
           return (
-          <div key={topic.id} className="card topic-card">
+          <div
+            key={topic.id}
+            className="card topic-card"
+            style={
+              topicImage
+                ? ({ ["--topic-image" as string]: `url(${topicImage})` } as CSSProperties)
+                : undefined
+            }
+            role="img"
+            aria-label={`بطاقة موضوع ${topic.title}`}
+          >
             <div className="card-content">
               <h2>{topic.title}</h2>
               <p>{topic.description}</p>
