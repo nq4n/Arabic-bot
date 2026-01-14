@@ -6,6 +6,7 @@
   background: var(--bg-secondary);
   border-radius: var(--border-radius);
   overflow: hidden;
+  margin-top: 80px;
 }
 
 .chat-global-toggle {
