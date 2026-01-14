@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import type { Session } from "@supabase/supabase-js";
 import "../styles/ChatCenter.css";
@@ -43,6 +43,13 @@ export default function ChatCenter() {
   const [chatEnabled, setChatEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const chatThreadRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatThreadRef.current) {
+      chatThreadRef.current.scrollTop = chatThreadRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const teacherId = useMemo(() => {
     if (!session) return null;
@@ -168,6 +175,12 @@ export default function ChatCenter() {
     const interval = window.setInterval(loadMessages, CHAT_REFRESH_MS);
     return () => window.clearInterval(interval);
   }, [loadChatSetting, loadMessages, studentId, teacherId]);
+
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      handleSend();
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || !teacherId || !studentId || !session) return;
@@ -305,7 +318,7 @@ export default function ChatCenter() {
 
           {error && <div className="chat-error-banner">{error}</div>}
 
-          <div className="chat-thread">
+          <div className="chat-thread" ref={chatThreadRef}>
             {messages.length === 0 && (
               <div className="chat-empty">ابدأ المحادثة بإرسال رسالة.</div>
             )}
@@ -339,6 +352,7 @@ export default function ChatCenter() {
               type="text"
               value={input}
               onChange={(event) => setInput(event.target.value)}
+              onKeyPress={handleKeyPress}
               placeholder={
                 chatEnabled
                   ? `اكتب رسالة إلى ${getDisplayName(selectedPeer)}...`
@@ -350,8 +364,16 @@ export default function ChatCenter() {
               type="button"
               onClick={handleSend}
               disabled={!chatEnabled || !input.trim() || !selectedPeerId}
+              aria-label="إرسال"
             >
-              إرسال
+              <svg
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                fill="currentColor"
+              >
+                <path d="M1.101 21.757 23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z"></path>
+              </svg>
             </button>
           </div>
         </div>
