@@ -8,6 +8,7 @@
 ============================ */
 :root {
   --font-family: "Cairo", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --nav-h: 72px;
 
   /* Brand */
   --primary: #0f766e;
@@ -106,11 +107,11 @@ body {
 }
 
 .App main {
-  padding: 2.5rem 2.5rem 2.5rem calc(2.5rem + var(--sidebar-width));
+  padding: calc(2.5rem + var(--nav-h)) 2.5rem 2.5rem calc(2.5rem + var(--sidebar-width));
 }
 
 .App.login-view main {
-  padding: 2.5rem;
+  padding: calc(2.5rem + var(--nav-h)) 2.5rem 2.5rem;
 }
 
 .container {
@@ -283,10 +284,10 @@ a:hover {
   :root { --sidebar-width: 0px; }
 
   .App main {
-    padding: 5.5rem 1.5rem 2rem;
+    padding: calc(5.5rem + var(--nav-h)) 1.5rem 2rem;
   }
 
   .App.login-view main {
-    padding: 2.5rem 1.5rem;
+    padding: calc(2.5rem + var(--nav-h)) 1.5rem 2.5rem;
   }
 }

@@ -19,6 +19,20 @@
   --destructive: #d93025;
   --destructive-hover-bg: #fee2e2;
   --destructive-hover-text: #b91c1c;
+
+  /* Legacy palette aliases (map older styles to theme tokens) */
+  --color-primary: var(--primary);
+  --color-primary-light: color-mix(in srgb, var(--primary) 70%, #ffffff);
+  --color-primary-light-transparent: color-mix(in srgb, var(--primary) 25%, transparent);
+  --color-background: var(--bg-card);
+  --color-background-alt: var(--bg-secondary);
+  --color-border: var(--border-color);
+  --color-text-primary: var(--text-main);
+  --color-text-secondary: var(--text-muted);
+  --color-text-main: var(--text-main);
+  --color-success: var(--primary);
+  --color-success-light: color-mix(in srgb, var(--primary) 20%, transparent);
+  --color-accent: var(--accent);
 }
 
 [data-theme="dark"] {
@@ -28,6 +42,10 @@
   --destructive: #f28b82;
   --destructive-hover-bg: rgba(242, 139, 130, 0.15);
   --destructive-hover-text: #fad2cf;
+
+  --color-primary-light: color-mix(in srgb, var(--primary) 55%, #0f172a);
+  --color-primary-light-transparent: color-mix(in srgb, var(--primary) 22%, transparent);
+  --color-success-light: color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 html {
