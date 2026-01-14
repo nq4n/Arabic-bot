@@ -7,6 +7,7 @@ import { getAIAnalysis } from "../services/aiEvaluationService";
 import { isLessonSectionActive } from "../utils/lessonSettings";
 import "../styles/Evaluate.css";
 import { Session } from "@supabase/supabase-js";
+import { logAdminNotification } from "../utils/adminNotifications";
 
 type WritingValues = { [key: string]: string };
 
@@ -82,6 +83,13 @@ export default function Evaluate() {
       
       // 3. Navigate to the new submission review page on success
       if (newSubmission) {
+          await logAdminNotification({
+            recipientId: session.user.id,
+            actorId: session.user.id,
+            actorRole: "student",
+            message: "تم تسليم الكتابة وحصلت على 10 نقاط.",
+            category: "points",
+          });
           navigate(`/submission/${newSubmission.id}`);
       }
 
