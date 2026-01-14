@@ -10,6 +10,7 @@ import {
 import { supabase } from "../supabaseClient";
 import "../styles/Topic.css";
 import type { Session } from "@supabase/supabase-js";
+import CollaborativeChat from "../components/CollaborativeChat";
 
 export default function Topic() {
   const { topicId } = useParams<{ topicId: string }>();
@@ -42,6 +43,8 @@ export default function Topic() {
   const completedActivityItems = topic.activities.list.filter((activity) =>
     completedActivities.includes(activity.activity)
   );
+  const isDiscussingIssue = topic.id === "discussing-issue";
+  const isDialogueText = topic.id === "dialogue-text";
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -277,6 +280,13 @@ export default function Topic() {
               ))}
             </ul>
           </section>
+          {session && (isDiscussingIssue || isDialogueText) && (
+            <CollaborativeChat
+              topicId={topic.id}
+              mode={isDiscussingIssue ? "group" : "pair"}
+              session={session}
+            />
+          )}
         </div>
       </div>
 

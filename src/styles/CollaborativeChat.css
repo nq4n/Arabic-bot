@@ -1,0 +1,125 @@
+.collaborative-chat {
+  background: var(--card-bg, #ffffff);
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.collaborative-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.partner-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.partner-picker select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #d8d8d8;
+  background: #fff;
+}
+
+.collaborative-chat .chat-thread {
+  background: #f9fafb;
+  border-radius: 14px;
+  padding: 1rem;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.collaborative-chat .chat-empty {
+  text-align: center;
+  color: #6e6e6e;
+}
+
+.collaborative-chat .chat-error-banner {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #ffecec;
+  color: #b50f0f;
+}
+
+.collaborative-chat .chat-bubble {
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  max-width: 75%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.collaborative-chat .chat-sender {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.collaborative-chat .chat-time {
+  font-size: 0.75rem;
+  color: #8a8a8a;
+  align-self: flex-end;
+}
+
+.collaborative-chat .chat-bubble.is-sent {
+  align-self: flex-start;
+  background: #daf0ff;
+}
+
+.collaborative-chat .chat-bubble.is-received {
+  align-self: flex-end;
+  background: #ffffff;
+  border: 1px solid #ececec;
+}
+
+.collaborative-chat .chat-input-area {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.collaborative-chat .chat-input-area input {
+  flex: 1;
+  padding: 0.7rem;
+  border-radius: 12px;
+  border: 1px solid #dcdcdc;
+}
+
+.collaborative-chat .chat-input-area button {
+  padding: 0.7rem 1.4rem;
+  border-radius: 12px;
+  border: none;
+  background: #1b4f8b;
+  color: #fff;
+  cursor: pointer;
+}
+
+.collaborative-chat .chat-input-area button:disabled {
+  background: #b8c7da;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .collaborative-chat {
+    padding: 1.2rem;
+  }
+
+  .collaborative-chat .chat-bubble {
+    max-width: 100%;
+  }
+
+  .collaborative-chat .chat-input-area {
+    flex-direction: column;
+  }
+}
