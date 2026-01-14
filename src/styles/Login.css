@@ -47,7 +47,7 @@
 }
 
 .login-welcome {
-  background: rgba(255, 255, 255, 0.75);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 1.25rem 1.5rem;
@@ -96,13 +96,13 @@
 }
 
 .login-error {
-    background-color: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
+    background-color: color-mix(in srgb, var(--destructive) 18%, transparent);
+    color: var(--destructive);
     padding: 0.75rem 1rem;
     border-radius: var(--border-radius);
     text-align: center;
     font-size: 0.9rem;
-    border: 1px solid rgba(220, 53, 69, 0.2);
+    border: 1px solid color-mix(in srgb, var(--destructive) 28%, transparent);
 }
 
 .input-group label {

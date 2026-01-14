@@ -4,7 +4,10 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem;
-  background: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
+  background: linear-gradient(
+      color-mix(in srgb, var(--bg-secondary) 90%, transparent),
+      color-mix(in srgb, var(--bg-secondary) 90%, transparent)
+    ),
     url("https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=80")
       center/cover;
   border-radius: 24px;

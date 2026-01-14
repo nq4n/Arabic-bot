@@ -5,7 +5,10 @@
   max-width: 2400px;
   margin: 0 auto;
   color: var(--text-primary);
-  background: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
+  background: linear-gradient(
+      color-mix(in srgb, var(--bg-secondary) 88%, transparent),
+      color-mix(in srgb, var(--bg-secondary) 88%, transparent)
+    ),
     url("https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1600&q=80")
       center/cover;
   border-radius: 24px;
@@ -69,7 +72,7 @@
 .video-placeholder {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background-color: #2d3748;
+  background-color: color-mix(in srgb, var(--primary-dark) 80%, #000000);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -81,12 +84,12 @@
 
 .video-placeholder .fa-play-circle {
   font-size: 4rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: color-mix(in srgb, var(--primary-icon) 70%, transparent);
   transition: all 0.3s ease;
 }
 
 .video-placeholder:hover .fa-play-circle {
-  color: rgba(255, 255, 255, 1);
+  color: var(--primary-icon);
   transform: scale(1.1);
 }
 
@@ -96,7 +99,7 @@
   border-radius: 12px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .topic-section.sequential-section {
@@ -160,7 +163,7 @@
 
 .step-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .step-header {
@@ -288,7 +291,7 @@
 .activity-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: color-mix(in srgb, #0f172a 45%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
