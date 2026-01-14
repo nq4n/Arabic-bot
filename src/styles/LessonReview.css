@@ -5,7 +5,10 @@
   max-width: 1200px;
   margin: 0 auto;
   color: var(--text-primary);
-  background: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)),
+  background: linear-gradient(
+      color-mix(in srgb, var(--bg-secondary) 90%, transparent),
+      color-mix(in srgb, var(--bg-secondary) 90%, transparent)
+    ),
     url("https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1600&q=80")
       center/cover;
   border-radius: 24px;
@@ -49,7 +52,7 @@
   border-radius: 12px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .section-title {

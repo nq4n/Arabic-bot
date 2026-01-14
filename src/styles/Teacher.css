@@ -38,7 +38,7 @@
 }
 .student-level.متقدم { background-color: var(--primary); }
 .student-level.متوسط { background-color: var(--accent); }
-.student-level.مبتدئ { background-color: #f44336; }
+.student-level.مبتدئ { background-color: var(--destructive); }
 
 .student-activity, .submission-topic, .submission-score {
   font-size: 0.9rem;
