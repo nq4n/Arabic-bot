@@ -47,3 +47,57 @@ CREATE TABLE public.submissions (id SERIAL PRIMARY KEY, student_id UUID REFERENC
 ALTER TABLE public.submissions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Submissions are viewable by owners." ON public.submissions FOR SELECT USING (auth.uid() = student_id);
 CREATE POLICY "Users can insert their own submissions." ON public.submissions FOR INSERT WITH CHECK (auth.uid() = student_id);
+
+-- Teacher/student private chat tables
+CREATE TABLE public.teacher_chat_settings (
+  teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  is_enabled BOOLEAN DEFAULT TRUE,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (teacher_id, student_id)
+);
+
+ALTER TABLE public.teacher_chat_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Teacher chat settings viewable by participants." ON public.teacher_chat_settings
+  FOR SELECT USING (auth.uid() = teacher_id OR auth.uid() = student_id);
+CREATE POLICY "Teacher chat settings manageable by teacher." ON public.teacher_chat_settings
+  FOR INSERT WITH CHECK (auth.uid() = teacher_id);
+CREATE POLICY "Teacher chat settings update by teacher." ON public.teacher_chat_settings
+  FOR UPDATE USING (auth.uid() = teacher_id);
+
+CREATE TABLE public.teacher_chat_messages (
+  id BIGSERIAL PRIMARY KEY,
+  teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  sender_name TEXT,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.teacher_chat_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Teacher chat messages viewable by participants." ON public.teacher_chat_messages
+  FOR SELECT USING (auth.uid() = teacher_id OR auth.uid() = student_id);
+CREATE POLICY "Teacher chat messages insert by participants." ON public.teacher_chat_messages
+  FOR INSERT WITH CHECK (
+    auth.uid() = sender_id
+    AND (sender_id = teacher_id OR sender_id = student_id)
+  );
+
+-- Collaborative student chat tables
+CREATE TABLE public.collaborative_chat_messages (
+  id BIGSERIAL PRIMARY KEY,
+  topic_id TEXT NOT NULL,
+  room_key TEXT NOT NULL,
+  room_type TEXT NOT NULL CHECK (room_type IN ('group', 'pair')),
+  sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  sender_name TEXT,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.collaborative_chat_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Collaborative chat viewable by authenticated users." ON public.collaborative_chat_messages
+  FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Collaborative chat insert by sender." ON public.collaborative_chat_messages
+  FOR INSERT WITH CHECK (auth.uid() = sender_id);
