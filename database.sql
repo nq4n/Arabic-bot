@@ -83,6 +83,29 @@ CREATE POLICY "Teacher chat messages insert by participants." ON public.teacher_
     AND (sender_id = teacher_id OR sender_id = student_id)
   );
 
+-- Admin notification log
+CREATE TABLE public.admin_notifications (
+  id BIGSERIAL PRIMARY KEY,
+  recipient_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  actor_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  actor_role TEXT,
+  message TEXT NOT NULL,
+  category TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.admin_notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admin notifications viewable by recipient or admin." ON public.admin_notifications
+  FOR SELECT USING (
+    auth.uid() = recipient_id
+    OR EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+CREATE POLICY "Admin notifications insert by actor." ON public.admin_notifications
+  FOR INSERT WITH CHECK (auth.uid() = actor_id);
+
 -- Collaborative student chat tables
 CREATE TABLE public.collaborative_chat_messages (
   id BIGSERIAL PRIMARY KEY,

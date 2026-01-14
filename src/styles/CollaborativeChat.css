@@ -1,5 +1,5 @@
 .collaborative-chat {
-  background: var(--card-bg, #ffffff);
+  background: var(--bg-card);
   border-radius: 18px;
   padding: 1.5rem;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
@@ -25,12 +25,13 @@
 .partner-picker select {
   padding: 0.5rem 0.75rem;
   border-radius: 10px;
-  border: 1px solid #d8d8d8;
-  background: #fff;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
 }
 
 .collaborative-chat .chat-thread {
-  background: #f9fafb;
+  background: var(--bg-secondary);
   border-radius: 14px;
   padding: 1rem;
   min-height: 240px;
@@ -43,7 +44,7 @@
 
 .collaborative-chat .chat-empty {
   text-align: center;
-  color: #6e6e6e;
+  color: var(--text-muted);
 }
 
 .collaborative-chat .chat-error-banner {
@@ -64,24 +65,24 @@
 
 .collaborative-chat .chat-sender {
   font-size: 0.85rem;
-  color: #555;
+  color: var(--text-muted);
 }
 
 .collaborative-chat .chat-time {
   font-size: 0.75rem;
-  color: #8a8a8a;
+  color: var(--text-muted);
   align-self: flex-end;
 }
 
 .collaborative-chat .chat-bubble.is-sent {
   align-self: flex-start;
-  background: #daf0ff;
+  background: rgba(37, 211, 102, 0.18);
 }
 
 .collaborative-chat .chat-bubble.is-received {
   align-self: flex-end;
-  background: #ffffff;
-  border: 1px solid #ececec;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
 }
 
 .collaborative-chat .chat-input-area {
@@ -93,21 +94,31 @@
   flex: 1;
   padding: 0.7rem;
   border-radius: 12px;
-  border: 1px solid #dcdcdc;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
 }
 
 .collaborative-chat .chat-input-area button {
   padding: 0.7rem 1.4rem;
   border-radius: 12px;
   border: none;
-  background: #1b4f8b;
+  background: #25d366;
   color: #fff;
   cursor: pointer;
 }
 
 .collaborative-chat .chat-input-area button:disabled {
-  background: #b8c7da;
+  background: rgba(148, 163, 184, 0.4);
   cursor: not-allowed;
+}
+
+[data-theme="dark"] .collaborative-chat .chat-thread {
+  background: rgba(15, 23, 42, 0.92);
+}
+
+[data-theme="dark"] .collaborative-chat .chat-bubble.is-sent {
+  background: rgba(37, 211, 102, 0.2);
 }
 
 @media (max-width: 768px) {

@@ -1,9 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
 import type { Session } from "@supabase/supabase-js";
 import "../styles/ChatCenter.css";
+import { logAdminNotification } from "../utils/adminNotifications";
 
 const CHAT_REFRESH_MS = 8000;
+const ADMIN_THREAD_ID = "admin-log";
 
 type UserRole = "student" | "teacher" | "admin" | null;
 
@@ -29,6 +31,24 @@ type ChatSetting = {
   is_enabled: boolean;
 };
 
+type AdminNotification = {
+  id: number;
+  recipient_id: string;
+  actor_id: string | null;
+  actor_role: string | null;
+  message: string;
+  category: string | null;
+  created_at: string;
+};
+
+type SidebarItem = {
+  id: string;
+  label: string;
+  roleLabel: string;
+  avatarLetter: string;
+  isAdminThread?: boolean;
+};
+
 const getDisplayName = (profile: Profile | null) =>
   profile?.username || profile?.email || "مستخدم";
 
@@ -39,27 +59,45 @@ export default function ChatCenter() {
   const [peers, setPeers] = useState<Profile[]>([]);
   const [selectedPeerId, setSelectedPeerId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
   const [input, setInput] = useState("");
   const [chatEnabled, setChatEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const chatThreadRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (chatThreadRef.current) {
-      chatThreadRef.current.scrollTop = chatThreadRef.current.scrollHeight;
-    }
-  }, [messages]);
+  const isAdminThread = selectedPeerId === ADMIN_THREAD_ID;
 
   const teacherId = useMemo(() => {
-    if (!session) return null;
+    if (!session || isAdminThread) return null;
     return currentRole === "student" ? selectedPeerId : session.user.id;
-  }, [currentRole, selectedPeerId, session]);
+  }, [currentRole, isAdminThread, selectedPeerId, session]);
 
   const studentId = useMemo(() => {
-    if (!session || !selectedPeerId) return null;
+    if (!session || !selectedPeerId || isAdminThread) return null;
     return currentRole === "student" ? session.user.id : selectedPeerId;
-  }, [currentRole, selectedPeerId, session]);
+  }, [currentRole, isAdminThread, selectedPeerId, session]);
+
+  const sidebarItems: SidebarItem[] = useMemo(() => {
+    const base: SidebarItem[] = [
+      {
+        id: ADMIN_THREAD_ID,
+        label: "إشعارات الإدارة",
+        roleLabel: "سجل الأنشطة",
+        avatarLetter: "إ",
+        isAdminThread: true,
+      },
+    ];
+
+    const peersList = peers.map((peer) => ({
+      id: peer.id,
+      label: getDisplayName(peer),
+      roleLabel:
+        peer.role === "admin" ? "مسؤول" : peer.role === "teacher" ? "معلم" : "طالب",
+      avatarLetter: getDisplayName(peer).charAt(0),
+    }));
+
+    return base.concat(peersList);
+  }, [peers]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -103,8 +141,9 @@ export default function ChatCenter() {
       if (peersError) {
         setError("تعذر تحميل قائمة المعلمين.");
       } else {
-        setPeers((data as Profile[]) ?? []);
-        setSelectedPeerId((data as Profile[])?.[0]?.id ?? null);
+        const list = (data as Profile[]) ?? [];
+        setPeers(list);
+        setSelectedPeerId((prev) => prev ?? list[0]?.id ?? ADMIN_THREAD_ID);
       }
       setLoading(false);
       return;
@@ -119,8 +158,9 @@ export default function ChatCenter() {
     if (studentsError) {
       setError("تعذر تحميل قائمة الطلاب.");
     } else {
-      setPeers((data as Profile[]) ?? []);
-      setSelectedPeerId((data as Profile[])?.[0]?.id ?? null);
+      const list = (data as Profile[]) ?? [];
+      setPeers(list);
+      setSelectedPeerId((prev) => prev ?? list[0]?.id ?? ADMIN_THREAD_ID);
     }
     setLoading(false);
   }, [currentRole]);
@@ -167,20 +207,44 @@ export default function ChatCenter() {
     setMessages((data as ChatMessage[]) ?? []);
   }, [studentId, teacherId]);
 
+  const loadAdminNotifications = useCallback(async () => {
+    if (!session) return;
+
+    const { data, error: adminError } = await supabase
+      .from("admin_notifications")
+      .select("id, recipient_id, actor_id, actor_role, message, category, created_at")
+      .eq("recipient_id", session.user.id)
+      .order("created_at", { ascending: true });
+
+    if (adminError) {
+      setError("تعذر تحميل إشعارات الإدارة.");
+      return;
+    }
+
+    setAdminNotifications((data as AdminNotification[]) ?? []);
+  }, [session]);
+
   useEffect(() => {
+    if (isAdminThread) {
+      loadAdminNotifications();
+      const interval = window.setInterval(loadAdminNotifications, CHAT_REFRESH_MS);
+      return () => window.clearInterval(interval);
+    }
+
     if (!teacherId || !studentId) return;
     loadChatSetting();
     loadMessages();
 
     const interval = window.setInterval(loadMessages, CHAT_REFRESH_MS);
     return () => window.clearInterval(interval);
-  }, [loadChatSetting, loadMessages, studentId, teacherId]);
-
-  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      handleSend();
-    }
-  };
+  }, [
+    isAdminThread,
+    loadAdminNotifications,
+    loadChatSetting,
+    loadMessages,
+    studentId,
+    teacherId,
+  ]);
 
   const handleSend = async () => {
     if (!input.trim() || !teacherId || !studentId || !session) return;
@@ -199,6 +263,25 @@ export default function ChatCenter() {
     if (sendError) {
       setError("تعذر إرسال الرسالة.");
       return;
+    }
+
+    if (currentRole !== "student" && selectedPeer && studentId) {
+      const senderName = getDisplayName(currentProfile);
+      const recipientName = getDisplayName(selectedPeer);
+      await logAdminNotification({
+        recipientId: studentId,
+        actorId: session.user.id,
+        actorRole: currentRole ?? "teacher",
+        message: `تلقيت ردًا من ${senderName}.`,
+        category: "teacher_reply",
+      });
+      await logAdminNotification({
+        recipientId: session.user.id,
+        actorId: session.user.id,
+        actorRole: currentRole ?? "teacher",
+        message: `أرسلت ردًا إلى ${recipientName}.`,
+        category: "teacher_reply",
+      });
     }
 
     setInput("");
@@ -227,6 +310,7 @@ export default function ChatCenter() {
   };
 
   const selectedPeer = peers.find((peer) => peer.id === selectedPeerId) || null;
+  const activeMessages = isAdminThread ? adminNotifications : messages;
 
   return (
     <div className="chat-center-page" dir="rtl">
@@ -240,27 +324,21 @@ export default function ChatCenter() {
             {!loading && peers.length === 0 && (
               <div className="chat-empty">لا يوجد مستخدمون</div>
             )}
-            {peers.map((peer) => (
+            {sidebarItems.map((item) => (
               <button
-                key={peer.id}
+                key={item.id}
                 type="button"
                 className={`chat-sidebar-item ${
-                  selectedPeerId === peer.id ? "is-active" : ""
+                  selectedPeerId === item.id ? "is-active" : ""
                 }`}
-                onClick={() => setSelectedPeerId(peer.id)}
+                onClick={() => setSelectedPeerId(item.id)}
               >
                 <div className="chat-peer-avatar">
-                  {getDisplayName(peer).charAt(0)}
+                  {item.avatarLetter}
                 </div>
                 <div className="chat-peer-info">
-                  <span className="chat-peer-name">{getDisplayName(peer)}</span>
-                  <span className="chat-peer-meta">
-                    {peer.role === "admin"
-                      ? "مسؤول"
-                      : peer.role === "teacher"
-                        ? "معلم"
-                        : "طالب"}
-                  </span>
+                  <span className="chat-peer-name">{item.label}</span>
+                  <span className="chat-peer-meta">{item.roleLabel}</span>
                 </div>
               </button>
             ))}
@@ -270,7 +348,15 @@ export default function ChatCenter() {
         <div className="chat-main">
           <div className="chat-center-controls">
             <div className="chat-peer-title">
-              {selectedPeer ? (
+              {isAdminThread ? (
+                <>
+                  <div className="chat-peer-avatar">إ</div>
+                  <div>
+                    <div>إشعارات الإدارة</div>
+                    <div className="chat-peer-meta">توثيق الأنشطة</div>
+                  </div>
+                </>
+              ) : selectedPeer ? (
                 <>
                   <div className="chat-peer-avatar">
                     {getDisplayName(selectedPeer).charAt(0)}
@@ -310,7 +396,7 @@ export default function ChatCenter() {
             )}
           </div>
 
-          {currentRole === "student" && !chatEnabled && (
+          {currentRole === "student" && !chatEnabled && !isAdminThread && (
             <div className="chat-disabled-note">
               قام المعلم بتعطيل الدردشة أثناء الحصة.
             </div>
@@ -318,64 +404,76 @@ export default function ChatCenter() {
 
           {error && <div className="chat-error-banner">{error}</div>}
 
-          <div className="chat-thread" ref={chatThreadRef}>
-            {messages.length === 0 && (
-              <div className="chat-empty">ابدأ المحادثة بإرسال رسالة.</div>
-            )}
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`chat-bubble ${
-                  message.sender_id === session?.user.id ? "is-sent" : "is-received"
-                }`}
-              >
-                <span className="chat-sender">
-                  {message.sender_id === session?.user.id
-                    ? "أنت"
-                    : message.sender_name ||
-                      getDisplayName(selectedPeer) ||
-                      "المعلم"}
-                </span>
-                <p>{message.message}</p>
-                <span className="chat-time">
-                  {new Date(message.created_at).toLocaleTimeString("ar-SA", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+          <div className="chat-thread">
+            {activeMessages.length === 0 && (
+              <div className="chat-empty">
+                {isAdminThread ? "لا توجد إشعارات حتى الآن." : "ابدأ المحادثة بإرسال رسالة."}
               </div>
-            ))}
+            )}
+            {activeMessages.map((message) =>
+              isAdminThread ? (
+                <div key={message.id} className="chat-bubble is-admin">
+                  <span className="chat-sender">إشعار النظام</span>
+                  <p>{message.message}</p>
+                  <span className="chat-time">
+                    {new Date(message.created_at).toLocaleTimeString("ar-SA", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              ) : (
+                <div
+                  key={message.id}
+                  className={`chat-bubble ${
+                    message.sender_id === session?.user.id ? "is-sent" : "is-received"
+                  }`}
+                >
+                  <span className="chat-sender">
+                    {message.sender_id === session?.user.id
+                      ? "أنت"
+                      : message.sender_name ||
+                        getDisplayName(selectedPeer) ||
+                        "المعلم"}
+                  </span>
+                  <p>{message.message}</p>
+                  <span className="chat-time">
+                    {new Date(message.created_at).toLocaleTimeString("ar-SA", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              )
+            )}
           </div>
 
-          <div className="chat-input-area">
-            <input
-              type="text"
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={
-                chatEnabled
-                  ? `اكتب رسالة إلى ${getDisplayName(selectedPeer)}...`
-                  : "الدردشة معطلة حاليًا"
-              }
-              disabled={!chatEnabled || !selectedPeerId}
-            />
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={!chatEnabled || !input.trim() || !selectedPeerId}
-              aria-label="إرسال"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="24"
-                height="24"
-                fill="currentColor"
+          {!isAdminThread ? (
+            <div className="chat-input-area">
+              <input
+                type="text"
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder={
+                  chatEnabled
+                    ? `اكتب رسالة إلى ${getDisplayName(selectedPeer)}...`
+                    : "الدردشة معطلة حاليًا"
+                }
+                disabled={!chatEnabled || !selectedPeerId}
+              />
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={!chatEnabled || !input.trim() || !selectedPeerId}
               >
-                <path d="M1.101 21.757 23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z"></path>
-              </svg>
-            </button>
-          </div>
+                إرسال
+              </button>
+            </div>
+          ) : (
+            <div className="chat-admin-note">
+              هذه القناة مخصصة للتوثيق والتنبيهات ولا يمكن الرد فيها.
+            </div>
+          )}
         </div>
       </section>
     </div>

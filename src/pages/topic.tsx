@@ -11,6 +11,7 @@ import { supabase } from "../supabaseClient";
 import "../styles/Topic.css";
 import type { Session } from "@supabase/supabase-js";
 import CollaborativeChat from "../components/CollaborativeChat";
+import { logAdminNotification } from "../utils/adminNotifications";
 
 export default function Topic() {
   const { topicId } = useParams<{ topicId: string }>();
@@ -136,6 +137,23 @@ export default function Topic() {
     setIsSubmitting(false);
   };
 
+  const handleToggleActivity = async (activity: Activity) => {
+    const isCompleting = !completedActivities.includes(activity.activity);
+    setActivityProgress(
+      toggleActivityCompletion(topicIds, topic.id, activity.activity)
+    );
+
+    if (isCompleting && session) {
+      await logAdminNotification({
+        recipientId: session.user.id,
+        actorId: session.user.id,
+        actorRole: "student",
+        message: `حصلت على 5 نقاط لإكمال نشاط: ${activity.description}.`,
+        category: "points",
+      });
+    }
+  };
+
   if (!isLessonActive) {
     return (
       <div className="topic-page" dir="rtl">
@@ -254,15 +272,7 @@ export default function Topic() {
                     <input
                       type="checkbox"
                       checked={completedActivities.includes(activity.activity)}
-                      onChange={() =>
-                        setActivityProgress(
-                          toggleActivityCompletion(
-                            topicIds,
-                            topic.id,
-                            activity.activity
-                          )
-                        )
-                      }
+                      onChange={() => handleToggleActivity(activity)}
                     />
                     <span className="activity-text">
                       <i className={`${activity.icon} activity-icon`}></i>
@@ -296,6 +306,15 @@ export default function Topic() {
           className="button button-primary cta-button"
           onClick={() => {
             markLessonCompleted(topicIds, topic.id);
+            if (session) {
+              logAdminNotification({
+                recipientId: session.user.id,
+                actorId: session.user.id,
+                actorRole: "student",
+                message: `أكملت درس \"${topic.title}\" وحصلت على 20 نقطة.`,
+                category: "points",
+              });
+            }
             navigate(`/lesson-review/${topic.id}`);
           }}
           disabled={!isReviewActive}
