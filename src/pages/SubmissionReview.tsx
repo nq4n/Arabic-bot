@@ -30,8 +30,6 @@ type Profile = {
   role: 'student' | 'teacher' | 'admin';
 };
 
-type TabKey = 'ai' | 'teacher';
-
 export default function SubmissionReview() {
   const { submissionId } = useParams<{ submissionId: string }>();
   const navigate = useNavigate();

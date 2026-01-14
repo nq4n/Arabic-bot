@@ -323,6 +323,13 @@ export default function ChatCenter() {
   };
 
   const selectedPeer = peers.find((peer) => peer.id === selectedPeerId) || null;
+  const isThreadEmpty = isAdminThread
+    ? adminNotifications.length === 0
+    : messages.length === 0;
+  const activeMessages = isAdminThread ? adminNotifications : messages;
+  const isChatMessage = (
+    message: ChatMessage | AdminNotification
+  ): message is ChatMessage => "sender_id" in message;
 
   return (
     <div className="chat-center-page" dir="rtl">
@@ -417,13 +424,13 @@ export default function ChatCenter() {
           {error && <div className="chat-error-banner">{error}</div>}
 
           <div className="chat-thread">
-            {activeMessages.length === 0 && (
+            {isThreadEmpty && (
               <div className="chat-empty">
                 {isAdminThread ? "لا توجد إشعارات حتى الآن." : "ابدأ المحادثة بإرسال رسالة."}
               </div>
             )}
             {activeMessages.map((message) =>
-              isAdminThread ? (
+              !isChatMessage(message) ? (
                 <div key={message.id} className="chat-bubble is-admin">
                   <span className="chat-sender">إشعار النظام</span>
                   <p>{message.message}</p>
