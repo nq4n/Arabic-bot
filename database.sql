@@ -14,16 +14,25 @@ GRANT ALL ON SCHEMA public TO public;
 -- Create profiles table. It will store the user's role and a public username for display.
 CREATE TABLE public.profiles (
   id UUID PRIMARY KEY,
+  email TEXT UNIQUE,
   username TEXT UNIQUE,
   role TEXT,
+  must_change_password BOOLEAN DEFAULT TRUE,
+  added_by_teacher_id UUID REFERENCES public.profiles(id),
   CONSTRAINT username_length CHECK (char_length(username) >= 3)
 );
 
 -- Function to create a profile automatically when a new user signs up in Supabase Auth.
 CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, username, role)
-  VALUES (new.id, new.raw_user_meta_data->>'username', new.raw_user_meta_data->>'role');
+  INSERT INTO public.profiles (id, email, username, role, must_change_password)
+  VALUES (
+    new.id,
+    new.email,
+    new.raw_user_meta_data->>'username',
+    new.raw_user_meta_data->>'role',
+    true
+  );
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -36,6 +45,13 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public profiles are viewable by everyone." ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Users can insert their own profile." ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can update own profile." ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admins can update any profile." ON public.profiles
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
 
 
 -- Create all other application tables (topics, submissions, etc.)

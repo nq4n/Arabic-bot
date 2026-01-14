@@ -1,4 +1,4 @@
-// supabase/functions/create-user/index.ts
+﻿// supabase/functions/create-user/index.ts
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -30,7 +30,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password, username, role, addedBy } = await req.json();
+    const { email, password, role, addedBy } = await req.json();
 
     if (!email || !password || !role) {
       return new Response(
@@ -40,12 +40,48 @@ serve(async (req) => {
     }
 
     // 1) إنشاء المستخدم في Auth باستخدام admin
+    const randomDigits = (length: number) => {
+      const digits = [];
+      const bytes = new Uint8Array(length);
+      crypto.getRandomValues(bytes);
+      for (let i = 0; i < length; i += 1) {
+        digits.push((bytes[i] % 10).toString());
+      }
+      return digits.join("");
+    };
+
+    const usernamePrefix =
+      role === "student" ? "s" : role === "teacher" ? "t" : "u";
+
+    let generatedUsername = "";
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const candidate = `${usernamePrefix}${randomDigits(6)}`;
+      const { data: existing, error: existingError } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("username", candidate)
+        .maybeSingle();
+
+      if (existingError) {
+        console.error("Username lookup error:", existingError);
+      }
+
+      if (!existing) {
+        generatedUsername = candidate;
+        break;
+      }
+    }
+
+    if (!generatedUsername) {
+      generatedUsername = `${usernamePrefix}${randomDigits(10)}`;
+    }
+
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true, // لو حاب تفرض تأكيد إيميل خله false
       user_metadata: {
-        username,
+        username: generatedUsername,
         role,
       },
     });
@@ -70,7 +106,7 @@ serve(async (req) => {
     } = {
       id: user.id,
       email,
-      username,
+      username: generatedUsername,
       role,
       must_change_password: true, // أو false حسب نظامك
     };
@@ -82,15 +118,17 @@ serve(async (req) => {
 
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .insert(profileInsertData);
+      .upsert(profileInsertData, { onConflict: "id" });
 
     if (profileError) {
-      console.error("Profile insert error:", profileError);
-      // نرجع نجاح رغم خطأ profile، أو تقدر تخليه error حسب رغبتك
+      return new Response(
+        JSON.stringify({ error: profileError.message ?? "Profile upsert error" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(
-      JSON.stringify({ success: true, userId: user.id }),
+      JSON.stringify({ success: true, userId: user.id, username: generatedUsername }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
@@ -101,3 +139,5 @@ serve(async (req) => {
     );
   }
 });
+
+

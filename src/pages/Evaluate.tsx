@@ -140,83 +140,94 @@ export default function Evaluate() {
         <p>املأ الأقسام أدناه واحصل على تقييم فوري بناءً على المعايير الموضحة.</p>
       </header>
 
-      <section className="card rubric-area">
-        <h2><i className="fas fa-clipboard-check"></i> {topic.evaluationTask.title}</h2>
-        <p>{topic.evaluationTask.description}</p>
-        {topic.evaluationTask.mode === "discussion" && (
-          <p className="text-note">هذه المهمة تركّز على وضوح الحجة والاحترام في عرض الرأي.</p>
-        )}
-        {topic.evaluationTask.mode === "dialogue" && (
-          <p className="text-note">هذه المهمة تركّز على سلاسة الحوار ووضوح الأصوات.</p>
-        )}
-        {topic.evaluationTask.mode === "report" && (
-          <p className="text-note">هذه المهمة تركّز على التنظيم والموضوعية في عرض المعلومات.</p>
-        )}
-      </section>
+      <div className="evaluate-content-wrapper">
+        <div className="vertical-stack">
+          <section className="card rubric-area evaluate-section">
+            <h2><i className="fas fa-clipboard-check"></i> {topic.evaluationTask.title}</h2>
+            <p>{topic.evaluationTask.description}</p>
+            {topic.evaluationTask.mode === "discussion" && (
+              <p className="text-note">هذه المهمة تركّز على وضوح الحجة والاحترام في عرض الرأي.</p>
+            )}
+            {topic.evaluationTask.mode === "dialogue" && (
+              <p className="text-note">هذه المهمة تركّز على سلاسة الحوار ووضوح الأصوات.</p>
+            )}
+            {topic.evaluationTask.mode === "report" && (
+              <p className="text-note">هذه المهمة تركّز على التنظيم والموضوعية في عرض المعلومات.</p>
+            )}
+          </section>
 
-      {rubric && (
-        <section className="card rubric-area">
-          <h2><i className="fas fa-tasks"></i> معايير التقييم</h2>
-          <div className="rubric-table-wrapper">
-            <table className="rubric-table">
-              <thead>
-                <tr>
-                  <th>المعيار</th>
-                  {rubric.criteria[0]?.levels.map((level) => (
-                    <th key={level.id}>
-                      {level.label}
-                      <span className="rubric-level-score">({level.score})</span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rubric.criteria.map((criterion) => (
-                  <tr key={criterion.id}>
-                    <td className="rubric-criterion-cell">
-                      <strong>{criterion.name}</strong>
-                      <p>{criterion.description}</p>
-                    </td>
-                    {criterion.levels.map((level) => (
-                      <td key={level.id}>
-                        <div className="rubric-level-info">
-                          <span className="rubric-level-label">{level.label}</span>
-                          <span className="rubric-level-description">{level.description}</span>
-                        </div>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      <div className="card evaluation-area">
-        {sectionsToRender.map((section) => (
-            <div key={section.id} className="writing-section">
+          <div className="card evaluation-area evaluate-section">
+            {sectionsToRender.map((section) => (
+              <div key={section.id} className="writing-section">
                 <label htmlFor={section.id}>{section.title}</label>
                 {section.description && (
                   <p className="writing-section-description">{section.description}</p>
                 )}
                 <textarea
-                    id={section.id}
-                    className="text-editor"
-                    placeholder={section.placeholder}
-                    value={writingValues[section.id] || ''}
-                    onChange={(e) => handleInputChange(section.id, e.target.value)}
-                    rows={section.id === 'main' ? 15 : 5}
-                    disabled={isEvaluating}
+                  id={section.id}
+                  className="text-editor"
+                  placeholder={section.placeholder}
+                  value={writingValues[section.id] || ""}
+                  onChange={(e) => handleInputChange(section.id, e.target.value)}
+                  rows={section.id === "main" ? 15 : 5}
+                  disabled={isEvaluating}
                 ></textarea>
-            </div>
-        ))}
-        <button onClick={handleEvaluate} disabled={isEvaluating} className="button button-primary cta-button">
-          {isEvaluating ? "...جاري التقييم" : "قيّم النص الآن"}
-        </button>
+              </div>
+            ))}
+            <button onClick={handleEvaluate} disabled={isEvaluating} className="button button-primary cta-button">
+              {isEvaluating ? "...جاري التقييم" : "قيّم النص الآن"}
+            </button>
+          </div>
+        </div>
+
+        <div className="vertical-stack">
+          {rubric && (
+            <section className="card rubric-area evaluate-section">
+              <h2><i className="fas fa-tasks"></i> معايير التقييم</h2>
+              <div className="rubric-table-wrapper">
+                <table className="rubric-table">
+                  <thead>
+                    <tr>
+                      <th>المعيار</th>
+                      {rubric.criteria[0]?.levels.map((level) => (
+                        <th key={level.id}>
+                          {level.label}
+                          <span className="rubric-level-score">({level.score})</span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rubric.criteria.map((criterion) => (
+                      <tr key={criterion.id}>
+                        <td className="rubric-criterion-cell">
+                          <strong>{criterion.name}</strong>
+                          <p>{criterion.description}</p>
+                        </td>
+                        {criterion.levels.map((level) => (
+                          <td key={level.id}>
+                            <div className="rubric-level-info">
+                              <span className="rubric-level-label">{level.label}</span>
+                              <span className="rubric-level-description">{level.description}</span>
+                            </div>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+        </div>
       </div>
 
-      {isEvaluating && <div className="loading-indicator"><div className="spinner"></div><p>...يتم الآن تحليل النص بواسطة الذكاء الاصطناعي</p></div>}
+      {isEvaluating && (
+        <div className="loading-indicator">
+          <div className="spinner"></div>
+          <p>...يتم الآن تحليل النص بواسطة الذكاء الاصطناعي</p>
+        </div>
+      )}
 
       <div className="page-actions">
         <button className="button button-secondary" onClick={() => navigate(-1)}><i className="fas fa-arrow-right"></i> رجوع</button>

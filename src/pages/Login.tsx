@@ -13,7 +13,7 @@ const ThemeToggle = () => {
 };
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,8 +24,38 @@ export default function Login() {
     setLoading(true);
     setError(null);
 
+    const trimmedIdentifier = identifier.trim();
+    if (!trimmedIdentifier) {
+      setError("الرجاء إدخال البريد الإلكتروني أو اسم المستخدم.");
+      setLoading(false);
+      return;
+    }
+
+    let loginEmail = trimmedIdentifier;
+    if (!trimmedIdentifier.includes("@")) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("email")
+        .ilike("username", trimmedIdentifier)
+        .maybeSingle();
+
+      if (profileError) {
+        setError("تعذر العثور على الحساب، حاول مرة أخرى.");
+        setLoading(false);
+        return;
+      }
+
+      if (!profile?.email) {
+        setError("اسم المستخدم غير مرتبط ببريد إلكتروني.");
+        setLoading(false);
+        return;
+      }
+
+      loginEmail = profile.email;
+    }
+
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: loginEmail,
       password,
     });
 
@@ -73,12 +103,12 @@ export default function Login() {
           <div className="input-group">
             <label htmlFor="email">البريد الإلكتروني</label>
             <input
-              type="email"
+              type="text"
               id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
-              autoComplete="email"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="user@example.com / s123456"
+              autoComplete="username"
               required
             />
           </div>

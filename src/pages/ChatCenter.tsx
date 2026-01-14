@@ -14,6 +14,7 @@ type Profile = {
   username: string | null;
   email: string | null;
   role: UserRole;
+  added_by_teacher_id?: string | null;
 };
 
 type ChatMessage = {
@@ -110,7 +111,7 @@ export default function ChatCenter() {
       if (!session) return;
       const { data, error: profileError } = await supabase
         .from("profiles")
-        .select("id, username, email, role")
+        .select("id, username, email, role, added_by_teacher_id")
         .eq("id", session.user.id)
         .single();
 
@@ -132,6 +133,7 @@ export default function ChatCenter() {
     setError(null);
 
     if (currentRole === "student") {
+      const assignedTeacherId = currentProfile?.added_by_teacher_id ?? null;
       const { data, error: peersError } = await supabase
         .from("profiles")
         .select("id, username, email, role")
@@ -141,7 +143,12 @@ export default function ChatCenter() {
       if (peersError) {
         setError("تعذر تحميل قائمة المعلمين.");
       } else {
-        const list = (data as Profile[]) ?? [];
+        let list = (data as Profile[]) ?? [];
+        if (assignedTeacherId) {
+          list = list.filter(
+            (peer) => peer.role === "admin" || peer.id === assignedTeacherId
+          );
+        }
         setPeers(list);
         setSelectedPeerId((prev) => prev ?? list[0]?.id ?? ADMIN_THREAD_ID);
       }
@@ -149,11 +156,17 @@ export default function ChatCenter() {
       return;
     }
 
-    const { data, error: studentsError } = await supabase
+    let studentsQuery = supabase
       .from("profiles")
       .select("id, username, email, role")
       .eq("role", "student")
       .order("username", { ascending: true });
+
+    if (currentRole === "teacher" && session?.user.id) {
+      studentsQuery = studentsQuery.eq("added_by_teacher_id", session.user.id);
+    }
+
+    const { data, error: studentsError } = await studentsQuery;
 
     if (studentsError) {
       setError("تعذر تحميل قائمة الطلاب.");
@@ -163,7 +176,7 @@ export default function ChatCenter() {
       setSelectedPeerId((prev) => prev ?? list[0]?.id ?? ADMIN_THREAD_ID);
     }
     setLoading(false);
-  }, [currentRole]);
+  }, [currentProfile?.added_by_teacher_id, currentRole, session?.user.id]);
 
   useEffect(() => {
     loadPeers();
@@ -310,7 +323,6 @@ export default function ChatCenter() {
   };
 
   const selectedPeer = peers.find((peer) => peer.id === selectedPeerId) || null;
-  const activeMessages = isAdminThread ? adminNotifications : messages;
 
   return (
     <div className="chat-center-page" dir="rtl">
