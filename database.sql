@@ -49,20 +49,19 @@ CREATE POLICY "Submissions are viewable by owners." ON public.submissions FOR SE
 CREATE POLICY "Users can insert their own submissions." ON public.submissions FOR INSERT WITH CHECK (auth.uid() = student_id);
 
 -- Teacher/student private chat tables
-CREATE TABLE public.teacher_chat_settings (
+CREATE TABLE public.teacher_chat_global_settings (
   teacher_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  student_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   is_enabled BOOLEAN DEFAULT TRUE,
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (teacher_id, student_id)
+  PRIMARY KEY (teacher_id)
 );
 
-ALTER TABLE public.teacher_chat_settings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Teacher chat settings viewable by participants." ON public.teacher_chat_settings
-  FOR SELECT USING (auth.uid() = teacher_id OR auth.uid() = student_id);
-CREATE POLICY "Teacher chat settings manageable by teacher." ON public.teacher_chat_settings
+ALTER TABLE public.teacher_chat_global_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Teacher chat global settings viewable by participants." ON public.teacher_chat_global_settings
+  FOR SELECT USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Teacher chat global settings manageable by teacher." ON public.teacher_chat_global_settings
   FOR INSERT WITH CHECK (auth.uid() = teacher_id);
-CREATE POLICY "Teacher chat settings update by teacher." ON public.teacher_chat_settings
+CREATE POLICY "Teacher chat global settings update by teacher." ON public.teacher_chat_global_settings
   FOR UPDATE USING (auth.uid() = teacher_id);
 
 CREATE TABLE public.teacher_chat_messages (

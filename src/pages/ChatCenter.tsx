@@ -26,7 +26,6 @@ type ChatMessage = {
 
 type ChatSetting = {
   teacher_id: string;
-  student_id: string;
   is_enabled: boolean;
 };
 
@@ -46,7 +45,7 @@ export default function ChatCenter() {
   const [error, setError] = useState<string | null>(null);
 
   const teacherId = useMemo(() => {
-    if (!session || !selectedPeerId) return null;
+    if (!session) return null;
     return currentRole === "student" ? selectedPeerId : session.user.id;
   }, [currentRole, selectedPeerId, session]);
 
@@ -124,13 +123,12 @@ export default function ChatCenter() {
   }, [loadPeers]);
 
   const loadChatSetting = useCallback(async () => {
-    if (!teacherId || !studentId) return;
+    if (!teacherId) return;
 
     const { data, error: settingsError } = await supabase
-      .from("teacher_chat_settings")
-      .select("teacher_id, student_id, is_enabled")
+      .from("teacher_chat_global_settings")
+      .select("teacher_id, is_enabled")
       .eq("teacher_id", teacherId)
-      .eq("student_id", studentId)
       .maybeSingle();
 
     if (settingsError) {
@@ -140,7 +138,7 @@ export default function ChatCenter() {
 
     const settings = (data as ChatSetting | null) ?? null;
     setChatEnabled(settings ? settings.is_enabled : true);
-  }, [studentId, teacherId]);
+  }, [teacherId]);
 
   const loadMessages = useCallback(async () => {
     if (!teacherId || !studentId) return;
@@ -195,19 +193,18 @@ export default function ChatCenter() {
   };
 
   const handleToggleChat = async () => {
-    if (!teacherId || !studentId || currentRole === "student") return;
+    if (!teacherId || currentRole === "student") return;
     const nextValue = !chatEnabled;
     setChatEnabled(nextValue);
 
     const { error: updateError } = await supabase
-      .from("teacher_chat_settings")
+      .from("teacher_chat_global_settings")
       .upsert(
         {
           teacher_id: teacherId,
-          student_id: studentId,
           is_enabled: nextValue,
         },
-        { onConflict: "teacher_id,student_id" }
+        { onConflict: "teacher_id" }
       );
 
     if (updateError) {
@@ -221,14 +218,36 @@ export default function ChatCenter() {
   return (
     <div className="chat-center-page" dir="rtl">
       <header className="chat-center-header">
-        <h1>مركز الدردشة</h1>
-        <p>الدردشة الخاصة بين المعلم والطالب في واجهة تشبه أنظمة المحادثة المكتبية.</p>
+        <div>
+          <h1>مركز الدردشة</h1>
+          <p>دردشة خاصة بين المعلم والطالب ضمن واجهة حديثة.</p>
+        </div>
+        {currentRole !== "student" && (
+          <div className="chat-global-toggle">
+            <div>
+              <div>الدردشة للطلاب</div>
+              <div className="chat-toggle-status">
+                {chatEnabled ? "مفعلة" : "متوقفة"}
+              </div>
+            </div>
+            <button
+              type="button"
+              className={`chat-switch ${chatEnabled ? "is-on" : "is-off"}`}
+              onClick={handleToggleChat}
+              aria-pressed={!chatEnabled}
+            >
+              <span className="chat-switch-knob" />
+            </button>
+          </div>
+        )}
       </header>
 
       <section className="chat-center-card">
         <div className="chat-center-layout">
           <aside className="chat-sidebar">
-            <h3>{currentRole === "student" ? "المعلمون" : "الطلاب"}</h3>
+            <div className="chat-sidebar-header">
+              <h3>{currentRole === "student" ? "المعلمون" : "الطلاب"}</h3>
+            </div>
             <div className="chat-sidebar-list">
               {loading && <div className="chat-empty">جاري التحميل...</div>}
               {!loading && peers.length === 0 && (
@@ -243,10 +262,19 @@ export default function ChatCenter() {
                   }`}
                   onClick={() => setSelectedPeerId(peer.id)}
                 >
-                  <span className="chat-peer-name">{getDisplayName(peer)}</span>
-                  <span className="chat-peer-meta">
-                    {peer.role === "admin" ? "مسؤول" : peer.role === "teacher" ? "معلم" : "طالب"}
-                  </span>
+                  <div className="chat-peer-avatar">
+                    {getDisplayName(peer).charAt(0)}
+                  </div>
+                  <div className="chat-peer-info">
+                    <span className="chat-peer-name">{getDisplayName(peer)}</span>
+                    <span className="chat-peer-meta">
+                      {peer.role === "admin"
+                        ? "مسؤول"
+                        : peer.role === "teacher"
+                          ? "معلم"
+                          : "طالب"}
+                    </span>
+                  </div>
                 </button>
               ))}
             </div>
@@ -255,17 +283,26 @@ export default function ChatCenter() {
           <div className="chat-main">
             <div className="chat-center-controls">
               <div className="chat-peer-title">
-                {selectedPeer ? getDisplayName(selectedPeer) : "اختر محادثة"}
+                {selectedPeer ? (
+                  <>
+                    <div className="chat-peer-avatar">
+                      {getDisplayName(selectedPeer).charAt(0)}
+                    </div>
+                    <div>
+                      <div>{getDisplayName(selectedPeer)}</div>
+                      <div className="chat-peer-meta">
+                        {selectedPeer.role === "admin"
+                          ? "مسؤول"
+                          : selectedPeer.role === "teacher"
+                            ? "معلم"
+                            : "طالب"}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  "اختر محادثة"
+                )}
               </div>
-              {currentRole !== "student" && selectedPeerId && (
-                <button
-                  type="button"
-                  className={`chat-toggle ${chatEnabled ? "is-enabled" : "is-disabled"}`}
-                  onClick={handleToggleChat}
-                >
-                  {chatEnabled ? "تعطيل الدردشة" : "تفعيل الدردشة"}
-                </button>
-              )}
             </div>
 
             {currentRole === "student" && !chatEnabled && (
