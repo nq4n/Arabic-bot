@@ -27,6 +27,7 @@ import SubmissionReview from "./pages/SubmissionReview";
 import StudentProgress from "./pages/StudentProgress";
 import AboutUs from "./pages/AboutUs";
 import FirstLoginChangePassword from "./components/FirstLoginChangePassword";
+import ChatCenter from "./pages/ChatCenter";
 
 export type UserRole = "student" | "teacher" | "admin" | null;
 
@@ -221,6 +222,18 @@ const AppContent = () => {
                 requiredRole={["student", "teacher", "admin"]}
               >
                 <AboutUs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chats"
+            element={
+              <ProtectedRoute
+                userRole={userRole}
+                isRoleLoading={isRoleLoading}
+                requiredRole={["student", "teacher", "admin"]}
+              >
+                <ChatCenter />
               </ProtectedRoute>
             }
           />
