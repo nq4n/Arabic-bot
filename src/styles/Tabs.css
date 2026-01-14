@@ -23,7 +23,7 @@
     The theme provides a light background. We override the theme's
     low-contrast text color with a dark, readable one.
   */
-  color: #1f2937 !important; /* Using a standard dark gray for high contrast */
+  color: var(--text-main) !important;
 }
 
 /* 
@@ -32,7 +32,7 @@
   text color with a light one for high contrast.
 */
 .tabs button.active {
-  color: #ffffff !important; /* Pure white for maximum readability */
+  color: var(--primary-icon) !important;
 }
 
 .tabs button:hover:not(.active) {

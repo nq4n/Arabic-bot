@@ -37,6 +37,6 @@
 }
 
 .suggestion-text {
-  color: #4CAF50; /* A slightly different green for suggestions */
+  color: var(--primary);
   font-weight: 500;
 }

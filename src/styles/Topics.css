@@ -91,7 +91,11 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.9));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-secondary) 65%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 92%, transparent)
+  );
 }
 
 .topic-card > * {
@@ -101,7 +105,7 @@
 
 .topic-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .card-content {
@@ -150,8 +154,8 @@
 
 .card-actions {
   padding: 1rem 1.5rem;
-  background-color: rgba(255, 255, 255, 0.55);
-  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  background-color: color-mix(in srgb, var(--bg-card) 70%, transparent);
+  border-top: 1px solid var(--border-strong);
   display: flex;
   justify-content: space-between;
   align-items: center;

@@ -309,7 +309,7 @@
 }
 
 .level-box {
-  background-color: var(--bg-main); /* Lighter background for unselected */
+  background-color: var(--bg-card); /* Lighter background for unselected */
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   padding: 1rem;
@@ -326,14 +326,14 @@
 .level-box:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 .level-box.selected {
   background-color: var(--primary);
   color: var(--primary-icon); /* Text color for selected box */
   border-color: var(--primary);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 

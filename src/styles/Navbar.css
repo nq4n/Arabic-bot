@@ -14,29 +14,33 @@
   width: 100%;
   height: var(--nav-h);
   z-index: 100;
-  
+
   padding: 10px 0;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.92),
-    rgba(255, 255, 255, 0.75)
+    color-mix(in srgb, var(--bg-secondary) 92%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 72%, transparent)
   );
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 
   border-bottom: 1px solid var(--border-color);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-  
+  box-shadow: var(--shadow-sm);
+
   /* Performance-optimized slide transition */
   will-change: transform;
   transition: transform 0.2s linear;
   pointer-events: auto;
 }
 
-body.dark .navbar {
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.4);
+[data-theme='dark'] .navbar {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--bg-secondary) 92%, transparent),
+    color-mix(in srgb, var(--bg-secondary) 68%, transparent)
+  );
+  border-bottom: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-md);
 }
 
 .navbar.is-hidden {
@@ -76,7 +80,7 @@ main { padding-top: var(--nav-h); }
   font-weight: 800;
   color: var(--text-main);
   margin: 0;
-  text-shadow: 0 8px 18px rgba(15, 23, 42, 0.22);
+  text-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
 }
 
 .navbar-logo a {
@@ -101,7 +105,7 @@ main { padding-top: var(--nav-h); }
   border-radius: 9px;
   font-weight: 500;
   color: var(--text-main);
-  transition: background-color 0.1s ease, color 0.2s ease, transform 0.1s ease;
+  transition: background-color 0.1s ease, color 0.2s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 
 .navbar-links a.active::after {
@@ -110,13 +114,14 @@ main { padding-top: var(--nav-h); }
   inset: 0;
   border-radius: 999px;
   border: 1px solid var(--primary);
-  box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.2);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 .navbar-links a:hover {
   text-decoration: none !important;
   transform: translateY(-1px);
-  background-color: rgba(15, 118, 110, 0.08);
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
 .navbar-actions {
