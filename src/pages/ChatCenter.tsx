@@ -222,111 +222,111 @@ export default function ChatCenter() {
     <div className="chat-center-page" dir="rtl">
       <header className="chat-center-header">
         <h1>مركز الدردشة</h1>
-        <p>
-          الدردشة الخاصة بين المعلم والطالب، بالإضافة إلى التنسيق مع الإدارة عند
-          الحاجة.
-        </p>
+        <p>الدردشة الخاصة بين المعلم والطالب في واجهة تشبه أنظمة المحادثة المكتبية.</p>
       </header>
 
       <section className="chat-center-card">
-        <div className="chat-center-controls">
-          <div className="chat-peer-select">
-            <label htmlFor="peer-select">
-              {currentRole === "student" ? "اختر المعلم" : "اختر الطالب"}
-            </label>
-            <select
-              id="peer-select"
-              value={selectedPeerId ?? ""}
-              onChange={(event) => setSelectedPeerId(event.target.value || null)}
-              disabled={loading || peers.length === 0}
-            >
-              {peers.length === 0 && (
-                <option value="">لا يوجد مستخدمون</option>
+        <div className="chat-center-layout">
+          <aside className="chat-sidebar">
+            <h3>{currentRole === "student" ? "المعلمون" : "الطلاب"}</h3>
+            <div className="chat-sidebar-list">
+              {loading && <div className="chat-empty">جاري التحميل...</div>}
+              {!loading && peers.length === 0 && (
+                <div className="chat-empty">لا يوجد مستخدمون</div>
               )}
               {peers.map((peer) => (
-                <option key={peer.id} value={peer.id}>
-                  {getDisplayName(peer)}
-                </option>
+                <button
+                  key={peer.id}
+                  type="button"
+                  className={`chat-sidebar-item ${
+                    selectedPeerId === peer.id ? "is-active" : ""
+                  }`}
+                  onClick={() => setSelectedPeerId(peer.id)}
+                >
+                  <span className="chat-peer-name">{getDisplayName(peer)}</span>
+                  <span className="chat-peer-meta">
+                    {peer.role === "admin" ? "مسؤول" : peer.role === "teacher" ? "معلم" : "طالب"}
+                  </span>
+                </button>
               ))}
-            </select>
-          </div>
-
-          {currentRole !== "student" && selectedPeerId && (
-            <button
-              type="button"
-              className={`chat-toggle ${chatEnabled ? "is-enabled" : "is-disabled"}`}
-              onClick={handleToggleChat}
-            >
-              {chatEnabled ? "تعطيل الدردشة" : "تفعيل الدردشة"}
-            </button>
-          )}
-        </div>
-
-        {currentRole === "student" && !chatEnabled && (
-          <div className="chat-disabled-note">
-            قام المعلم بتعطيل الدردشة أثناء الحصة.
-          </div>
-        )}
-
-        {error && <div className="chat-error-banner">{error}</div>}
-
-        <div className="chat-thread">
-          {messages.length === 0 && (
-            <div className="chat-empty">ابدأ المحادثة بإرسال رسالة.</div>
-          )}
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`chat-bubble ${
-                message.sender_id === session?.user.id ? "is-sent" : "is-received"
-              }`}
-            >
-              <span className="chat-sender">
-                {message.sender_id === session?.user.id
-                  ? "أنت"
-                  : message.sender_name ||
-                    getDisplayName(selectedPeer) ||
-                    "المعلم"}
-              </span>
-              <p>{message.message}</p>
-              <span className="chat-time">
-                {new Date(message.created_at).toLocaleTimeString("ar-SA", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
             </div>
-          ))}
-        </div>
+          </aside>
 
-        <div className="chat-input-area">
-          <input
-            type="text"
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder={
-              chatEnabled
-                ? `اكتب رسالة إلى ${getDisplayName(selectedPeer)}...`
-                : "الدردشة معطلة حاليًا"
-            }
-            disabled={!chatEnabled || !selectedPeerId}
-          />
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={!chatEnabled || !input.trim() || !selectedPeerId}
-          >
-            إرسال
-          </button>
-        </div>
-      </section>
+          <div className="chat-main">
+            <div className="chat-center-controls">
+              <div className="chat-peer-title">
+                {selectedPeer ? getDisplayName(selectedPeer) : "اختر محادثة"}
+              </div>
+              {currentRole !== "student" && selectedPeerId && (
+                <button
+                  type="button"
+                  className={`chat-toggle ${chatEnabled ? "is-enabled" : "is-disabled"}`}
+                  onClick={handleToggleChat}
+                >
+                  {chatEnabled ? "تعطيل الدردشة" : "تفعيل الدردشة"}
+                </button>
+              )}
+            </div>
 
-      <section className="chat-center-note">
-        <h2>الدردشة التعاونية للطلاب</h2>
-        <p>
-          ستجد الدردشة الجماعية داخل درس "مناقشة قضية"، والدردشة الثنائية داخل
-          درس "النص الحواري" لممارسة الحوار بين طالبين.
-        </p>
+            {currentRole === "student" && !chatEnabled && (
+              <div className="chat-disabled-note">
+                قام المعلم بتعطيل الدردشة أثناء الحصة.
+              </div>
+            )}
+
+            {error && <div className="chat-error-banner">{error}</div>}
+
+            <div className="chat-thread">
+              {messages.length === 0 && (
+                <div className="chat-empty">ابدأ المحادثة بإرسال رسالة.</div>
+              )}
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`chat-bubble ${
+                    message.sender_id === session?.user.id ? "is-sent" : "is-received"
+                  }`}
+                >
+                  <span className="chat-sender">
+                    {message.sender_id === session?.user.id
+                      ? "أنت"
+                      : message.sender_name ||
+                        getDisplayName(selectedPeer) ||
+                        "المعلم"}
+                  </span>
+                  <p>{message.message}</p>
+                  <span className="chat-time">
+                    {new Date(message.created_at).toLocaleTimeString("ar-SA", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="chat-input-area">
+              <input
+                type="text"
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder={
+                  chatEnabled
+                    ? `اكتب رسالة إلى ${getDisplayName(selectedPeer)}...`
+                    : "الدردشة معطلة حاليًا"
+                }
+                disabled={!chatEnabled || !selectedPeerId}
+              />
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={!chatEnabled || !input.trim() || !selectedPeerId}
+              >
+                إرسال
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );
