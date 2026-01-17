@@ -44,6 +44,14 @@ type ActivitySubmission = {
   created_at: string;
 };
 
+type CollaborativeCompletion = {
+  id: number;
+  student_id: string;
+  topic_id: string;
+  activity_kind: string;
+  completed_at: string;
+};
+
 interface CsvRow {
   email: string;
   username?: string;
@@ -61,7 +69,11 @@ export default function TeacherPanel() {
   const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
     getLessonVisibility(topicIds)
   );
+  const [collaborativeVisibility, setCollaborativeVisibility] = useState<
+    Record<string, boolean>
+  >({});
   const [activitySubmissions, setActivitySubmissions] = useState<ActivitySubmission[]>([]);
+  const [collaborativeCompletions, setCollaborativeCompletions] = useState<CollaborativeCompletion[]>([]);
 
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -132,6 +144,22 @@ export default function TeacherPanel() {
         activityData = (data || []) as ActivitySubmission[];
       }
 
+      let completionData: CollaborativeCompletion[] = [];
+      if (studentIds.length > 0 || currentUserRole !== "teacher") {
+        let completionQuery = supabase
+          .from("collaborative_activity_completions")
+          .select("id, student_id, topic_id, activity_kind, completed_at")
+          .order("completed_at", { ascending: false });
+
+        if (currentUserRole === "teacher" && studentIds.length > 0) {
+          completionQuery = completionQuery.in("student_id", studentIds);
+        }
+
+        const { data, error: completionError } = await completionQuery;
+        if (completionError) throw completionError;
+        completionData = (data || []) as CollaborativeCompletion[];
+      }
+
       const subs = (submissions || []) as Submission[];
       const countsMap: Record<string, number> = {};
       subs.forEach((s) => {
@@ -147,6 +175,7 @@ export default function TeacherPanel() {
 
       setUsers(list);
       setActivitySubmissions(activityData);
+      setCollaborativeCompletions(completionData);
     } catch (err: any) {
       console.error("Error loading data:", err);
       setFormError(`حدث خطأ أثناء جلب البيانات: ${err.message}`);
@@ -186,6 +215,38 @@ export default function TeacherPanel() {
   useEffect(() => {
     setLessonVisibility(getLessonVisibility(topicIds));
   }, [topicIds]);
+
+  useEffect(() => {
+    const loadCollaborativeVisibility = async () => {
+      if (!currentUser || (currentUserRole !== "teacher" && currentUserRole !== "admin")) {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("lesson_section_visibility")
+        .select("topic_id, is_enabled")
+        .eq("teacher_id", currentUser.id)
+        .eq("section", "collaborative");
+
+      if (error) {
+        console.error("Error loading collaborative visibility:", error);
+        return;
+      }
+
+      const defaults: Record<string, boolean> = {};
+      topicIds.forEach((id) => {
+        defaults[id] = true;
+      });
+
+      (data || []).forEach((row) => {
+        defaults[row.topic_id] = row.is_enabled;
+      });
+
+      setCollaborativeVisibility(defaults);
+    };
+
+    loadCollaborativeVisibility();
+  }, [currentUser, currentUserRole, topicIds]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -413,11 +474,53 @@ export default function TeacherPanel() {
     }
   };
 
+  const handleDeleteCompletion = async (completionId: number) => {
+    try {
+      const { error } = await supabase
+        .from("collaborative_activity_completions")
+        .delete()
+        .eq("id", completionId);
+
+      if (error) throw error;
+
+      setCollaborativeCompletions((prev) =>
+        prev.filter((item) => item.id !== completionId)
+      );
+    } catch (err: any) {
+      setFormError(`تعذر حذف السجل: ${err.message}`);
+    }
+  };
+
   const handleVisibilityChange = (
     topicId: string,
     section: LessonSection,
     value: boolean
   ) => {
+    if (section === "collaborative") {
+      if (!currentUser) return;
+      setFormError(null);
+      supabase
+        .from("lesson_section_visibility")
+        .upsert(
+          {
+            teacher_id: currentUser.id,
+            topic_id: topicId,
+            section: "collaborative",
+            is_enabled: value,
+          },
+          { onConflict: "teacher_id,topic_id,section" }
+        )
+        .then(({ error }) => {
+          if (error) {
+            console.error("Error updating collaborative visibility:", error);
+            setFormError("??? ??????? ??? ????? ??? ??????.");
+            return;
+          }
+          setCollaborativeVisibility((prev) => ({ ...prev, [topicId]: value }));
+        });
+      return;
+    }
+
     const updated = updateLessonVisibility(topicIds, topicId, section, value);
     setLessonVisibility(updated);
   };
@@ -448,10 +551,12 @@ export default function TeacherPanel() {
               <div key={topic.id} className="topic-grid-item">
                 <h3 className="topic-title">{topic.title}</h3>
                 <div className="topic-sections">
-                  {(["lesson", "review", "evaluation"] as LessonSection[]).map(
+                  {(["lesson", "review", "evaluation", "activity", "collaborative"] as LessonSection[]).map(
                     (section) => (
                       <div key={`${topic.id}-${section}`} className="topic-section-item">
                         <label className="topic-section-label">
+                          {section === "collaborative" && "نشاط المناقشة"}
+                          {section === "activity" && "الأنشطة"}
                           {section === "lesson" && "الدرس"}
                           {section === "review" && "المراجعة"}
                           {section === "evaluation" && "الكتابة والتقييم"}
@@ -459,7 +564,11 @@ export default function TeacherPanel() {
                         <label className="toggle-switch">
                           <input
                             type="checkbox"
-                            checked={lessonVisibility[topic.id]?.[section] ?? true}
+                            checked={
+                              section === "collaborative"
+                                ? collaborativeVisibility[topic.id] ?? true
+                                : lessonVisibility[topic.id]?.[section] ?? true
+                            }
                             onChange={(e) =>
                               handleVisibilityChange(
                                 topic.id,
@@ -522,6 +631,61 @@ export default function TeacherPanel() {
                         {new Date(submission.created_at).toLocaleDateString(
                           "ar"
                         )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="card lesson-visibility-card">
+          <div className="lesson-visibility-header">
+            <h2>سجل إنهاء الأنشطة التعاونية</h2>
+            <p>يمكن حذف السجل لإعادة فتح النشاط للطالب.</p>
+          </div>
+          {loading ? (
+            <p>جاري تحميل السجلات...</p>
+          ) : collaborativeCompletions.length === 0 ? (
+            <p className="muted-note">لا يوجد سجلات للأنشطة التعاونية.</p>
+          ) : (
+            <div className="lesson-visibility-table-wrapper">
+              <table className="lesson-visibility-table">
+                <thead>
+                  <tr>
+                    <th>الطالب</th>
+                    <th>الموضوع</th>
+                    <th>نوع النشاط</th>
+                    <th>تاريخ الإنهاء</th>
+                    <th>إزالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {collaborativeCompletions.map((completion) => (
+                    <tr key={completion.id}>
+                      <td>
+                        {users.find((u) => u.id === completion.student_id)
+                          ?.username || "غير معروف"}
+                      </td>
+                      <td>
+                        {topics.find((t) => t.id === completion.topic_id)
+                          ?.title || completion.topic_id}
+                      </td>
+                      <td>{completion.activity_kind}</td>
+                      <td>
+                        {new Date(completion.completed_at).toLocaleDateString(
+                          "ar"
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="button button-compact button-destructive"
+                          onClick={() => handleDeleteCompletion(completion.id)}
+                        >
+                          حذف
+                        </button>
                       </td>
                     </tr>
                   ))}

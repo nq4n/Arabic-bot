@@ -10,7 +10,6 @@ import {
 import { supabase } from "../supabaseClient";
 import "../styles/Topic.css";
 import type { Session } from "@supabase/supabase-js";
-import CollaborativeChat from "../components/CollaborativeChat";
 import { logAdminNotification } from "../utils/adminNotifications";
 
 export default function Topic() {
@@ -31,6 +30,10 @@ export default function Topic() {
   const [session, setSession] = useState<Session | null>(null);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [collaborativeCompletion, setCollaborativeCompletion] = useState({
+    discussion: false,
+    dialogue: false,
+  });
 
   if (!topic) {
     return <div className="topic-page">الموضوع غير موجود</div>;
@@ -38,6 +41,8 @@ export default function Topic() {
 
   const isLessonActive = isLessonSectionActive(topicIds, topic.id, "lesson");
   const isReviewActive = isLessonSectionActive(topicIds, topic.id, "review");
+  const isActivityActive = isLessonSectionActive(topicIds, topic.id, "activity");
+  const [isCollaborativeActive, setIsCollaborativeActive] = useState(true);
   const completedActivities =
     activityProgress[topic.id]?.completedActivityIds ?? [];
   const activityCount = topic.activities.list.length;
@@ -52,6 +57,50 @@ export default function Topic() {
       setSession(session);
     });
   }, []);
+
+  useEffect(() => {
+    const loadCollaborativeVisibility = async () => {
+      if (!session || !topic) return;
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, added_by_teacher_id")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profileError) {
+        setIsCollaborativeActive(true);
+        return;
+      }
+
+      const teacherId =
+        profile?.role === "teacher" || profile?.role === "admin"
+          ? session.user.id
+          : profile?.added_by_teacher_id;
+
+      if (!teacherId) {
+        setIsCollaborativeActive(true);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("lesson_section_visibility")
+        .select("is_enabled")
+        .eq("teacher_id", teacherId)
+        .eq("topic_id", topic.id)
+        .eq("section", "collaborative")
+        .limit(1);
+
+      if (error) {
+        setIsCollaborativeActive(true);
+        return;
+      }
+
+      setIsCollaborativeActive(data?.[0]?.is_enabled ?? true);
+    };
+
+    loadCollaborativeVisibility();
+  }, [session, topic]);
 
   useEffect(() => {
     const fetchActivitySubmissions = async () => {
@@ -82,6 +131,30 @@ export default function Topic() {
     };
 
     fetchActivitySubmissions();
+  }, [session, topic]);
+
+  useEffect(() => {
+    const fetchCollaborativeCompletion = async () => {
+      if (!session || !topic) return;
+      const { data, error } = await supabase
+        .from("collaborative_activity_completions")
+        .select("activity_kind")
+        .eq("student_id", session.user.id)
+        .eq("topic_id", topic.id);
+
+      if (error) {
+        return;
+      }
+
+      const next = { discussion: false, dialogue: false };
+      (data || []).forEach((row) => {
+        if (row.activity_kind === "discussion") next.discussion = true;
+        if (row.activity_kind === "dialogue") next.dialogue = true;
+      });
+      setCollaborativeCompletion(next);
+    };
+
+    fetchCollaborativeCompletion();
   }, [session, topic]);
 
   const openActivityModal = (activity: Activity) => {
@@ -238,7 +311,8 @@ export default function Topic() {
             </div>
           </section>
 
-          <section className="topic-section card sequential-section">
+          {isActivityActive && !isDiscussingIssue && !isDialogueText && (
+            <section className="topic-section card sequential-section">
             <h2 className="section-title">
               <i className="fas fa-pencil-ruler icon"></i>{' '}
               {topic.activities.header}
@@ -289,13 +363,37 @@ export default function Topic() {
                 </li>
               ))}
             </ul>
-          </section>
-          {session && (isDiscussingIssue || isDialogueText) && (
-            <CollaborativeChat
-              topicId={topic.id}
-              mode={isDiscussingIssue ? "group" : "pair"}
-              session={session}
-            />
+            </section>
+          )}
+          {isActivityActive && isCollaborativeActive && isDiscussingIssue && (
+            <div className="activity-cta">
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => navigate(`/collaborative-activity/${topic.id}`)}
+                disabled={collaborativeCompletion.discussion}
+              >
+                الانتقال إلى نشاط المناقشة الجماعية
+              </button>
+              {collaborativeCompletion.discussion && (
+                <p className="muted-note">O¦U. OU,OU+OO­ U+O'OOú OU,U.U+OU,O'Oc.</p>
+              )}
+            </div>
+          )}
+          {isActivityActive && isCollaborativeActive && isDialogueText && (
+            <div className="activity-cta">
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => navigate(`/peer-dialogue/${topic.id}`)}
+                disabled={collaborativeCompletion.dialogue}
+              >
+                ابدأ نشاط الحوار مع زميل
+              </button>
+              {collaborativeCompletion.dialogue && (
+                <p className="muted-note">تم إنهاء نشاط الحوار.</p>
+              )}
+            </div>
           )}
         </div>
       </div>

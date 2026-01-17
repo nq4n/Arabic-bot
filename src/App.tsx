@@ -28,6 +28,8 @@ import StudentProgress from "./pages/StudentProgress";
 import AboutUs from "./pages/AboutUs";
 import FirstLoginChangePassword from "./components/FirstLoginChangePassword";
 import ChatCenter from "./pages/ChatCenter";
+import CollaborativeActivity from "./pages/CollaborativeActivity";
+import PeerDialogueActivity from "./pages/PeerDialogueActivity";
 
 export type UserRole = "student" | "teacher" | "admin" | null;
 
@@ -150,6 +152,22 @@ const AppContent = () => {
             element={
               <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <LessonReview />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/collaborative-activity/:topicId"
+            element={
+              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+                <CollaborativeActivity />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/peer-dialogue/:topicId"
+            element={
+              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+                <PeerDialogueActivity />
               </ProtectedRoute>
             }
           />

@@ -4,95 +4,61 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabaseClient";
 import "../styles/CollaborativeChat.css";
 
-type Profile = {
-  id: string;
-  username: string | null;
-  email: string | null;
-  role: "student" | "teacher" | "admin" | null;
-};
-
-type ConversationMessage = {
-  role: "student" | "teacher" | "admin" | "unknown";
+type DialogueMessage = {
+  role: string;
   userId: string;
   text: string;
   timestamp: string;
 };
 
-type CollaborativeChatSession = {
+type DialogueSession = {
   id: number;
   topic_id: string;
-  case_title: string;
-  conversation_log: ConversationMessage[] | null;
+  scenario_text: string;
+  conversation_log: DialogueMessage[] | null;
 };
 
-interface CollaborativeChatProps {
+interface PeerDialogueChatProps {
   topicId: string;
-  chatId: number;
+  sessionId: number;
   session: Session;
+  role: string;
+  scenarioText: string | null;
 }
 
 const CHAT_REFRESH_MS = 8000;
 
-const getDisplayName = (profile: Profile | null) =>
-  profile?.username || profile?.email || "المشارك";
-
-const getRoleLabel = (role: ConversationMessage["role"]) => {
-  if (role === "teacher") return "المعلم";
-  if (role === "admin") return "المشرف";
-  return "الطالب";
-};
-
-export default function CollaborativeChat({
+export default function PeerDialogueChat({
   topicId,
-  chatId,
+  sessionId,
   session,
-}: CollaborativeChatProps) {
+  role,
+  scenarioText,
+}: PeerDialogueChatProps) {
   const navigate = useNavigate();
-  const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
-  const [chatSession, setChatSession] = useState<CollaborativeChatSession | null>(
-    null
-  );
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [messages, setMessages] = useState<DialogueMessage[]>([]);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      const { data, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, username, email, role")
-        .eq("id", session.user.id)
-        .single();
-
-      if (profileError) {
-        setError("تعذر تحميل الملف الشخصي.");
-        return;
-      }
-
-      setCurrentProfile(data as Profile);
-    };
-
-    loadProfile();
-  }, [session.user.id]);
+  const [scenario, setScenario] = useState(scenarioText ?? "");
 
   const loadMessages = useCallback(async () => {
     const { data, error: messagesError } = await supabase
-      .from("collaborative_chat")
-      .select("id, topic_id, case_title, conversation_log")
-      .eq("id", chatId)
+      .from("dialogue_peer_sessions")
+      .select("id, topic_id, scenario_text, conversation_log")
+      .eq("id", sessionId)
       .eq("topic_id", topicId)
       .maybeSingle();
 
     if (messagesError) {
-      setError("تعذر تحميل المحادثة.");
+      setError("تعذر تحميل الحوار.");
       return;
     }
 
-    const sessionData = (data as CollaborativeChatSession | null) ?? null;
-    setChatSession(sessionData);
-    setMessages((sessionData?.conversation_log ?? []) as ConversationMessage[]);
-  }, [chatId, topicId]);
+    const sessionData = (data as DialogueSession | null) ?? null;
+    setScenario(sessionData?.scenario_text ?? scenarioText ?? "");
+    setMessages((sessionData?.conversation_log ?? []) as DialogueMessage[]);
+  }, [scenarioText, sessionId, topicId]);
 
   useEffect(() => {
     loadMessages();
@@ -104,17 +70,17 @@ export default function CollaborativeChat({
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const newMessage: ConversationMessage = {
-      role: currentProfile?.role ?? "unknown",
+    const newMessage: DialogueMessage = {
+      role,
       userId: session.user.id,
       text: input.trim(),
       timestamp: new Date().toISOString(),
     };
 
     const { error: sendError } = await supabase.rpc(
-      "append_collaborative_chat_message",
+      "append_dialogue_peer_message",
       {
-        _chat_id: chatId,
+        _session_id: sessionId,
         _message: newMessage,
       }
     );
@@ -128,7 +94,7 @@ export default function CollaborativeChat({
     loadMessages();
   };
 
-  const handleFinishDiscussion = async () => {
+  const handleFinishDialogue = async () => {
     if (isFinishing) return;
     setIsFinishing(true);
     setError(null);
@@ -139,13 +105,13 @@ export default function CollaborativeChat({
         {
           student_id: session.user.id,
           topic_id: topicId,
-          activity_kind: "discussion",
+          activity_kind: "dialogue",
         },
         { onConflict: "student_id,topic_id,activity_kind" }
       );
 
     if (finishError) {
-      setError("تعذر إنهاء النقاش.");
+      setError("تعذر إنهاء الحوار.");
       setIsFinishing(false);
       return;
     }
@@ -157,20 +123,17 @@ export default function CollaborativeChat({
     <section className="collaborative-chat" dir="rtl">
       <header className="collaborative-chat-header">
         <div>
-          <h3>مناقشة القضية</h3>
-          <p>
-            {chatSession?.case_title
-              ? `القضية المختارة: ${chatSession.case_title}`
-              : "ابدأ الحوار مع زملائك بعد اختيار القضية."}
-          </p>
+          <h3>حوار زميل</h3>
+          <p>{scenario || "سيظهر سيناريو الحوار هنا."}</p>
+          <p>دورك هو: {role}</p>
         </div>
         <button
           type="button"
           className="button button-compact"
-          onClick={handleFinishDiscussion}
+          onClick={handleFinishDialogue}
           disabled={isFinishing}
         >
-          {isFinishing ? "جاري الإنهاء..." : "إنهاء النقاش"}
+          {isFinishing ? "جاري الإنهاء..." : "إنهاء الحوار"}
         </button>
       </header>
 
@@ -179,7 +142,7 @@ export default function CollaborativeChat({
       <>
         <div className="chat-thread">
           {messages.length === 0 && (
-            <div className="chat-empty">لا توجد رسائل بعد، ابدأ النقاش.</div>
+            <div className="chat-empty">لا توجد رسائل بعد.</div>
           )}
           {messages.map((message, index) => (
             <div
@@ -189,9 +152,7 @@ export default function CollaborativeChat({
               }`}
             >
               <span className="chat-sender">
-                {message.userId === session.user.id
-                  ? "أنا"
-                  : `${getRoleLabel(message.role)} ${message.userId.slice(0, 6)}`}
+                {message.userId === session.user.id ? "أنت" : message.role}
               </span>
               <p>{message.text}</p>
               <span className="chat-time">
@@ -209,7 +170,7 @@ export default function CollaborativeChat({
             type="text"
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder={`اكتب رسالتك إلى ${getDisplayName(currentProfile)}...`}
+            placeholder="اكتب رسالتك هنا..."
           />
           <button type="button" onClick={handleSend} disabled={!input.trim()}>
             إرسال

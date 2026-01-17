@@ -1,4 +1,9 @@
-export type LessonSection = "lesson" | "review" | "evaluation";
+export type LessonSection =
+  | "lesson"
+  | "review"
+  | "evaluation"
+  | "activity"
+  | "collaborative";
 
 export type LessonVisibility = Record<
   string,
@@ -6,6 +11,8 @@ export type LessonVisibility = Record<
     lesson: boolean;
     review: boolean;
     evaluation: boolean;
+    activity: boolean;
+    collaborative: boolean;
   }
 >;
 
@@ -49,6 +56,8 @@ const normalizeVisibility = (
       lesson: normalized[topicId]?.lesson ?? true,
       review: normalized[topicId]?.review ?? true,
       evaluation: normalized[topicId]?.evaluation ?? true,
+      activity: normalized[topicId]?.activity ?? true,
+      collaborative: normalized[topicId]?.collaborative ?? true,
     };
   });
   return normalized;
