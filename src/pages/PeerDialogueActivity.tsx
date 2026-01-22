@@ -3,8 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabaseClient";
 import { topics } from "../data/topics";
-import { isLessonSectionActive } from "../utils/lessonSettings";
+import { LessonVisibility, buildLessonVisibilityFromRows, getLessonVisibility } from "../utils/lessonSettings";
 import PeerDialogueChat from "../components/PeerDialogueChat";
+import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/Topic.css";
 
 export default function PeerDialogueActivity() {
@@ -13,28 +14,41 @@ export default function PeerDialogueActivity() {
   const topic = topics.find((t) => t.id === topicId);
   const topicIds = useMemo(() => topics.map((t) => t.id), []);
   const [session, setSession] = useState<Session | null>(null);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
+  const [isVisibilityLoading, setIsVisibilityLoading] = useState(true);
+  const [isCompletionLoading, setIsCompletionLoading] = useState(true);
+  const [isMatchLoading, setIsMatchLoading] = useState(true);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [scenarioText, setScenarioText] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "waiting" | "matched">("idle");
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [isCollaborativeActive, setIsCollaborativeActive] = useState(true);
+  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
+    getLessonVisibility(topicIds)
+  );
   const [isCompleted, setIsCompleted] = useState(false);
+  const isPageLoading =
+    isSessionLoading || isVisibilityLoading || isCompletionLoading || isMatchLoading;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setIsSessionLoading(false);
     });
   }, []);
 
   const isActivityActive = topic
-    ? isLessonSectionActive(topicIds, topic.id, "activity")
+    ? lessonVisibility[topic.id]?.activity ?? true
     : false;
 
   useEffect(() => {
-    const loadCollaborativeVisibility = async () => {
-      if (!session || !topic) return;
+    const loadLessonVisibilitySettings = async () => {
+      setIsVisibilityLoading(true);
+      if (!session || !topic) {
+        setIsVisibilityLoading(false);
+        return;
+      }
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
@@ -43,7 +57,7 @@ export default function PeerDialogueActivity() {
         .single();
 
       if (profileError) {
-        setIsCollaborativeActive(true);
+        setIsVisibilityLoading(false);
         return;
       }
 
@@ -53,31 +67,34 @@ export default function PeerDialogueActivity() {
           : profile?.added_by_teacher_id;
 
       if (!teacherId) {
-        setIsCollaborativeActive(true);
+        setIsVisibilityLoading(false);
         return;
       }
 
       const { data, error } = await supabase
-        .from("lesson_section_visibility")
-        .select("is_enabled")
-        .eq("teacher_id", teacherId)
-        .eq("topic_id", topic.id)
-        .eq("section", "collaborative")
-        .limit(1);
+        .from("lesson_visibility_settings")
+        .select("topic_id, settings")
+        .eq("teacher_id", teacherId);
 
       if (error) {
-        setIsCollaborativeActive(true);
+        setIsVisibilityLoading(false);
         return;
       }
 
-      setIsCollaborativeActive(data?.[0]?.is_enabled ?? true);
+      const next = buildLessonVisibilityFromRows(topicIds, data || []);
+      setLessonVisibility(next);
+      setIsVisibilityLoading(false);
     };
 
-    loadCollaborativeVisibility();
-  }, [session, topic]);
+    loadLessonVisibilitySettings();
+  }, [session, topic, topicIds]);
 
   const loadCompletion = useCallback(async () => {
-    if (!session || !topic) return;
+    setIsCompletionLoading(true);
+    if (!session || !topic) {
+      setIsCompletionLoading(false);
+      return;
+    }
     const { data, error: completionError } = await supabase
       .from("collaborative_activity_completions")
       .select("id")
@@ -86,8 +103,12 @@ export default function PeerDialogueActivity() {
       .eq("activity_kind", "dialogue")
       .maybeSingle();
 
-    if (completionError) return;
+    if (completionError) {
+      setIsCompletionLoading(false);
+      return;
+    }
     setIsCompleted(!!data);
+    setIsCompletionLoading(false);
   }, [session, topic]);
 
   useEffect(() => {
@@ -95,13 +116,18 @@ export default function PeerDialogueActivity() {
   }, [loadCompletion]);
 
   const loadExistingSession = useCallback(async () => {
-    if (!session || !topic) return;
+    if (!session || !topic) {
+      setIsMatchLoading(false);
+      return;
+    }
+    setIsMatchLoading(true);
     const { data, error: sessionError } = await supabase.rpc(
       "get_dialogue_peer_session",
       { _topic_id: topic.id }
     );
 
     if (sessionError) {
+      setIsMatchLoading(false);
       return;
     }
 
@@ -112,6 +138,7 @@ export default function PeerDialogueActivity() {
       setScenarioText(payload.scenario_text ?? null);
       setStatus("matched");
     }
+    setIsMatchLoading(false);
   }, [session, topic]);
 
   useEffect(() => {
@@ -129,14 +156,14 @@ export default function PeerDialogueActivity() {
     );
 
     if (startError) {
-      setError("تعذر بدء الحوار.");
+      setError("تعذر بدء الحوار. حاول مرة أخرى.");
       setIsStarting(false);
       return;
     }
 
     const payload = Array.isArray(data) ? data[0] : data;
     if (!payload) {
-      setError("تعذر بدء الحوار.");
+      setError("تعذر بدء الحوار. حاول مرة أخرى.");
       setIsStarting(false);
       return;
     }
@@ -173,24 +200,44 @@ export default function PeerDialogueActivity() {
   }, [session, status, topic]);
 
   if (!topic) {
-    return <div className="topic-page">الموضوع غير متوفر.</div>;
+    return <div className="topic-page">عذرًا، الدرس غير موجود.</div>;
+  }
+
+  if (isPageLoading) {
+    return (
+      <div className="topic-page" dir="rtl">
+        <header className="topic-main-header page-header">
+          <SkeletonHeader titleWidthClass="skeleton-w-40" subtitleWidthClass="skeleton-w-70" />
+        </header>
+        <div className="topic-content-wrapper">
+          <div className="vertical-stack">
+            <SkeletonSection lines={3} />
+            <SkeletonSection lines={3} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!session) {
     return (
       <div className="topic-page" dir="rtl">
         <div className="not-found-container">
-          <h1>جاري تحميل الجلسة...</h1>
+          <h1>جاري التحقق من الحساب...</h1>
         </div>
       </div>
     );
   }
 
+  const isCollaborativeActive = topic
+    ? lessonVisibility[topic.id]?.collaborative ?? true
+    : true;
+
   if (!isActivityActive || !isCollaborativeActive) {
     return (
       <div className="topic-page" dir="rtl">
         <div className="not-found-container">
-          <h1>النشاط غير متاح.</h1>
+          <h1>هذا النشاط غير متاح الآن.</h1>
           <button className="button" onClick={() => navigate(-1)}>
             رجوع
           </button>
@@ -203,7 +250,7 @@ export default function PeerDialogueActivity() {
     return (
       <div className="topic-page" dir="rtl">
         <div className="not-found-container">
-          <h1>تم إنهاء نشاط الحوار.</h1>
+          <h1>أحسنت! أنهيت نشاط الحوار لهذا الدرس.</h1>
           <button className="button" onClick={() => navigate(`/topic/${topic.id}`)}>
             العودة إلى الدرس
           </button>
@@ -214,8 +261,9 @@ export default function PeerDialogueActivity() {
 
   return (
     <div className="topic-page" dir="rtl">
-      <header className="topic-main-header">
-        <h1>حوار زميل: {topic.title}</h1>
+      <header className="topic-main-header page-header">
+        <h1 className="page-title">نشاط الحوار: {topic.title}</h1>
+        <p className="page-subtitle">حوار ثنائي منظّم مع زميلك لاستخلاص الأفكار وتبادل الأدوار.</p>
       </header>
 
       <div className="topic-content-wrapper">
@@ -230,12 +278,12 @@ export default function PeerDialogueActivity() {
             />
           ) : (
             <section className="topic-section card sequential-section">
-              <h2 className="section-title">ابدأ الحوار مع زميل</h2>
+              <h2 className="section-title">ابدأ الحوار مع زميلك</h2>
               <p className="muted-note">
-                سيتم اختيار زميل وسيناريو بشكل عشوائي عند البدء.
+                ستدخلون غرفة حوار ثنائية، وعند انضمام زميلك ستظهر لكم فكرة الحوار والأدوار. التزم بآداب النقاش وتبادل الأدوار حتى تكتمل المهمة.
               </p>
               {status === "waiting" && (
-                <p className="muted-note">بانتظار طالب آخر...</p>
+                <p className="muted-note">بانتظار انضمام طالب آخر...</p>
               )}
               {error && <div className="case-error">{error}</div>}
               <div className="case-actions">
@@ -245,7 +293,7 @@ export default function PeerDialogueActivity() {
                   onClick={handleStart}
                   disabled={isStarting || status === "waiting"}
                 >
-                  {isStarting ? "جاري البدء..." : "بدء الحوار"}
+                  {isStarting ? "جاري بدء الحوار..." : "ابدأ الحوار"}
                 </button>
               </div>
             </section>

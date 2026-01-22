@@ -30,12 +30,12 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password, role, addedBy } = await req.json();
+    const { email, password, role, addedBy, full_name, grade } = await req.json();
 
     if (!email || !password || !role) {
       return new Response(
-        JSON.stringify({ error: "email, password, role مطلوبة" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ success: false, error: "email, password, role مطلوبة" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -80,16 +80,21 @@ serve(async (req) => {
       email,
       password,
       email_confirm: true, // لو حاب تفرض تأكيد إيميل خله false
+      // No user_metadata here? Wait, previous code had it.
+      // Checking previous code...
+      // Line 83: user_metadata: { username: generatedUsername, role },
       user_metadata: {
         username: generatedUsername,
         role,
+        full_name,
+        grade, // Add grade here
       },
     });
 
     if (error || !data?.user) {
       return new Response(
-        JSON.stringify({ error: error?.message ?? "فشل إنشاء المستخدم" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: error?.message ?? "فشل إنشاء المستخدم" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -103,12 +108,16 @@ serve(async (req) => {
       role: string;
       must_change_password: boolean;
       added_by_teacher_id?: string | null; // Make it optional
+      full_name?: string | null;
+      grade?: string | null; // Add grade here
     } = {
       id: user.id,
       email,
       username: generatedUsername,
       role,
       must_change_password: true, // أو false حسب نظامك
+      full_name,
+      grade, // Pass grade here
     };
 
     // If the new user is a student and addedBy is provided, record the teacher's ID
@@ -122,22 +131,20 @@ serve(async (req) => {
 
     if (profileError) {
       return new Response(
-        JSON.stringify({ error: profileError.message ?? "Profile upsert error" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: profileError.message ?? "Profile upsert error" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     return new Response(
       JSON.stringify({ success: true, userId: user.id, username: generatedUsername }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (err) {
     console.error("Unexpected error in create-user function:", err);
     return new Response(
-      JSON.stringify({ error: "Unexpected error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: "Unexpected error" }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 });
-
-

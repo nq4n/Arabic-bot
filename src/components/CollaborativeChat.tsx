@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabaseClient";
+import { logAdminNotification } from "../utils/adminNotifications";
+import { emitAchievementToast } from "../utils/achievementToast";
+import { trackCollaborativeCompletion } from "../utils/studentTracking";
 import "../styles/CollaborativeChat.css";
 
 type Profile = {
@@ -133,21 +136,52 @@ export default function CollaborativeChat({
     setIsFinishing(true);
     setError(null);
 
-    const { error: finishError } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("collaborative_activity_completions")
-      .upsert(
-        {
-          student_id: session.user.id,
-          topic_id: topicId,
-          activity_kind: "discussion",
-        },
-        { onConflict: "student_id,topic_id,activity_kind" }
-      );
+      .select("id")
+      .eq("student_id", session.user.id)
+      .eq("topic_id", topicId)
+      .eq("activity_kind", "discussion")
+      .maybeSingle();
 
-    if (finishError) {
-      setError("تعذر إنهاء النقاش.");
+    if (existingError) {
+      setError("تعذر إنهاء المناقشة.");
       setIsFinishing(false);
       return;
+    }
+
+    if (!existing) {
+      const { error: finishError } = await supabase
+        .from("collaborative_activity_completions")
+        .upsert(
+          {
+            student_id: session.user.id,
+            topic_id: topicId,
+            activity_kind: "discussion",
+          },
+          { onConflict: "student_id,topic_id,activity_kind" }
+        );
+
+      if (finishError) {
+        setError("تعذر إنهاء المناقشة.");
+        setIsFinishing(false);
+        return;
+      }
+
+      await logAdminNotification({
+        recipientId: session.user.id,
+        actorId: session.user.id,
+        actorRole: "student",
+        message: "تم منحك 5 نقاط لإكمال نشاط المناقشة الجماعية.",
+        category: "points",
+      });
+      await trackCollaborativeCompletion(session.user.id, topicId, "discussion");
+      emitAchievementToast({
+        title: "تم احتساب النقاط",
+        message: "رائع! حصلت على 5 نقاط لإكمال المناقشة الجماعية.",
+        points: 5,
+        tone: "success",
+      });
     }
 
     navigate(`/topic/${topicId}`);

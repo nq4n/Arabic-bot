@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { SkeletonSection } from '../components/SkeletonBlocks';
 import '../styles/MySubmissions.css';
 
 type Submission = {
@@ -63,13 +64,13 @@ export default function MySubmissions() {
 
   return (
     <div className='submissions-page' dir='rtl'>
-      <header className='submissions-header'>
-        <h1>تسليماتي</h1>
-        <p>هنا يمكنك عرض جميع كتاباتك السابقة ونتائج تقييمها.</p>
+      <header className='submissions-header page-header'>
+        <h1 className="page-title">تسليماتي</h1>
+        <p className="page-subtitle">هنا يمكنك عرض جميع كتاباتك السابقة ونتائج تقييمها.</p>
       </header>
 
-      <div className='card submissions-list'>
-        {loading && <p>...جاري تحميل التسليمات</p>}
+      <div className='card submissions-list' aria-busy={loading}>
+        {loading && <SkeletonSection lines={5} />}
         {error && <p className='error-message'>{error}</p>}
         {!loading && !error && (
           <table>

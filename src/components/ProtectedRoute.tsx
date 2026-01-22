@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { ReactElement } from "react";
 import type { UserRole } from "../App"; // or copy the type if this import causes issues
+import SkeletonPage from "./SkeletonPage";
 
 interface ProtectedRouteProps {
   userRole: UserRole;
@@ -18,7 +19,7 @@ export default function ProtectedRoute({
 
   // NEW: Wait until the role is loaded before doing anything
   if (isRoleLoading) {
-    return <div className="container">تحميل...</div>; 
+    return <SkeletonPage />;
   }
 
   // 1) Not logged in -> go to login

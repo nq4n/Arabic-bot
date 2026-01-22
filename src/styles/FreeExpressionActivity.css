@@ -1,0 +1,328 @@
+.free-expression-page {
+  padding: 2.5rem 1.5rem 3rem;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.2), transparent 45%),
+    radial-gradient(circle at 92% 15%, rgba(129, 140, 248, 0.16), transparent 45%),
+    radial-gradient(circle at 18% 85%, rgba(16, 185, 129, 0.16), transparent 45%),
+    #f8fafc;
+}
+
+.free-expression-header {
+  max-width: 1100px;
+  margin: 0 auto 2rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.free-expression-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.free-expression-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.free-expression-stepper {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.free-expression-step-btn {
+  text-align: right;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.75rem 0.9rem;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 0.6rem;
+  align-items: center;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.free-expression-step-btn.active {
+  border-color: rgba(15, 118, 110, 0.5);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.free-expression-step-index {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  background: var(--accent-soft);
+  color: var(--text-main);
+}
+
+.free-expression-step-btn.active .free-expression-step-index {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  color: #fff;
+}
+
+.free-expression-step-title {
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.free-expression-slide-frame {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+}
+
+.free-expression-slide {
+  display: grid;
+  gap: 1rem;
+}
+
+.free-expression-slide-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--text-main);
+}
+
+.free-expression-card {
+  border-radius: calc(var(--border-radius) + 4px);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 45px -40px rgba(15, 23, 42, 0.35);
+}
+
+.prompt-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.prompt-carousel {
+  display: grid;
+  gap: 1rem;
+}
+
+.prompt-carousel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.free-expression-arrow {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.prompt-carousel-count {
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.prompt-carousel-card {
+  display: grid;
+}
+
+.prompt-card {
+  text-align: right;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.6rem;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.prompt-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+
+.prompt-card.active {
+  border-color: rgba(15, 118, 110, 0.5);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.prompt-card:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.35);
+  outline-offset: 2px;
+}
+
+.prompt-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.prompt-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 900;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: rgba(15, 118, 110, 0.1);
+  color: var(--primary-dark);
+}
+
+.prompt-type.image {
+  background: rgba(14, 116, 144, 0.12);
+  border-color: rgba(14, 116, 144, 0.2);
+  color: #0e7490;
+}
+
+.prompt-type.case {
+  background: rgba(234, 88, 12, 0.12);
+  border-color: rgba(234, 88, 12, 0.2);
+  color: #c2410c;
+}
+
+.prompt-type.scenario {
+  background: rgba(109, 40, 217, 0.12);
+  border-color: rgba(109, 40, 217, 0.2);
+  color: #6d28d9;
+}
+
+.prompt-type.free {
+  background: rgba(21, 128, 61, 0.12);
+  border-color: rgba(21, 128, 61, 0.2);
+  color: #15803d;
+}
+
+.prompt-title {
+  font-weight: 900;
+  color: var(--text-main);
+}
+
+.prompt-description {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.prompt-thumb {
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.prompt-preview {
+  display: grid;
+  gap: 1rem;
+}
+
+.prompt-preview-header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.prompt-detail {
+  border-radius: 12px;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  background: rgba(15, 118, 110, 0.08);
+  padding: 0.75rem 0.85rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.prompt-detail-label {
+  font-weight: 900;
+  color: var(--primary-dark);
+  font-size: 0.9rem;
+}
+
+.prompt-preview-image {
+  width: 100%;
+  height: 240px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.free-expression-editor {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.free-expression-label {
+  font-weight: 900;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.free-expression-editor textarea {
+  width: 100%;
+  min-height: 230px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  padding: 0.85rem;
+  font-family: inherit;
+  background: #fff;
+}
+
+.free-expression-actions {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.free-expression-slide-actions {
+  max-width: 1100px;
+  margin: 1.5rem auto 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.free-expression-slide-count {
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.free-expression-alert {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.free-expression-alert.is-error {
+  background: color-mix(in srgb, var(--destructive) 18%, transparent);
+  color: var(--destructive);
+}
+
+.free-expression-alert.is-success {
+  background: color-mix(in srgb, #16a34a 18%, transparent);
+  color: #16a34a;
+}

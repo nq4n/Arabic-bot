@@ -1,33 +1,111 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { topics } from "../data/topics";
-import { isLessonSectionActive, markLessonCompleted } from "../utils/lessonSettings";
-import "../styles/LessonReview.css"; 
+import { LessonVisibility, buildLessonVisibilityFromRows, getLessonVisibility, markLessonCompleted } from "../utils/lessonSettings";
+import "../styles/LessonReview.css";
+import { supabase } from "../supabaseClient";
 import Chat from '../components/Chat';
+import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 
 export default function LessonReview() {
   const { topicId } = useParams<{ topicId: string }>();
   const navigate = useNavigate();
   const topic = topics.find((t) => t.id === topicId);
   const topicIds = useMemo(() => topics.map((t) => t.id), []);
+  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
+    getLessonVisibility(topicIds)
+  );
+  const [isLoading, setIsLoading] = useState(true);
 
+  useEffect(() => {
+    const loadLessonVisibilitySettings = async () => {
+      setIsLoading(true);
+      if (!topic) {
+        setIsLoading(false);
+        return;
+      }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData.session;
+      if (!session) {
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, added_by_teacher_id")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profileError) {
+        setIsLoading(false);
+        return;
+      }
+
+      const teacherId =
+        profile?.role === "teacher" || profile?.role === "admin"
+          ? session.user.id
+          : profile?.added_by_teacher_id;
+
+      if (!teacherId) {
+        setIsLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("lesson_visibility_settings")
+        .select("topic_id, settings")
+        .eq("teacher_id", teacherId);
+
+      if (error) {
+        setIsLoading(false);
+        return;
+      }
+
+      const next = buildLessonVisibilityFromRows(topicIds, data || []);
+      setLessonVisibility(next);
+      setIsLoading(false);
+    };
+
+    loadLessonVisibilitySettings();
+  }, [topic, topicIds]);
+
+  useEffect(() => {
+    if (!topic) return;
+    markLessonCompleted(topicIds, topic.id);
+  }, [topic?.id, topicIds]);
   if (!topic) {
     return <div className="review-page">الموضوع غير موجود</div>;
   }
 
-  const isReviewActive = isLessonSectionActive(topicIds, topic.id, "review");
-  const isEvaluationActive = isLessonSectionActive(topicIds, topic.id, "evaluation");
+  const isReviewActive = lessonVisibility[topic.id]?.review ?? true;
+  const isEvaluationActive = lessonVisibility[topic.id]?.evaluation ?? true;
 
-  useEffect(() => {
-    markLessonCompleted(topicIds, topic.id);
-  }, [topic.id, topicIds]);
+  if (isLoading) {
+    return (
+      <div className="review-page" dir="rtl">
+        <header className="review-header page-header">
+          <SkeletonHeader titleWidthClass="skeleton-w-40" subtitleWidthClass="skeleton-w-70" />
+        </header>
+        <div className="review-grid">
+          <div className="review-column">
+            <SkeletonSection lines={4} />
+            <SkeletonSection lines={3} />
+          </div>
+          <div className="review-column">
+            <SkeletonSection lines={4} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isReviewActive) {
     return (
       <div className="review-page" dir="rtl">
-        <header className="review-header">
-          <h1>قسم المراجعة غير متاح حاليًا</h1>
-          <p>تم إيقاف هذا القسم من قبل المعلم. يرجى الرجوع لاحقًا.</p>
+        <header className="review-header page-header">
+          <h1 className="page-title">قسم المراجعة غير متاح حاليًا</h1>
+          <p className="page-subtitle">تم إيقاف هذا القسم من قبل المعلم. يرجى الرجوع لاحقًا.</p>
         </header>
         <div className="page-actions">
           <button className="button button-secondary" onClick={() => navigate("/")}>
@@ -68,9 +146,9 @@ export default function LessonReview() {
 
   return (
     <div className="review-page" dir="rtl">
-      <header className="review-header">
-        <h1>مراجعة الدرس: {topic.title}</h1>
-        <p>قبل أن تبدأ الكتابة، دعنا نراجع أهم النقاط ونتفاعل مع المساعد الذكي.</p>
+      <header className="review-header page-header">
+        <h1 className="page-title">مراجعة الدرس: {topic.title}</h1>
+        <p className="page-subtitle">قبل أن تبدأ الكتابة، دعنا نراجع أهم النقاط ونتفاعل مع المساعد الذكي.</p>
       </header>
 
       <div className="review-grid">
@@ -130,5 +208,4 @@ export default function LessonReview() {
     </div>
   );
 }
-
 

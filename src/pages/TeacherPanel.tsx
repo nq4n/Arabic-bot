@@ -3,11 +3,13 @@ import { supabase } from "../supabaseClient";
 import Papa from "papaparse";
 import type { ParseResult } from "papaparse";
 import { topics } from "../data/topics";
+import { SkeletonSection } from "../components/SkeletonBlocks";
 import {
   LessonSection,
   LessonVisibility,
   getLessonVisibility,
-  updateLessonVisibility,
+  buildLessonVisibilityFromRows,
+  VISIBILITY_STORAGE_KEY,
 } from "../utils/lessonSettings";
 import "../styles/global.css";
 import "../styles/Navbar.css";
@@ -20,6 +22,7 @@ type UserRole = "student" | "teacher" | "admin" | null;
 type Profile = {
   id: string;
   username: string | null;
+  full_name?: string | null;
   email: string | null;
   role: UserRole;
   must_change_password: boolean;
@@ -35,29 +38,19 @@ type Submission = {
   student_id: string;
 };
 
-type ActivitySubmission = {
-  id: number;
-  student_id: string;
-  topic_id: string;
-  activity_id: number;
-  response_text: string | null;
-  created_at: string;
-};
-
-type CollaborativeCompletion = {
-  id: number;
-  student_id: string;
-  topic_id: string;
-  activity_kind: string;
-  completed_at: string;
-};
-
 interface CsvRow {
   email: string;
   username?: string;
+  full_name?: string; // Added full_name
+  grade?: string; // Added grade
   role: UserRole;
   password: string;
 }
+
+const getDisplayName = (
+  profile: { full_name?: string | null; username?: string | null; email?: string | null } | null,
+  fallback = "—"
+) => profile?.full_name || profile?.username || profile?.email || fallback;
 
 export default function TeacherPanel() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -69,20 +62,18 @@ export default function TeacherPanel() {
   const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
     getLessonVisibility(topicIds)
   );
-  const [collaborativeVisibility, setCollaborativeVisibility] = useState<
-    Record<string, boolean>
-  >({});
-  const [activitySubmissions, setActivitySubmissions] = useState<ActivitySubmission[]>([]);
-  const [collaborativeCompletions, setCollaborativeCompletions] = useState<CollaborativeCompletion[]>([]);
+
 
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadSuccess, setUploadSuccess, ] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   const [newEmail, setNewEmail] = useState("");
+  const [newFullName, setNewFullName] = useState("");
   const [newRole, setNewRole] = useState<UserRole>("student");
   const [newPassword, setNewPassword] = useState("123456789");
+  const [newGrade, setNewGrade] = useState(""); // New state for grade
   const [addingUser, setAddingUser] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithStats | null>(null);
@@ -96,7 +87,7 @@ export default function TeacherPanel() {
     try {
       let profilesQuery = supabase
         .from("profiles")
-        .select("id, username, email, role, must_change_password, added_by_teacher_id")
+        .select("id, username, full_name, email, role, must_change_password, added_by_teacher_id")
         .order("username", { ascending: true });
 
       if (currentUserRole === "teacher" && currentUser?.id) {
@@ -104,7 +95,6 @@ export default function TeacherPanel() {
           .eq("role", "student")
           .eq("added_by_teacher_id", currentUser.id);
       }
-
       const { data: profiles, error: profilesError } = await profilesQuery;
 
       if (profilesError) throw profilesError;
@@ -128,38 +118,6 @@ export default function TeacherPanel() {
         submissions = (data || []) as Submission[];
       }
 
-      let activityData: ActivitySubmission[] = [];
-      if (studentIds.length > 0 || currentUserRole !== "teacher") {
-        let activityQuery = supabase
-          .from("activity_submissions")
-          .select("id, student_id, topic_id, activity_id, response_text, created_at")
-          .order("created_at", { ascending: false });
-
-        if (currentUserRole === "teacher" && studentIds.length > 0) {
-          activityQuery = activityQuery.in("student_id", studentIds);
-        }
-
-        const { data, error: activityError } = await activityQuery;
-        if (activityError) throw activityError;
-        activityData = (data || []) as ActivitySubmission[];
-      }
-
-      let completionData: CollaborativeCompletion[] = [];
-      if (studentIds.length > 0 || currentUserRole !== "teacher") {
-        let completionQuery = supabase
-          .from("collaborative_activity_completions")
-          .select("id, student_id, topic_id, activity_kind, completed_at")
-          .order("completed_at", { ascending: false });
-
-        if (currentUserRole === "teacher" && studentIds.length > 0) {
-          completionQuery = completionQuery.in("student_id", studentIds);
-        }
-
-        const { data, error: completionError } = await completionQuery;
-        if (completionError) throw completionError;
-        completionData = (data || []) as CollaborativeCompletion[];
-      }
-
       const subs = (submissions || []) as Submission[];
       const countsMap: Record<string, number> = {};
       subs.forEach((s) => {
@@ -174,8 +132,7 @@ export default function TeacherPanel() {
       }));
 
       setUsers(list);
-      setActivitySubmissions(activityData);
-      setCollaborativeCompletions(completionData);
+
     } catch (err: any) {
       console.error("Error loading data:", err);
       setFormError(`حدث خطأ أثناء جلب البيانات: ${err.message}`);
@@ -217,35 +174,26 @@ export default function TeacherPanel() {
   }, [topicIds]);
 
   useEffect(() => {
-    const loadCollaborativeVisibility = async () => {
+    const loadLessonVisibilitySettings = async () => {
       if (!currentUser || (currentUserRole !== "teacher" && currentUserRole !== "admin")) {
         return;
       }
 
       const { data, error } = await supabase
-        .from("lesson_section_visibility")
-        .select("topic_id, is_enabled")
-        .eq("teacher_id", currentUser.id)
-        .eq("section", "collaborative");
+        .from("lesson_visibility_settings")
+        .select("topic_id, settings")
+        .eq("teacher_id", currentUser.id);
 
       if (error) {
-        console.error("Error loading collaborative visibility:", error);
+        console.error("Error loading lesson visibility settings:", error);
         return;
       }
 
-      const defaults: Record<string, boolean> = {};
-      topicIds.forEach((id) => {
-        defaults[id] = true;
-      });
-
-      (data || []).forEach((row) => {
-        defaults[row.topic_id] = row.is_enabled;
-      });
-
-      setCollaborativeVisibility(defaults);
+      const next = buildLessonVisibilityFromRows(topicIds, data || []);
+      setLessonVisibility(next);
     };
 
-    loadCollaborativeVisibility();
+    loadLessonVisibilitySettings();
   }, [currentUser, currentUserRole, topicIds]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -271,7 +219,7 @@ export default function TeacherPanel() {
         let errorList: string[] = [];
 
         for (const user of usersToCreate) {
-          const { email, role, password } = user;
+          const { email, role, password, full_name, grade } = user;
           if (!email || !role || !password) {
             console.warn("Skipping incomplete row in CSV:", user);
             continue;
@@ -283,25 +231,37 @@ export default function TeacherPanel() {
               password: string;
               role: UserRole;
               addedBy?: string;
+              full_name?: string;
+              grade?: string; // Add grade here
             } = { email, password, role };
+
+            if (full_name) {
+              body.full_name = full_name;
+            }
+            if (grade) { // Add grade to body if present
+              body.grade = grade;
+            }
 
             if (currentUserRole === "teacher" && role === "student" && currentUser?.id) {
               body.addedBy = currentUser.id;
             }
 
-            const { error } = await supabase.functions.invoke("create-user", {
+            const { data: createData, error } = await supabase.functions.invoke("create-user", {
               body,
             });
-          
+
             if (error) {
               errorList.push(`${email}: ${error.message}`);
+            } else if (!createData?.success) {
+              const reason = (createData as any)?.error || "فشل الإنشاء لسبب غير معروف";
+              errorList.push(`${email}: ${reason}`);
             } else {
               createdCount++;
             }
           } catch (e: any) {
             errorList.push(`${email}: ${e.message}`);
           }
-          
+
         }
 
         setUploading(false);
@@ -328,12 +288,14 @@ export default function TeacherPanel() {
     setAddingUser(true);
     setFormError(null);
     setSuccessMessage(null);
-  
+
     try {
       const body: any = {
         email: newEmail,
         password: newPassword,
         role: newRole,
+        full_name: newFullName,
+        grade: newGrade, // Add grade here
       };
 
       if (currentUserRole === "teacher" && newRole === "student") {
@@ -343,33 +305,36 @@ export default function TeacherPanel() {
       const { data: _data, error } = await supabase.functions.invoke("create-user", {
         body,
       });
-  
+
       if (error) {
         throw new Error(`تعذّر الاتصال بوظيفة السيرفر: ${error.message}`);
       }
-  
+
       const responseBody = _data as any;
-  
+
       if (!responseBody?.success) {
         throw new Error(`تعذّر إنشاء المستخدم: ${responseBody?.error ?? "سبب غير معروف"}`);
       }
-  
+
       const generatedUsername = responseBody?.username as string | undefined;
-      setSuccessMessage(
-        generatedUsername
-          ? `تم إضافة المستخدم بنجاح. اسم المستخدم: ${generatedUsername}`
-          : "تم إضافة المستخدم بنجاح."
-      );
+
+      let msg = generatedUsername
+        ? `تم إضافة المستخدم بنجاح. اسم المستخدم: ${generatedUsername}`
+        : "تم إضافة المستخدم بنجاح.";
+
+      setSuccessMessage(msg);
       if (responseBody.profileCreated === false && responseBody.profileError) {
         setSuccessMessage(
           `تم إنشاء المستخدم، لكن حدثت مشكلة في حفظ البيانات الإضافية: ${responseBody.profileError}`
         );
       }
-  
+
       setNewEmail("");
+      setNewFullName("");
       setNewPassword("123456789");
       setNewRole("student");
-  
+      setNewGrade(""); // Clear newGrade after submission
+
       setTimeout(() => loadData(), 1000);
     } catch (err: any) {
       setFormError(err.message);
@@ -377,7 +342,7 @@ export default function TeacherPanel() {
       setAddingUser(false);
     }
   };
-  
+
   const handleDeleteClick = (user: UserWithStats) => {
     setUserToDelete(user);
     setShowConfirmDelete(true);
@@ -406,7 +371,7 @@ export default function TeacherPanel() {
         throw new Error(`فشل حذف المستخدم: ${responseBody.error} ${responseBody.details ? `(${responseBody.details})` : ""}`);
       }
 
-      setSuccessMessage(`تم حذف المستخدم ${userToDelete.username} بنجاح.`);
+      setSuccessMessage(`تم حذف المستخدم ${getDisplayName(userToDelete, "—")} بنجاح.`);
       loadData(); // Reload data after deletion
     } catch (err: any) {
       setFormError(`فشل حذف المستخدم: ${err.message}`);
@@ -421,7 +386,7 @@ export default function TeacherPanel() {
     setShowConfirmDelete(false);
     setUserToDelete(null);
   };
-  
+
   const handleChangeRole = async (userId: string, newRole: UserRole) => {
     if (!newRole) return;
 
@@ -474,71 +439,60 @@ export default function TeacherPanel() {
     }
   };
 
-  const handleDeleteCompletion = async (completionId: number) => {
-    try {
-      const { error } = await supabase
-        .from("collaborative_activity_completions")
-        .delete()
-        .eq("id", completionId);
 
-      if (error) throw error;
-
-      setCollaborativeCompletions((prev) =>
-        prev.filter((item) => item.id !== completionId)
-      );
-    } catch (err: any) {
-      setFormError(`تعذر حذف السجل: ${err.message}`);
-    }
-  };
 
   const handleVisibilityChange = (
     topicId: string,
     section: LessonSection,
     value: boolean
   ) => {
-    if (section === "collaborative") {
-      if (!currentUser) return;
-      setFormError(null);
-      supabase
-        .from("lesson_section_visibility")
-        .upsert(
-          {
-            teacher_id: currentUser.id,
-            topic_id: topicId,
-            section: "collaborative",
-            is_enabled: value,
-          },
-          { onConflict: "teacher_id,topic_id,section" }
-        )
-        .then(({ error }) => {
-          if (error) {
-            console.error("Error updating collaborative visibility:", error);
-            setFormError("??? ??????? ??? ????? ??? ??????.");
-            return;
-          }
-          setCollaborativeVisibility((prev) => ({ ...prev, [topicId]: value }));
-        });
-      return;
-    }
+    const updated = {
+      ...lessonVisibility,
+      [topicId]: {
+        ...(lessonVisibility[topicId] || {}),
+        [section]: value,
+      },
+    };
 
-    const updated = updateLessonVisibility(topicIds, topicId, section, value);
+    localStorage.setItem(VISIBILITY_STORAGE_KEY, JSON.stringify(updated));
     setLessonVisibility(updated);
+
+    if (!currentUser) return;
+    setFormError(null);
+
+    const topicSettings = updated[topicId];
+    supabase
+      .from("lesson_visibility_settings")
+      .upsert(
+        {
+          teacher_id: currentUser.id,
+          topic_id: topicId,
+          settings: topicSettings,
+        },
+        { onConflict: "teacher_id,topic_id" }
+      )
+      .then(({ error }) => {
+        if (error) {
+          console.error("Error updating lesson visibility settings:", error);
+          setFormError("تعذر حفظ إعدادات إتاحة الدروس. حاول مرة أخرى.");
+        }
+      });
   };
 
   return (
     <div className="page" dir="rtl" style={{ padding: "2rem" }}>
-      
+
       <div className='submissions-page' dir='rtl'>
-      <header className='submissions-header'>
-        <h1>لوحة إدارة المستخدمين</h1>
-      </header>
+        <header className='submissions-header'>
+          <h1>لوحة إدارة المستخدمين</h1>
+        </header>
       </div>
       <p style={{ marginBottom: "1.5rem", color: "#4b5563" }}>
         من هنا يمكن للمعلم/المسؤول متابعة نشاط الطلاب، إضافة مستخدمين جدد، وتعديل الصلاحيات.
       </p>
 
       <div className="teacher-cards-container">
-        <section className="card lesson-visibility-card">
+        <section className="card lesson-visibility-card full-width-card">
           <div className="lesson-visibility-header">
             <h2>إدارة إتاحة الدروس للطلاب</h2>
             <p>
@@ -564,11 +518,7 @@ export default function TeacherPanel() {
                         <label className="toggle-switch">
                           <input
                             type="checkbox"
-                            checked={
-                              section === "collaborative"
-                                ? collaborativeVisibility[topic.id] ?? true
-                                : lessonVisibility[topic.id]?.[section] ?? true
-                            }
+                            checked={lessonVisibility[topic.id]?.[section] ?? false}
                             onChange={(e) =>
                               handleVisibilityChange(
                                 topic.id,
@@ -580,8 +530,8 @@ export default function TeacherPanel() {
                           <span className="toggle-slider" aria-hidden="true"></span>
                           <span className="toggle-label">
                             {lessonVisibility[topic.id]?.[section]
-                              ? "متاح"
-                              : "غير متاح"}
+                              ? ""
+                              : ""}
                           </span>
                         </label>
                       </div>
@@ -593,107 +543,12 @@ export default function TeacherPanel() {
           </div>
         </section>
 
-        <section className="card lesson-visibility-card">
-          <div className="lesson-visibility-header">
-            <h2>تسليمات الأنشطة من الطلاب</h2>
-            <p>هنا تظهر الأنشطة التي أرسلها الطلاب للمعلمين.</p>
-          </div>
-          {loading ? (
-            <p>...جاري تحميل التسليمات</p>
-          ) : activitySubmissions.length === 0 ? (
-            <p className="muted-note">لا توجد تسليمات أنشطة بعد.</p>
-          ) : (
-            <div className="lesson-visibility-table-wrapper">
-              <table className="lesson-visibility-table">
-                <thead>
-                  <tr>
-                    <th>الطالب</th>
-                    <th>الموضوع</th>
-                    <th>النشاط</th>
-                    <th>وصف الطالب</th>
-                    <th>التاريخ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activitySubmissions.map((submission) => (
-                    <tr key={submission.id}>
-                      <td>
-                        {users.find((u) => u.id === submission.student_id)
-                          ?.username || "طالب"}
-                      </td>
-                      <td>
-                        {topics.find((t) => t.id === submission.topic_id)
-                          ?.title || submission.topic_id}
-                      </td>
-                      <td>النشاط {submission.activity_id}</td>
-                      <td>{submission.response_text || "-"}</td>
-                      <td>
-                        {new Date(submission.created_at).toLocaleDateString(
-                          "ar"
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
 
-        <section className="card lesson-visibility-card">
-          <div className="lesson-visibility-header">
-            <h2>سجل إنهاء الأنشطة التعاونية</h2>
-            <p>يمكن حذف السجل لإعادة فتح النشاط للطالب.</p>
-          </div>
-          {loading ? (
-            <p>جاري تحميل السجلات...</p>
-          ) : collaborativeCompletions.length === 0 ? (
-            <p className="muted-note">لا يوجد سجلات للأنشطة التعاونية.</p>
-          ) : (
-            <div className="lesson-visibility-table-wrapper">
-              <table className="lesson-visibility-table">
-                <thead>
-                  <tr>
-                    <th>الطالب</th>
-                    <th>الموضوع</th>
-                    <th>نوع النشاط</th>
-                    <th>تاريخ الإنهاء</th>
-                    <th>إزالة</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {collaborativeCompletions.map((completion) => (
-                    <tr key={completion.id}>
-                      <td>
-                        {users.find((u) => u.id === completion.student_id)
-                          ?.username || "غير معروف"}
-                      </td>
-                      <td>
-                        {topics.find((t) => t.id === completion.topic_id)
-                          ?.title || completion.topic_id}
-                      </td>
-                      <td>{completion.activity_kind}</td>
-                      <td>
-                        {new Date(completion.completed_at).toLocaleDateString(
-                          "ar"
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="button button-compact button-destructive"
-                          onClick={() => handleDeleteCompletion(completion.id)}
-                        >
-                          حذف
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+
+
+
+
+
       </div>
 
       <div className="teacher-cards-container">
@@ -711,7 +566,7 @@ export default function TeacherPanel() {
             }}
           >
             ارفع ملف CSV يحتوي على الأعمدة:{" "}
-            <code>email</code>, <code>role</code>, <code>password</code>.
+            <code>email</code>, <code>role</code>, <code>password</code>, <code>full_name</code>.
           </p>
           <p
             style={{
@@ -773,6 +628,28 @@ export default function TeacherPanel() {
               سيتم إنشاء اسم المستخدم تلقائياً.
             </p>
 
+            <div className="input-group">
+              <label htmlFor="newFullName">الاسم الكامل (اختياري)</label>
+              <input
+                id="newFullName"
+                type="text"
+                value={newFullName}
+                onChange={(e) => setNewFullName(e.target.value)}
+                placeholder="الاسم الثلاثي"
+              />
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="newGrade">الصف/المستوى (اختياري)</label>
+              <input
+                id="newGrade"
+                type="text"
+                value={newGrade}
+                onChange={(e) => setNewGrade(e.target.value)}
+                placeholder="مثال: الصف الخامس"
+              />
+            </div>
+
 
             <div className="input-group">
               <label htmlFor="newRole">نوع المستخدم</label>
@@ -825,7 +702,7 @@ export default function TeacherPanel() {
         <h2 style={{ marginBottom: "1rem" }}>المستخدمون الحاليون</h2>
 
         {loading ? (
-          <p>جارِ تحميل المستخدمين...</p>
+          <SkeletonSection lines={5} showTitle={false} />
         ) : formError ? (
           <p className="login-error">{formError}</p>
         ) : users.length === 0 ? (
@@ -841,6 +718,7 @@ export default function TeacherPanel() {
             >
               <thead>
                 <tr>
+                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>الاسم</th>
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>اسم المستخدم</th>
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>البريد الإلكتروني</th>
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>الصلاحية</th>
@@ -854,7 +732,12 @@ export default function TeacherPanel() {
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id}>
-                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.username || "—"}</td>
+                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>
+                      {u.full_name || "—"}
+                    </td>
+                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>
+                      {u.username || "—"}
+                    </td>
                     <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.email || "—"}</td>
                     <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.role === "admin" ? "مسؤول" : u.role === "teacher" ? "معلم" : "طالب"}</td>
                     <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.submissionsCount}</td>
@@ -911,7 +794,10 @@ export default function TeacherPanel() {
         <div className="modal-backdrop">
           <div className="modal-content card" dir="rtl">
             <h3>تأكيد الحذف</h3>
-            <p>هل أنت متأكد أنك تريد حذف المستخدم {userToDelete.username} ({userToDelete.email})؟</p>
+            <p>
+              هل أنت متأكد أنك تريد حذف المستخدم {getDisplayName(userToDelete, "—")} (
+              {userToDelete.email})؟
+            </p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "1rem", marginTop: "1.5rem" }}>
               <button className="button button-compact" onClick={cancelDelete}>
                 إلغاء

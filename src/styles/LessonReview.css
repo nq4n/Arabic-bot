@@ -16,20 +16,6 @@
 
 .review-header {
   text-align: center;
-  margin-bottom: 2rem;
-  margin-top: 50px;
-}
-
-.review-header h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-.review-header p {
-  font-size: 1.1rem;
-  color: var(--text-secondary);
-  margin-top: 0.5rem;
 }
 
 .review-grid {

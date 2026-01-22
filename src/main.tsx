@@ -1,11 +1,10 @@
-
 import ReactDOM from 'react-dom/client';
-import Root from './App';
+import App from './App';
 import './index.css';
-import { ThemeProvider } from './hooks/ThemeContext';
+import { SessionProvider } from './hooks/SessionContext';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-    <ThemeProvider>
-      <Root />
-    </ThemeProvider>
+  <SessionProvider>
+    <App />
+  </SessionProvider>
 );

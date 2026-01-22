@@ -7,6 +7,7 @@ import type { RubricLevel } from '../data/rubrics';
 import { topics, WritingSection } from '../data/topics';
 import '../styles/SubmissionReview.css';
 import '../styles/Tabs.css';
+import SkeletonPage from '../components/SkeletonPage';
 
 // --- TYPE DEFINITIONS ---
 type Submission = {
@@ -210,14 +211,9 @@ export default function SubmissionReview() {
   };
 
   // --- RENDER LOGIC ---
-  if (loading)
-    return (
-      <div className="page-container" dir="rtl">
-        <div className="loading-indicator">
-          <div className="spinner"></div>
-        </div>
-      </div>
-    );
+  if (loading) {
+    return <SkeletonPage />;
+  }
 
   if (error)
     return (
@@ -480,7 +476,7 @@ export default function SubmissionReview() {
 
   return (
     <div className="page-container submission-review-page" dir="rtl">
-      <header className="review-header">
+      <header className="review-header page-header">
         <h1>مراجعة التسليم: {submission.topic_title}</h1>
         <p>
           <strong>تاريخ التسليم:</strong> {new Date(submission.created_at).toLocaleString('ar')}

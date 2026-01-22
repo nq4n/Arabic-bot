@@ -9,6 +9,10 @@
   .teacher-cards-container {
     grid-template-columns: 1fr 1fr; /* Two columns on medium screens and up */
   }
+
+  .teacher-cards-container .full-width-card {
+    grid-column: 1 / -1; /* Span across all columns */
+  }
 }
 
 /* Specific styling for the lesson visibility card to ensure it fits the grid */

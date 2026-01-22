@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");
+
 @font-face {
   font-family: 'title';
   src: url('/fonts/title.otf') format('opentype');
@@ -7,13 +9,20 @@
    THEME TOKENS (Premium Arabic Glass)
 ============================ */
 :root {
-  --font-family: "Cairo", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --font-family: "Cairo", "Tajawal", "Noto Naskh Arabic", system-ui,
+    -apple-system, "Segoe UI", Roboto, sans-serif;
   --nav-h: 72px;
+  --sidebar-width: 0px;
+
+  --layout-inline-padding: 2rem;
+  --layout-block-padding: 2.5rem;
+  --layout-top-gap: 1rem;
 
   /* Brand */
   --primary: #0f766e;
   --primary-dark: #0b4f4a;
   --primary-hover: #15958a;
+  --primary-icon: #ffffff;
 
   --accent: #d4a23b;
   --accent-2: #f2d38a; /* subtle highlight */
@@ -33,6 +42,7 @@
   /* Borders + Radius */
   --border-color: rgba(15, 23, 42, 0.12);
   --border-strong: rgba(15, 23, 42, 0.18);
+  --border-color-light: rgba(15, 23, 42, 0.06);
   --border-radius: 18px;
   --radius-sm: 12px;
 
@@ -40,6 +50,9 @@
   --shadow-sm: 0 8px 18px rgba(15, 23, 42, 0.08);
   --shadow-md: 0 18px 40px rgba(15, 23, 42, 0.14);
   --shadow-lg: 0 28px 65px rgba(15, 23, 42, 0.16);
+  --shadow: 0 6px 16px rgba(15, 23, 42, 0.14);
+  --shadow-small: 0 2px 8px rgba(15, 23, 42, 0.1);
+  --primary-shadow: rgba(15, 118, 110, 0.35);
 
   /* Focus */
   --focus-ring: 0 0 0 4px rgba(15, 118, 110, 0.18);
@@ -50,6 +63,18 @@
   --primary-color: var(--primary);
   --text-primary: var(--text-main);
   --text-secondary: var(--text-muted);
+  --color-primary: var(--primary);
+  --color-primary-light: color-mix(in srgb, var(--primary) 70%, #ffffff);
+  --color-primary-light-transparent: color-mix(in srgb, var(--primary) 25%, transparent);
+  --color-background: var(--bg-card);
+  --color-background-alt: var(--bg-secondary);
+  --color-border: var(--border-color);
+  --color-text-primary: var(--text-main);
+  --color-text-secondary: var(--text-muted);
+  --color-text-main: var(--text-main);
+  --color-success: var(--primary);
+  --color-success-light: color-mix(in srgb, var(--primary) 20%, transparent);
+  --color-accent: var(--accent);
 }
 
 /* ============================
@@ -59,6 +84,7 @@
   --primary: #33d0c5;
   --primary-dark: #1b8c86;
   --primary-hover: #4de3d8;
+  --primary-icon: #0f172a;
 
   --accent: #f2c05f;
   --accent-2: #ffdba0;
@@ -74,10 +100,14 @@
 
   --border-color: rgba(148, 163, 184, 0.20);
   --border-strong: rgba(148, 163, 184, 0.30);
+  --border-color-light: rgba(148, 163, 184, 0.18);
 
   --shadow-sm: 0 10px 22px rgba(2, 6, 23, 0.45);
   --shadow-md: 0 22px 50px rgba(2, 6, 23, 0.55);
   --shadow-lg: 0 34px 85px rgba(2, 6, 23, 0.65);
+  --shadow: 0 12px 30px rgba(2, 6, 23, 0.5);
+  --shadow-small: 0 4px 14px rgba(2, 6, 23, 0.4);
+  --primary-shadow: rgba(51, 208, 197, 0.32);
 
   --focus-ring: 0 0 0 4px rgba(51, 208, 197, 0.18);
   --focus-ring-accent: 0 0 0 4px rgba(242, 192, 95, 0.22);
@@ -86,6 +116,9 @@
   --primary-color: var(--primary);
   --text-primary: var(--text-main);
   --text-secondary: var(--text-muted);
+  --color-primary-light: color-mix(in srgb, var(--primary) 55%, #0f172a);
+  --color-primary-light-transparent: color-mix(in srgb, var(--primary) 22%, transparent);
+  --color-success-light: color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 /* ============================
@@ -107,11 +140,14 @@ body {
 }
 
 .App main {
-  padding: calc(2.5rem + var(--nav-h)) 2.5rem 2.5rem calc(2.5rem + var(--sidebar-width));
+  padding: calc(var(--nav-h) + var(--layout-top-gap))
+    var(--layout-inline-padding)
+    var(--layout-block-padding)
+    calc(var(--layout-inline-padding) + var(--sidebar-width));
 }
 
 .App.login-view main {
-  padding: calc(2.5rem + var(--nav-h)) 2.5rem 2.5rem;
+  padding: var(--layout-block-padding) var(--layout-inline-padding);
 }
 
 .container {
@@ -153,7 +189,7 @@ button, .button {
   background:
     linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0)) ,
     linear-gradient(135deg, var(--primary-dark), var(--primary));
-  color: #ffffff;
+  color: var(--primary-icon);
 
   font-size: 14px;
   font-weight: 800;
@@ -179,7 +215,7 @@ button:hover, .button:hover {
   transform: translateY(-1px);
   box-shadow: 0 22px 50px rgba(15, 23, 42, 0.28);
   filter: brightness(1.03);
-  color: #ffffff;
+  color: var(--primary-icon);
   text-decoration: none;
 }
 
@@ -216,6 +252,29 @@ button.accent, .button.accent {
 
 button.accent:focus-visible, .button.accent:focus-visible {
   box-shadow: var(--focus-ring-accent), 0 22px 50px rgba(15, 23, 42, 0.18);
+}
+
+button:disabled, .button:disabled {
+  cursor: not-allowed;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0)) ,
+    linear-gradient(135deg, rgba(91, 100, 112, 0.5), rgba(91, 100, 112, 0.32));
+  border-color: var(--border-color);
+  color: rgba(15, 23, 42, 0.65);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  filter: none;
+  transform: none;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme='dark'] button:disabled,
+[data-theme='dark'] .button:disabled {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0)) ,
+    linear-gradient(135deg, rgba(148, 163, 184, 0.35), rgba(148, 163, 184, 0.22));
+  color: rgba(248, 250, 252, 0.72);
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.35);
+  text-shadow: 0 1px 1px rgba(2, 6, 23, 0.6);
 }
 
 /* ============================
@@ -281,13 +340,156 @@ a:hover {
    RESPONSIVE
 ============================ */
 @media (max-width: 900px) {
-  :root { --sidebar-width: 0px; }
+  :root {
+    --sidebar-width: 0px;
+    --layout-inline-padding: 1.25rem;
+    --layout-top-gap: 0.75rem;
+    --layout-block-padding: 2rem;
+  }
 
   .App main {
-    padding: calc(5.5rem + var(--nav-h)) 1.5rem 2rem;
+    padding: calc(var(--nav-h) + var(--layout-top-gap))
+      var(--layout-inline-padding)
+      var(--layout-block-padding);
   }
 
   .App.login-view main {
-    padding: calc(2.5rem + var(--nav-h)) 1.5rem 2.5rem;
+    padding: var(--layout-block-padding) var(--layout-inline-padding);
+  }
+}
+
+/* ============================
+   PAGE HEADERS
+============================ */
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  margin: 0;
+  font-size: clamp(1.9rem, 2.2vw + 0.9rem, 2.7rem);
+  font-weight: 900;
+  color: var(--primary-color);
+  letter-spacing: 0.2px;
+  line-height: 1.15;
+}
+
+.page-subtitle {
+  margin: 0.45rem 0 0;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+/* ============================
+   SKELETON LOADERS
+============================ */
+.page-skeleton {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.skeleton-surface {
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 20%, transparent);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.45),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.3s ease-in-out infinite;
+}
+
+.skeleton-title {
+  height: 26px;
+}
+
+.skeleton-line {
+  height: 12px;
+}
+
+.skeleton-block {
+  height: 90px;
+  border-radius: 16px;
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.skeleton-w-30 {
+  width: 30%;
+}
+
+.skeleton-w-40 {
+  width: 40%;
+}
+
+.skeleton-w-60 {
+  width: 60%;
+}
+
+.skeleton-w-70 {
+  width: 70%;
+}
+
+.skeleton-w-80 {
+  width: 80%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  60% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
   }
 }

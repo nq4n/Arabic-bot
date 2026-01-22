@@ -1,3 +1,4 @@
+
 export type LessonSection =
   | "lesson"
   | "review"
@@ -16,6 +17,11 @@ export type LessonVisibility = Record<
   }
 >;
 
+export type LessonVisibilitySettingsRow = {
+  topic_id: string;
+  settings: Partial<Record<LessonSection, boolean>> | null;
+};
+
 export type LessonProgress = Record<
   string,
   {
@@ -30,7 +36,7 @@ export type ActivityProgress = Record<
   }
 >;
 
-const VISIBILITY_STORAGE_KEY = "lesson_visibility_settings";
+export const VISIBILITY_STORAGE_KEY = "lesson_visibility_settings";
 const PROGRESS_STORAGE_KEY = "lesson_progress_settings";
 const ACTIVITY_STORAGE_KEY = "lesson_activity_progress";
 
@@ -54,13 +60,45 @@ const normalizeVisibility = (
   topicIds.forEach((topicId) => {
     normalized[topicId] = {
       lesson: normalized[topicId]?.lesson ?? true,
-      review: normalized[topicId]?.review ?? true,
-      evaluation: normalized[topicId]?.evaluation ?? true,
-      activity: normalized[topicId]?.activity ?? true,
-      collaborative: normalized[topicId]?.collaborative ?? true,
+      review: normalized[topicId]?.review ?? false,
+      evaluation: normalized[topicId]?.evaluation ?? false,
+      activity: normalized[topicId]?.activity ?? false,
+      collaborative: normalized[topicId]?.collaborative ?? false,
+      
+      
     };
   });
   return normalized;
+};
+
+const normalizeSectionSettings = (
+  settings: Partial<Record<LessonSection, boolean>> | null | undefined
+) => ({
+  lesson: settings?.lesson ?? false,
+  review: settings?.review ?? false,
+  evaluation: settings?.evaluation ?? false,
+  activity: settings?.activity ?? false,
+  collaborative: settings?.collaborative ?? false,
+});
+
+export const applyLessonVisibility = (
+  topicIds: string[],
+  visibility: LessonVisibility
+) => {
+  const normalized = normalizeVisibility(visibility, topicIds);
+  localStorage.setItem(VISIBILITY_STORAGE_KEY, JSON.stringify(normalized));
+  return normalized;
+};
+
+export const buildLessonVisibilityFromRows = (
+  topicIds: string[],
+  rows: LessonVisibilitySettingsRow[]
+) => {
+  const next: LessonVisibility = {};
+  rows.forEach((row) => {
+    next[row.topic_id] = normalizeSectionSettings(row.settings ?? {});
+  });
+  return applyLessonVisibility(topicIds, next);
 };
 
 const normalizeProgress = (
@@ -119,7 +157,7 @@ export const isLessonSectionActive = (
   section: LessonSection
 ): boolean => {
   const current = getLessonVisibility(topicIds);
-  return current[topicId]?.[section] ?? true;
+  return current[topicId]?.[section] ?? false;
 };
 
 export const getLessonProgress = (topicIds: string[]): LessonProgress => {

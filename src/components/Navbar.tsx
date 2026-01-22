@@ -1,5 +1,5 @@
 // src/components/Navbar.tsx
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { useTheme } from "../hooks/ThemeContext";
 import "../styles/Navbar.css";
@@ -55,12 +55,20 @@ export default function Navbar({ session, userRole }: NavbarProps) {
   const [isHidden, setIsHidden] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
+  const navigate = useNavigate();
 
   const avatarUrl = session?.user?.user_metadata?.avatar_url;
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
     setDropdownOpen(false);
+    if (error) {
+      console.error("Logout failed:", error);
+    }
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("sb-"))
+      .forEach((key) => localStorage.removeItem(key));
+    navigate("/login", { replace: true });
   };
 
   useEffect(() => {
@@ -116,9 +124,10 @@ export default function Navbar({ session, userRole }: NavbarProps) {
         <>
           {/* match /teacher route in App.tsx */}
           <NavLink to="/teacher">لوحة المستخدمين</NavLink>
+          <NavLink to="/activity-submissions">تسليمات أنشطة الطلبة</NavLink>
           {/* use same submissions route used for students */}
           <NavLink to="/submissions">التسليمات</NavLink>
-          <NavLink to="/progress">نقاط الطلاب</NavLink>
+
           <NavLink to="/chats">الدردشة</NavLink>
         </>
       );
@@ -163,9 +172,8 @@ export default function Navbar({ session, userRole }: NavbarProps) {
 
           {session && (
             <div
-              className={`profile-dropdown ${
-                isDropdownOpen ? "open" : ""
-              }`}
+              className={`profile-dropdown ${isDropdownOpen ? "open" : ""
+                }`}
               ref={dropdownRef}
             >
               <button
@@ -184,9 +192,8 @@ export default function Navbar({ session, userRole }: NavbarProps) {
               </button>
 
               <div
-                className={`profile-dropdown-content ${
-                  isDropdownOpen ? "show" : ""
-                }`}
+                className={`profile-dropdown-content ${isDropdownOpen ? "show" : ""
+                  }`}
               >
                 <div className="dropdown-user-info">
                   <div className="user-email">{session.user.email}</div>
@@ -194,6 +201,14 @@ export default function Navbar({ session, userRole }: NavbarProps) {
                     {getRoleDisplayName(userRole)}
                   </div>
                 </div>
+                <NavLink
+                  to="/profile"
+                  className="profile-link-item"
+                  onClick={() => setDropdownOpen(false)}
+                >
+                  <UserIcon />
+                  <span>الملف الشخصي</span>
+                </NavLink>
                 <button onClick={handleLogout} className="logout-button-item">
                   <LogoutIcon />
                   <span>تسجيل الخروج</span>

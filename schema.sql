@@ -57,6 +57,35 @@ $$;
 ALTER FUNCTION "public"."append_collaborative_chat_message"("_chat_id" bigint, "_message" "jsonb") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."append_dialogue_peer_message"("_session_id" bigint, "_message" "jsonb") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  if not exists (
+    select 1
+    from public.dialogue_peer_participants
+    where session_id = _session_id
+      and user_id = auth.uid()
+  ) then
+    raise exception 'not a participant';
+  end if;
+
+  update public.dialogue_peer_sessions
+     set conversation_log = coalesce(conversation_log, '[]'::jsonb) || jsonb_build_array(_message),
+         updated_at = now()
+   where id = _session_id;
+
+  if not found then
+    raise exception 'session not found';
+  end if;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."append_dialogue_peer_message"("_session_id" bigint, "_message" "jsonb") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_case_participant_counts"("_topic_id" "text") RETURNS TABLE("chat_id" bigint, "case_title" "text", "participant_count" integer, "max_students" integer, "is_participant" boolean)
     LANGUAGE "sql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -76,6 +105,36 @@ $$;
 
 
 ALTER FUNCTION "public"."get_case_participant_counts"("_topic_id" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_dialogue_peer_session"("_topic_id" "text") RETURNS TABLE("session_id" bigint, "role" "text", "scenario_text" "text", "status" "text")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  select s.id, p.role, s.scenario_text
+    into session_id, role, scenario_text
+    from public.dialogue_peer_participants p
+    join public.dialogue_peer_sessions s on s.id = p.session_id
+   where p.user_id = auth.uid()
+     and s.topic_id = _topic_id
+     and s.status = 'active'
+   order by s.id desc
+   limit 1;
+
+  if session_id is null then
+    status := 'none';
+    return next;
+    return;
+  end if;
+
+  status := 'active';
+  return next;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."get_dialogue_peer_session"("_topic_id" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_user_role"("user_id" "uuid") RETURNS "text"
@@ -98,11 +157,12 @@ CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, username, role, must_change_password)
+  INSERT INTO public.profiles (id, email, username, full_name, role, must_change_password)
   VALUES (
     new.id,
     new.email,
     new.raw_user_meta_data->>'username',
+    new.raw_user_meta_data->>'full_name',
     new.raw_user_meta_data->>'role',
     true
   );
@@ -200,6 +260,110 @@ $$;
 
 ALTER FUNCTION "public"."start_collaborative_chat_session"("_topic_id" "text", "_case_title" "text") OWNER TO "postgres";
 
+
+CREATE OR REPLACE FUNCTION "public"."start_dialogue_peer_session"("_topic_id" "text") RETURNS TABLE("session_id" bigint, "role" "text", "scenario_text" "text", "status" "text")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  existing_session_id bigint;
+  existing_role text;
+  existing_scenario text;
+  waiting_user uuid;
+  scenario_role_a text;
+  scenario_role_b text;
+  assigned_role_self text;
+  assigned_role_other text;
+begin
+  select s.id, p.role, s.scenario_text
+    into existing_session_id, existing_role, existing_scenario
+    from public.dialogue_peer_participants p
+    join public.dialogue_peer_sessions s on s.id = p.session_id
+   where p.user_id = auth.uid()
+     and s.topic_id = _topic_id
+     and s.status = 'active'
+   order by s.id desc
+   limit 1;
+
+  if existing_session_id is not null then
+    session_id := existing_session_id;
+    role := existing_role;
+    scenario_text := existing_scenario;
+    status := 'active';
+    return next;
+    return;
+  end if;
+
+  delete from public.dialogue_peer_queue
+   where topic_id = _topic_id
+     and user_id = auth.uid();
+
+  select user_id
+    into waiting_user
+    from public.dialogue_peer_queue
+   where topic_id = _topic_id
+     and user_id <> auth.uid()
+   order by joined_at
+   limit 1
+   for update skip locked;
+
+  if waiting_user is null then
+    insert into public.dialogue_peer_queue (topic_id, user_id)
+    values (_topic_id, auth.uid())
+    on conflict do nothing;
+
+    session_id := null;
+    role := null;
+    scenario_text := null;
+    status := 'waiting';
+    return next;
+    return;
+  end if;
+
+  delete from public.dialogue_peer_queue
+   where topic_id = _topic_id
+     and user_id = waiting_user;
+
+  select dps.scenario_text, dps.role_a, dps.role_b
+    into scenario_text, scenario_role_a, scenario_role_b
+    from public.dialogue_peer_scenarios dps
+   where topic_id = _topic_id
+     and is_active = true
+   order by random()
+   limit 1;
+
+  if scenario_text is null then
+    scenario_text := 'أعمل حوار بين معلم وطالبته';
+    scenario_role_a := 'معلمة';
+    scenario_role_b := 'طالبة';
+  end if;
+
+  if random() < 0.5 then
+    assigned_role_self := scenario_role_a;
+    assigned_role_other := scenario_role_b;
+  else
+    assigned_role_self := scenario_role_b;
+    assigned_role_other := scenario_role_a;
+  end if;
+
+  insert into public.dialogue_peer_sessions (topic_id, scenario_text, role_a, role_b)
+  values (_topic_id, scenario_text, scenario_role_a, scenario_role_b)
+  returning id into session_id;
+
+  insert into public.dialogue_peer_participants (session_id, user_id, role)
+  values
+    (session_id, auth.uid(), assigned_role_self),
+    (session_id, waiting_user, assigned_role_other);
+
+  role := assigned_role_self;
+  status := 'matched';
+  return next;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."start_dialogue_peer_session"("_topic_id" "text") OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -264,6 +428,33 @@ ALTER SEQUENCE "public"."admin_notifications_id_seq" OWNED BY "public"."admin_no
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."collaborative_activity_completions" (
+    "id" bigint NOT NULL,
+    "student_id" "uuid" NOT NULL,
+    "topic_id" "text" NOT NULL,
+    "activity_kind" "text" NOT NULL,
+    "completed_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."collaborative_activity_completions" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."collaborative_activity_completions_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."collaborative_activity_completions_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."collaborative_activity_completions_id_seq" OWNED BY "public"."collaborative_activity_completions"."id";
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."collaborative_chat" (
     "id" bigint NOT NULL,
     "topic_id" "text" NOT NULL,
@@ -291,38 +482,6 @@ ALTER SEQUENCE "public"."collaborative_chat_id_seq" OWNER TO "postgres";
 
 
 ALTER SEQUENCE "public"."collaborative_chat_id_seq" OWNED BY "public"."collaborative_chat"."id";
-
-
-
-CREATE TABLE IF NOT EXISTS "public"."collaborative_chat_messages" (
-    "id" bigint NOT NULL,
-    "topic_id" "text" NOT NULL,
-    "room_key" "text" NOT NULL,
-    "room_type" "text" NOT NULL,
-    "sender_id" "uuid",
-    "sender_name" "text",
-    "message" "text" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "room_id" bigint,
-    CONSTRAINT "collaborative_chat_messages_room_type_check" CHECK (("room_type" = ANY (ARRAY['group'::"text", 'pair'::"text"])))
-);
-
-
-ALTER TABLE "public"."collaborative_chat_messages" OWNER TO "postgres";
-
-
-CREATE SEQUENCE IF NOT EXISTS "public"."collaborative_chat_messages_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE "public"."collaborative_chat_messages_id_seq" OWNER TO "postgres";
-
-
-ALTER SEQUENCE "public"."collaborative_chat_messages_id_seq" OWNED BY "public"."collaborative_chat_messages"."id";
 
 
 
@@ -354,27 +513,19 @@ ALTER SEQUENCE "public"."collaborative_chat_participants_id_seq" OWNED BY "publi
 
 
 
-CREATE TABLE IF NOT EXISTS "public"."collaborative_chat_rooms" (
+CREATE TABLE IF NOT EXISTS "public"."dialogue_peer_participants" (
     "id" bigint NOT NULL,
-    "topic_id" "text" NOT NULL,
-    "room_key" "text" NOT NULL,
-    "room_type" "text" NOT NULL,
-    "activity_type" "text" NOT NULL,
-    "case_id" bigint,
-    "max_size" integer DEFAULT 6 NOT NULL,
-    "created_by" "uuid",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "collaborative_chat_rooms_activity_type_check" CHECK (("activity_type" = ANY (ARRAY['monaqasha_qadiya'::"text", 'nass_hiwar'::"text"]))),
-    CONSTRAINT "collaborative_chat_rooms_max_size_check" CHECK ((("max_size" >= 2) AND ("max_size" <= 6))),
-    CONSTRAINT "collaborative_chat_rooms_room_type_check" CHECK (("room_type" = ANY (ARRAY['group'::"text", 'pair'::"text"]))),
-    CONSTRAINT "monaqasha_requires_case" CHECK (((("activity_type" = 'monaqasha_qadiya'::"text") AND ("case_id" IS NOT NULL)) OR (("activity_type" <> 'monaqasha_qadiya'::"text") AND ("case_id" IS NULL))))
+    "session_id" bigint NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "role" "text" NOT NULL,
+    "joined_at" timestamp with time zone DEFAULT "now"() NOT NULL
 );
 
 
-ALTER TABLE "public"."collaborative_chat_rooms" OWNER TO "postgres";
+ALTER TABLE "public"."dialogue_peer_participants" OWNER TO "postgres";
 
 
-CREATE SEQUENCE IF NOT EXISTS "public"."collaborative_chat_rooms_id_seq"
+CREATE SEQUENCE IF NOT EXISTS "public"."dialogue_peer_participants_id_seq"
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -382,26 +533,25 @@ CREATE SEQUENCE IF NOT EXISTS "public"."collaborative_chat_rooms_id_seq"
     CACHE 1;
 
 
-ALTER SEQUENCE "public"."collaborative_chat_rooms_id_seq" OWNER TO "postgres";
+ALTER SEQUENCE "public"."dialogue_peer_participants_id_seq" OWNER TO "postgres";
 
 
-ALTER SEQUENCE "public"."collaborative_chat_rooms_id_seq" OWNED BY "public"."collaborative_chat_rooms"."id";
+ALTER SEQUENCE "public"."dialogue_peer_participants_id_seq" OWNED BY "public"."dialogue_peer_participants"."id";
 
 
 
-CREATE TABLE IF NOT EXISTS "public"."discussion_cases" (
+CREATE TABLE IF NOT EXISTS "public"."dialogue_peer_queue" (
     "id" bigint NOT NULL,
     "topic_id" "text" NOT NULL,
-    "title" "text" NOT NULL,
-    "description" "text",
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "user_id" "uuid" NOT NULL,
+    "joined_at" timestamp with time zone DEFAULT "now"() NOT NULL
 );
 
 
-ALTER TABLE "public"."discussion_cases" OWNER TO "postgres";
+ALTER TABLE "public"."dialogue_peer_queue" OWNER TO "postgres";
 
 
-CREATE SEQUENCE IF NOT EXISTS "public"."discussion_cases_id_seq"
+CREATE SEQUENCE IF NOT EXISTS "public"."dialogue_peer_queue_id_seq"
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -409,10 +559,70 @@ CREATE SEQUENCE IF NOT EXISTS "public"."discussion_cases_id_seq"
     CACHE 1;
 
 
-ALTER SEQUENCE "public"."discussion_cases_id_seq" OWNER TO "postgres";
+ALTER SEQUENCE "public"."dialogue_peer_queue_id_seq" OWNER TO "postgres";
 
 
-ALTER SEQUENCE "public"."discussion_cases_id_seq" OWNED BY "public"."discussion_cases"."id";
+ALTER SEQUENCE "public"."dialogue_peer_queue_id_seq" OWNED BY "public"."dialogue_peer_queue"."id";
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."dialogue_peer_scenarios" (
+    "id" bigint NOT NULL,
+    "topic_id" "text" NOT NULL,
+    "scenario_text" "text" NOT NULL,
+    "role_a" "text" NOT NULL,
+    "role_b" "text" NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."dialogue_peer_scenarios" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."dialogue_peer_scenarios_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."dialogue_peer_scenarios_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."dialogue_peer_scenarios_id_seq" OWNED BY "public"."dialogue_peer_scenarios"."id";
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."dialogue_peer_sessions" (
+    "id" bigint NOT NULL,
+    "topic_id" "text" NOT NULL,
+    "scenario_text" "text" NOT NULL,
+    "role_a" "text" NOT NULL,
+    "role_b" "text" NOT NULL,
+    "status" "text" DEFAULT 'active'::"text" NOT NULL,
+    "conversation_log" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."dialogue_peer_sessions" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."dialogue_peer_sessions_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."dialogue_peer_sessions_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."dialogue_peer_sessions_id_seq" OWNED BY "public"."dialogue_peer_sessions"."id";
 
 
 
@@ -429,6 +639,29 @@ CREATE TABLE IF NOT EXISTS "public"."lesson_section_visibility" (
 ALTER TABLE "public"."lesson_section_visibility" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."lesson_visibility_settings" (
+    "teacher_id" "uuid" NOT NULL,
+    "topic_id" "text" NOT NULL,
+    "settings" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."lesson_visibility_settings" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."point_rewards" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "title" "text" NOT NULL,
+    "min_points" integer NOT NULL,
+    "description" "text",
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL
+);
+
+
+ALTER TABLE "public"."point_rewards" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" "uuid" NOT NULL,
     "username" "text",
@@ -436,11 +669,41 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "must_change_password" boolean DEFAULT true NOT NULL,
     "email" "text",
     "added_by_teacher_id" "uuid",
+    "full_name" "text",
+    "grade" "text",
     CONSTRAINT "username_length" CHECK (("char_length"("username") >= 3))
 );
 
 
 ALTER TABLE "public"."profiles" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."student_tracking" (
+    "id" bigint NOT NULL,
+    "student_id" "uuid" NOT NULL,
+    "student_name" "text" NOT NULL,
+    "tracking_data" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."student_tracking" OWNER TO "postgres";
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."student_tracking_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."student_tracking_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."student_tracking_id_seq" OWNED BY "public"."student_tracking"."id";
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."submissions" (
@@ -515,15 +778,30 @@ ALTER SEQUENCE "public"."teacher_chat_messages_id_seq" OWNED BY "public"."teache
 
 
 
-CREATE TABLE IF NOT EXISTS "public"."teacher_chat_settings" (
-    "teacher_id" "uuid" NOT NULL,
-    "student_id" "uuid" NOT NULL,
-    "is_enabled" boolean DEFAULT true,
-    "updated_at" timestamp with time zone DEFAULT "now"()
+CREATE TABLE IF NOT EXISTS "public"."user_feedback" (
+    "id" bigint NOT NULL,
+    "user_id" "uuid",
+    "user_name" "text",
+    "email" "text",
+    "message_type" "text",
+    "message" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "user_feedback_message_type_check" CHECK (("message_type" = ANY (ARRAY['suggestion'::"text", 'content_contribution'::"text", 'technical_issue'::"text", 'other'::"text"])))
 );
 
 
-ALTER TABLE "public"."teacher_chat_settings" OWNER TO "postgres";
+ALTER TABLE "public"."user_feedback" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."user_feedback" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."user_feedback_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 
 
 ALTER TABLE ONLY "public"."activity_submissions" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."activity_submissions_id_seq"'::"regclass");
@@ -534,11 +812,11 @@ ALTER TABLE ONLY "public"."admin_notifications" ALTER COLUMN "id" SET DEFAULT "n
 
 
 
+ALTER TABLE ONLY "public"."collaborative_activity_completions" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."collaborative_activity_completions_id_seq"'::"regclass");
+
+
+
 ALTER TABLE ONLY "public"."collaborative_chat" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."collaborative_chat_id_seq"'::"regclass");
-
-
-
-ALTER TABLE ONLY "public"."collaborative_chat_messages" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."collaborative_chat_messages_id_seq"'::"regclass");
 
 
 
@@ -546,11 +824,23 @@ ALTER TABLE ONLY "public"."collaborative_chat_participants" ALTER COLUMN "id" SE
 
 
 
-ALTER TABLE ONLY "public"."collaborative_chat_rooms" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."collaborative_chat_rooms_id_seq"'::"regclass");
+ALTER TABLE ONLY "public"."dialogue_peer_participants" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."dialogue_peer_participants_id_seq"'::"regclass");
 
 
 
-ALTER TABLE ONLY "public"."discussion_cases" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."discussion_cases_id_seq"'::"regclass");
+ALTER TABLE ONLY "public"."dialogue_peer_queue" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."dialogue_peer_queue_id_seq"'::"regclass");
+
+
+
+ALTER TABLE ONLY "public"."dialogue_peer_scenarios" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."dialogue_peer_scenarios_id_seq"'::"regclass");
+
+
+
+ALTER TABLE ONLY "public"."dialogue_peer_sessions" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."dialogue_peer_sessions_id_seq"'::"regclass");
+
+
+
+ALTER TABLE ONLY "public"."student_tracking" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."student_tracking_id_seq"'::"regclass");
 
 
 
@@ -577,8 +867,13 @@ ALTER TABLE ONLY "public"."admin_notifications"
 
 
 
-ALTER TABLE ONLY "public"."collaborative_chat_messages"
-    ADD CONSTRAINT "collaborative_chat_messages_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."collaborative_activity_completions"
+    ADD CONSTRAINT "collaborative_activity_comple_student_id_topic_id_activity__key" UNIQUE ("student_id", "topic_id", "activity_kind");
+
+
+
+ALTER TABLE ONLY "public"."collaborative_activity_completions"
+    ADD CONSTRAINT "collaborative_activity_completions_pkey" PRIMARY KEY ("id");
 
 
 
@@ -597,23 +892,53 @@ ALTER TABLE ONLY "public"."collaborative_chat"
 
 
 
-ALTER TABLE ONLY "public"."collaborative_chat_rooms"
-    ADD CONSTRAINT "collaborative_chat_rooms_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."dialogue_peer_participants"
+    ADD CONSTRAINT "dialogue_peer_participants_pkey" PRIMARY KEY ("id");
 
 
 
-ALTER TABLE ONLY "public"."collaborative_chat_rooms"
-    ADD CONSTRAINT "collaborative_chat_rooms_room_key_key" UNIQUE ("room_key");
+ALTER TABLE ONLY "public"."dialogue_peer_participants"
+    ADD CONSTRAINT "dialogue_peer_participants_session_id_user_id_key" UNIQUE ("session_id", "user_id");
 
 
 
-ALTER TABLE ONLY "public"."discussion_cases"
-    ADD CONSTRAINT "discussion_cases_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."dialogue_peer_queue"
+    ADD CONSTRAINT "dialogue_peer_queue_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."dialogue_peer_queue"
+    ADD CONSTRAINT "dialogue_peer_queue_topic_id_user_id_key" UNIQUE ("topic_id", "user_id");
+
+
+
+ALTER TABLE ONLY "public"."dialogue_peer_scenarios"
+    ADD CONSTRAINT "dialogue_peer_scenarios_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."dialogue_peer_sessions"
+    ADD CONSTRAINT "dialogue_peer_sessions_pkey" PRIMARY KEY ("id");
 
 
 
 ALTER TABLE ONLY "public"."lesson_section_visibility"
     ADD CONSTRAINT "lesson_section_visibility_pkey" PRIMARY KEY ("teacher_id", "topic_id", "section");
+
+
+
+ALTER TABLE ONLY "public"."lesson_visibility_settings"
+    ADD CONSTRAINT "lesson_visibility_settings_pkey" PRIMARY KEY ("teacher_id", "topic_id");
+
+
+
+ALTER TABLE ONLY "public"."point_rewards"
+    ADD CONSTRAINT "point_rewards_min_points_key" UNIQUE ("min_points");
+
+
+
+ALTER TABLE ONLY "public"."point_rewards"
+    ADD CONSTRAINT "point_rewards_pkey" PRIMARY KEY ("id");
 
 
 
@@ -632,6 +957,11 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 
+ALTER TABLE ONLY "public"."student_tracking"
+    ADD CONSTRAINT "student_tracking_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."submissions"
     ADD CONSTRAINT "submissions_pkey" PRIMARY KEY ("id");
 
@@ -647,8 +977,8 @@ ALTER TABLE ONLY "public"."teacher_chat_messages"
 
 
 
-ALTER TABLE ONLY "public"."teacher_chat_settings"
-    ADD CONSTRAINT "teacher_chat_settings_pkey" PRIMARY KEY ("teacher_id", "student_id");
+ALTER TABLE ONLY "public"."user_feedback"
+    ADD CONSTRAINT "user_feedback_pkey" PRIMARY KEY ("id");
 
 
 
@@ -661,6 +991,26 @@ CREATE INDEX "collaborative_chat_participants_user_idx" ON "public"."collaborati
 
 
 CREATE INDEX "collaborative_chat_topic_case_idx" ON "public"."collaborative_chat" USING "btree" ("topic_id", "case_title");
+
+
+
+CREATE INDEX "dialogue_peer_participants_session_idx" ON "public"."dialogue_peer_participants" USING "btree" ("session_id");
+
+
+
+CREATE INDEX "dialogue_peer_participants_user_idx" ON "public"."dialogue_peer_participants" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "dialogue_peer_queue_topic_idx" ON "public"."dialogue_peer_queue" USING "btree" ("topic_id");
+
+
+
+CREATE INDEX "dialogue_peer_sessions_topic_idx" ON "public"."dialogue_peer_sessions" USING "btree" ("topic_id");
+
+
+
+CREATE UNIQUE INDEX "student_tracking_student_id_idx" ON "public"."student_tracking" USING "btree" ("student_id");
 
 
 
@@ -679,13 +1029,13 @@ ALTER TABLE ONLY "public"."admin_notifications"
 
 
 
+ALTER TABLE ONLY "public"."collaborative_activity_completions"
+    ADD CONSTRAINT "collaborative_activity_completions_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."collaborative_chat"
     ADD CONSTRAINT "collaborative_chat_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."collaborative_chat_messages"
-    ADD CONSTRAINT "collaborative_chat_messages_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
@@ -704,13 +1054,18 @@ ALTER TABLE ONLY "public"."collaborative_chat_participants"
 
 
 
-ALTER TABLE ONLY "public"."collaborative_chat_rooms"
-    ADD CONSTRAINT "collaborative_chat_rooms_case_id_fkey" FOREIGN KEY ("case_id") REFERENCES "public"."discussion_cases"("id") ON DELETE SET NULL;
+ALTER TABLE ONLY "public"."dialogue_peer_participants"
+    ADD CONSTRAINT "dialogue_peer_participants_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."dialogue_peer_sessions"("id") ON DELETE CASCADE;
 
 
 
-ALTER TABLE ONLY "public"."collaborative_chat_rooms"
-    ADD CONSTRAINT "collaborative_chat_rooms_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+ALTER TABLE ONLY "public"."dialogue_peer_participants"
+    ADD CONSTRAINT "dialogue_peer_participants_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."dialogue_peer_queue"
+    ADD CONSTRAINT "dialogue_peer_queue_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
@@ -719,8 +1074,18 @@ ALTER TABLE ONLY "public"."lesson_section_visibility"
 
 
 
+ALTER TABLE ONLY "public"."lesson_visibility_settings"
+    ADD CONSTRAINT "lesson_visibility_settings_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_added_by_teacher_id_fkey" FOREIGN KEY ("added_by_teacher_id") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."student_tracking"
+    ADD CONSTRAINT "student_tracking_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
@@ -749,16 +1114,6 @@ ALTER TABLE ONLY "public"."teacher_chat_messages"
 
 
 
-ALTER TABLE ONLY "public"."teacher_chat_settings"
-    ADD CONSTRAINT "teacher_chat_settings_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."teacher_chat_settings"
-    ADD CONSTRAINT "teacher_chat_settings_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-
-
 CREATE POLICY "Admin notifications insert by actor." ON "public"."admin_notifications" FOR INSERT WITH CHECK (("auth"."uid"() = "actor_id"));
 
 
@@ -766,10 +1121,6 @@ CREATE POLICY "Admin notifications insert by actor." ON "public"."admin_notifica
 CREATE POLICY "Admin notifications viewable by recipient or admin." ON "public"."admin_notifications" FOR SELECT USING ((("auth"."uid"() = "recipient_id") OR (EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text"))))));
-
-
-
-CREATE POLICY "Collaborative chat insert by sender." ON "public"."collaborative_chat_messages" FOR INSERT WITH CHECK ((("auth"."uid"() = "sender_id") AND (("room_id" IS NULL) OR "public"."is_room_member"("room_id", "auth"."uid"()))));
 
 
 
@@ -795,18 +1146,6 @@ CREATE POLICY "Collaborative chat participants viewable by room members" ON "pub
 
 
 
-CREATE POLICY "Collaborative chat rooms insert by creator." ON "public"."collaborative_chat_rooms" FOR INSERT WITH CHECK (("auth"."uid"() = "created_by"));
-
-
-
-CREATE POLICY "Collaborative chat rooms update by creator." ON "public"."collaborative_chat_rooms" FOR UPDATE USING (("auth"."uid"() = "created_by"));
-
-
-
-CREATE POLICY "Collaborative chat rooms viewable by authenticated users." ON "public"."collaborative_chat_rooms" FOR SELECT USING (("auth"."uid"() IS NOT NULL));
-
-
-
 CREATE POLICY "Collaborative chat sessions insert by creator." ON "public"."collaborative_chat" FOR INSERT WITH CHECK (("auth"."uid"() = "created_by"));
 
 
@@ -815,11 +1154,33 @@ CREATE POLICY "Collaborative chat sessions viewable by authenticated users." ON 
 
 
 
-CREATE POLICY "Collaborative chat viewable by authenticated users." ON "public"."collaborative_chat_messages" FOR SELECT USING ((("auth"."uid"() IS NOT NULL) AND (("room_id" IS NULL) OR "public"."is_room_member"("room_id", "auth"."uid"()))));
+CREATE POLICY "Dialogue participants insert by self" ON "public"."dialogue_peer_participants" FOR INSERT WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
-CREATE POLICY "Discussion cases viewable by everyone." ON "public"."discussion_cases" FOR SELECT USING (true);
+CREATE POLICY "Dialogue participants viewable by members" ON "public"."dialogue_peer_participants" FOR SELECT USING ((("user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = ANY (ARRAY['teacher'::"text", 'admin'::"text"])))))));
+
+
+
+CREATE POLICY "Dialogue queue delete by self" ON "public"."dialogue_peer_queue" FOR DELETE USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Dialogue queue insert by self" ON "public"."dialogue_peer_queue" FOR INSERT WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Dialogue scenarios viewable by authenticated" ON "public"."dialogue_peer_scenarios" FOR SELECT USING (("auth"."uid"() IS NOT NULL));
+
+
+
+CREATE POLICY "Dialogue sessions viewable by participants" ON "public"."dialogue_peer_sessions" FOR SELECT USING (((EXISTS ( SELECT 1
+   FROM "public"."dialogue_peer_participants" "participants"
+  WHERE (("participants"."session_id" = "dialogue_peer_sessions"."id") AND ("participants"."user_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = ANY (ARRAY['teacher'::"text", 'admin'::"text"])))))));
 
 
 
@@ -851,7 +1212,31 @@ CREATE POLICY "Lesson section visibility viewable by participants." ON "public".
 
 
 
+CREATE POLICY "Lesson visibility settings insert by teacher/admin." ON "public"."lesson_visibility_settings" FOR INSERT WITH CHECK ((("auth"."uid"() = "teacher_id") OR (EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text"))))));
+
+
+
+CREATE POLICY "Lesson visibility settings update by teacher/admin." ON "public"."lesson_visibility_settings" FOR UPDATE USING ((("auth"."uid"() = "teacher_id") OR (EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text"))))));
+
+
+
+CREATE POLICY "Lesson visibility settings viewable by participants." ON "public"."lesson_visibility_settings" FOR SELECT USING ((("auth"."uid"() IS NOT NULL) AND (("auth"."uid"() = "teacher_id") OR (EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'student'::"text") AND ("profiles"."added_by_teacher_id" = "lesson_visibility_settings"."teacher_id")))) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text")))))));
+
+
+
 CREATE POLICY "Public profiles are viewable by everyone." ON "public"."profiles" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "Students can insert own collaborative completions" ON "public"."collaborative_activity_completions" FOR INSERT WITH CHECK (("student_id" = "auth"."uid"()));
 
 
 
@@ -859,11 +1244,27 @@ CREATE POLICY "Students can insert their activity submissions" ON "public"."acti
 
 
 
+CREATE POLICY "Students can insert their tracking" ON "public"."student_tracking" FOR INSERT WITH CHECK (("auth"."uid"() = "student_id"));
+
+
+
 CREATE POLICY "Students can update their activity submissions" ON "public"."activity_submissions" FOR UPDATE USING (("auth"."uid"() = "student_id"));
 
 
 
+CREATE POLICY "Students can update their tracking" ON "public"."student_tracking" FOR UPDATE USING (("auth"."uid"() = "student_id")) WITH CHECK (("auth"."uid"() = "student_id"));
+
+
+
+CREATE POLICY "Students can view own collaborative completions" ON "public"."collaborative_activity_completions" FOR SELECT USING (("student_id" = "auth"."uid"()));
+
+
+
 CREATE POLICY "Students can view their activity submissions" ON "public"."activity_submissions" FOR SELECT USING (("auth"."uid"() = "student_id"));
+
+
+
+CREATE POLICY "Students can view their tracking" ON "public"."student_tracking" FOR SELECT USING (("auth"."uid"() = "student_id"));
 
 
 
@@ -887,19 +1288,27 @@ CREATE POLICY "Teacher chat messages viewable by participants." ON "public"."tea
 
 
 
-CREATE POLICY "Teacher chat settings manageable by teacher." ON "public"."teacher_chat_settings" FOR INSERT WITH CHECK (("auth"."uid"() = "teacher_id"));
+CREATE POLICY "Teachers and admins can view student tracking" ON "public"."student_tracking" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles" "p"
+  WHERE (("p"."id" = "auth"."uid"()) AND ("p"."role" = ANY (ARRAY['teacher'::"text", 'admin'::"text"])) AND (("p"."role" = 'admin'::"text") OR (EXISTS ( SELECT 1
+           FROM "public"."profiles" "s"
+          WHERE (("s"."id" = "student_tracking"."student_id") AND ("s"."added_by_teacher_id" = "auth"."uid"())))))))));
 
 
 
-CREATE POLICY "Teacher chat settings update by teacher." ON "public"."teacher_chat_settings" FOR UPDATE USING (("auth"."uid"() = "teacher_id"));
-
-
-
-CREATE POLICY "Teacher chat settings viewable by participants." ON "public"."teacher_chat_settings" FOR SELECT USING ((("auth"."uid"() = "teacher_id") OR ("auth"."uid"() = "student_id")));
+CREATE POLICY "Teachers can manage collaborative completions" ON "public"."collaborative_activity_completions" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = ANY (ARRAY['teacher'::"text", 'admin'::"text"]))))));
 
 
 
 CREATE POLICY "Teachers can view activity submissions" ON "public"."activity_submissions" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = ANY (ARRAY['teacher'::"text", 'admin'::"text"]))))));
+
+
+
+CREATE POLICY "Teachers can view collaborative completions" ON "public"."collaborative_activity_completions" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = ANY (ARRAY['teacher'::"text", 'admin'::"text"]))))));
 
@@ -929,25 +1338,37 @@ ALTER TABLE "public"."activity_submissions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."admin_notifications" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."collaborative_activity_completions" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."collaborative_chat" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."collaborative_chat_messages" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."collaborative_chat_participants" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."collaborative_chat_rooms" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."dialogue_peer_participants" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."discussion_cases" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."dialogue_peer_queue" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."dialogue_peer_scenarios" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."dialogue_peer_sessions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."lesson_section_visibility" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."lesson_visibility_settings" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."student_tracking" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."submissions" ENABLE ROW LEVEL SECURITY;
@@ -957,9 +1378,6 @@ ALTER TABLE "public"."teacher_chat_global_settings" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."teacher_chat_messages" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."teacher_chat_settings" ENABLE ROW LEVEL SECURITY;
 
 
 GRANT USAGE ON SCHEMA "public" TO "postgres";
@@ -975,9 +1393,21 @@ GRANT ALL ON FUNCTION "public"."append_collaborative_chat_message"("_chat_id" bi
 
 
 
+GRANT ALL ON FUNCTION "public"."append_dialogue_peer_message"("_session_id" bigint, "_message" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."append_dialogue_peer_message"("_session_id" bigint, "_message" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."append_dialogue_peer_message"("_session_id" bigint, "_message" "jsonb") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_case_participant_counts"("_topic_id" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_case_participant_counts"("_topic_id" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_case_participant_counts"("_topic_id" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_dialogue_peer_session"("_topic_id" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_dialogue_peer_session"("_topic_id" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_dialogue_peer_session"("_topic_id" "text") TO "service_role";
 
 
 
@@ -1011,6 +1441,12 @@ GRANT ALL ON FUNCTION "public"."start_collaborative_chat_session"("_topic_id" "t
 
 
 
+GRANT ALL ON FUNCTION "public"."start_dialogue_peer_session"("_topic_id" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."start_dialogue_peer_session"("_topic_id" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."start_dialogue_peer_session"("_topic_id" "text") TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."activity_submissions" TO "anon";
 GRANT ALL ON TABLE "public"."activity_submissions" TO "authenticated";
 GRANT ALL ON TABLE "public"."activity_submissions" TO "service_role";
@@ -1035,6 +1471,18 @@ GRANT ALL ON SEQUENCE "public"."admin_notifications_id_seq" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."collaborative_activity_completions" TO "anon";
+GRANT ALL ON TABLE "public"."collaborative_activity_completions" TO "authenticated";
+GRANT ALL ON TABLE "public"."collaborative_activity_completions" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."collaborative_activity_completions_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."collaborative_activity_completions_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."collaborative_activity_completions_id_seq" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."collaborative_chat" TO "anon";
 GRANT ALL ON TABLE "public"."collaborative_chat" TO "authenticated";
 GRANT ALL ON TABLE "public"."collaborative_chat" TO "service_role";
@@ -1044,18 +1492,6 @@ GRANT ALL ON TABLE "public"."collaborative_chat" TO "service_role";
 GRANT ALL ON SEQUENCE "public"."collaborative_chat_id_seq" TO "anon";
 GRANT ALL ON SEQUENCE "public"."collaborative_chat_id_seq" TO "authenticated";
 GRANT ALL ON SEQUENCE "public"."collaborative_chat_id_seq" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."collaborative_chat_messages" TO "anon";
-GRANT ALL ON TABLE "public"."collaborative_chat_messages" TO "authenticated";
-GRANT ALL ON TABLE "public"."collaborative_chat_messages" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."collaborative_chat_messages_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."collaborative_chat_messages_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."collaborative_chat_messages_id_seq" TO "service_role";
 
 
 
@@ -1071,27 +1507,51 @@ GRANT ALL ON SEQUENCE "public"."collaborative_chat_participants_id_seq" TO "serv
 
 
 
-GRANT ALL ON TABLE "public"."collaborative_chat_rooms" TO "anon";
-GRANT ALL ON TABLE "public"."collaborative_chat_rooms" TO "authenticated";
-GRANT ALL ON TABLE "public"."collaborative_chat_rooms" TO "service_role";
+GRANT ALL ON TABLE "public"."dialogue_peer_participants" TO "anon";
+GRANT ALL ON TABLE "public"."dialogue_peer_participants" TO "authenticated";
+GRANT ALL ON TABLE "public"."dialogue_peer_participants" TO "service_role";
 
 
 
-GRANT ALL ON SEQUENCE "public"."collaborative_chat_rooms_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."collaborative_chat_rooms_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."collaborative_chat_rooms_id_seq" TO "service_role";
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_participants_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_participants_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_participants_id_seq" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."discussion_cases" TO "anon";
-GRANT ALL ON TABLE "public"."discussion_cases" TO "authenticated";
-GRANT ALL ON TABLE "public"."discussion_cases" TO "service_role";
+GRANT ALL ON TABLE "public"."dialogue_peer_queue" TO "anon";
+GRANT ALL ON TABLE "public"."dialogue_peer_queue" TO "authenticated";
+GRANT ALL ON TABLE "public"."dialogue_peer_queue" TO "service_role";
 
 
 
-GRANT ALL ON SEQUENCE "public"."discussion_cases_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."discussion_cases_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."discussion_cases_id_seq" TO "service_role";
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_queue_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_queue_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_queue_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."dialogue_peer_scenarios" TO "anon";
+GRANT ALL ON TABLE "public"."dialogue_peer_scenarios" TO "authenticated";
+GRANT ALL ON TABLE "public"."dialogue_peer_scenarios" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_scenarios_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_scenarios_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_scenarios_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."dialogue_peer_sessions" TO "anon";
+GRANT ALL ON TABLE "public"."dialogue_peer_sessions" TO "authenticated";
+GRANT ALL ON TABLE "public"."dialogue_peer_sessions" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_sessions_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_sessions_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."dialogue_peer_sessions_id_seq" TO "service_role";
 
 
 
@@ -1101,9 +1561,33 @@ GRANT ALL ON TABLE "public"."lesson_section_visibility" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."lesson_visibility_settings" TO "anon";
+GRANT ALL ON TABLE "public"."lesson_visibility_settings" TO "authenticated";
+GRANT ALL ON TABLE "public"."lesson_visibility_settings" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."point_rewards" TO "anon";
+GRANT ALL ON TABLE "public"."point_rewards" TO "authenticated";
+GRANT ALL ON TABLE "public"."point_rewards" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."profiles" TO "anon";
 GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."profiles" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."student_tracking" TO "anon";
+GRANT ALL ON TABLE "public"."student_tracking" TO "authenticated";
+GRANT ALL ON TABLE "public"."student_tracking" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."student_tracking_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."student_tracking_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."student_tracking_id_seq" TO "service_role";
 
 
 
@@ -1137,9 +1621,15 @@ GRANT ALL ON SEQUENCE "public"."teacher_chat_messages_id_seq" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."teacher_chat_settings" TO "anon";
-GRANT ALL ON TABLE "public"."teacher_chat_settings" TO "authenticated";
-GRANT ALL ON TABLE "public"."teacher_chat_settings" TO "service_role";
+GRANT ALL ON TABLE "public"."user_feedback" TO "anon";
+GRANT ALL ON TABLE "public"."user_feedback" TO "authenticated";
+GRANT ALL ON TABLE "public"."user_feedback" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."user_feedback_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."user_feedback_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."user_feedback_id_seq" TO "service_role";
 
 
 

@@ -3,38 +3,33 @@
   margin: 0 auto;
   padding: 2rem;
   color: var(--text-primary);
-  background: linear-gradient(
-      color-mix(in srgb, var(--bg-secondary) 86%, transparent),
-      color-mix(in srgb, var(--bg-secondary) 90%, transparent)
-    ),
-    url("https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1600&q=80")
-      center/cover;
-  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
 }
 
 .progress-header {
   text-align: center;
-  margin-bottom: 2rem;
-}
-
-.progress-header h1 {
-  font-size: 2.4rem;
-  color: var(--primary-color);
-  margin-bottom: 0.5rem;
-}
-
-.progress-header p {
-  color: var(--text-secondary);
-  font-size: 1.05rem;
+  margin-bottom: 0;
 }
 
 .progress-summary {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(240px, 1.1fr) minmax(220px, 0.9fr);
   align-items: center;
-  flex-wrap: wrap;
   gap: 1.5rem;
-  margin-bottom: 2rem;
+}
+
+.progress-summary-total {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progress-summary-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
 .progress-total {
@@ -48,6 +43,21 @@
   flex-direction: column;
   gap: 0.5rem;
   color: var(--text-secondary);
+}
+
+.progress-legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.progress-legend span::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  flex-shrink: 0;
 }
 
 .progress-table-header {
@@ -117,6 +127,16 @@
   font-weight: 600;
 }
 
+.progress-row-skeleton {
+  pointer-events: none;
+}
+
+.progress-skeleton-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
 @media (max-width: 900px) {
   .progress-page {
     padding: 1.5rem;
@@ -129,5 +149,9 @@
 
   .progress-score {
     align-items: flex-start;
+  }
+
+  .progress-summary {
+    grid-template-columns: 1fr;
   }
 }

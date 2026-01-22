@@ -8,12 +8,6 @@
 
 .topics-header {
   text-align: center;
-  margin-bottom: 2rem;
-}
-
-.topics-header h1 {
-  font-size: 2.5rem;
-  color: var(--primary-color);
 }
 
 .topics-grid {
@@ -23,18 +17,42 @@
   align-items: stretch;
 }
 
-.topic-dashboard {
+.topics-overview {
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.topic-dashboard h2 {
+.topics-overview-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.topics-overview-header h2 {
   margin-top: 0;
   color: var(--primary-color);
 }
 
-.topic-dashboard p {
+.topics-overview-header p {
   color: var(--text-secondary);
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
+}
+
+.topics-overview-note,
+.topics-overview-loading {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.topics-overview-body {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.2fr) minmax(220px, 0.8fr);
+  gap: 1.5rem;
+  align-items: start;
 }
 
 .topic-dashboard-grid {
@@ -62,6 +80,26 @@
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--primary-color);
+}
+
+.topic-points-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+}
+
+.topic-points-panel h3 {
+  margin: 0;
+  color: var(--primary-color);
+}
+
+.topic-points-panel p {
+  margin: 0;
+  color: var(--text-secondary);
 }
 
 .topic-card {
@@ -96,6 +134,16 @@
     color-mix(in srgb, var(--bg-secondary) 65%, transparent),
     color-mix(in srgb, var(--bg-secondary) 92%, transparent)
   );
+}
+
+.topic-card.skeleton-card::before,
+.topic-card.skeleton-card::after {
+  display: none;
+}
+
+.topic-card.skeleton-card {
+  background-color: var(--bg-secondary);
+  pointer-events: none;
 }
 
 .topic-card > * {
@@ -186,26 +234,8 @@
   accent-color: var(--primary-color);
 }
 
-.topic-points-summary {
-  margin-bottom: 2rem;
-  display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) minmax(180px, 0.8fr) minmax(160px, 0.6fr);
-  gap: 1rem;
-  align-items: center;
-}
-
-.topic-points-summary h2 {
-  margin-top: 0;
-  color: var(--primary-color);
-}
-
-.topic-points-summary p {
-  margin-bottom: 0;
-  color: var(--text-secondary);
-}
-
 .topic-points-total {
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1rem 1.25rem;
@@ -243,7 +273,87 @@
     justify-content: flex-start;
   }
 
-  .topic-points-summary {
+  .topics-overview-body {
     grid-template-columns: 1fr;
   }
+}
+
+.gamification-summary {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 220px;
+}
+
+.points-badge {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px dashed var(--border-color);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.current-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  background: rgba(15, 118, 110, 0.1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+}
+
+.current-points {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+}
+
+.level-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.level-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.progress-bar-track {
+  height: 8px;
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 999px;
+  transition: width 0.5s ease-out;
+}
+
+.points-needed {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.max-level-message {
+  text-align: center;
+  color: var(--primary-color);
+  font-weight: 600;
+  padding: 0.5rem;
+  background: rgba(212, 162, 59, 0.15);
+  border-radius: 8px;
 }

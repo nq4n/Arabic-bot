@@ -13,6 +13,8 @@ import { ThemeProvider } from "./hooks/ThemeContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AchievementToast from "./components/AchievementToast";
+import SkeletonPage from "./components/SkeletonPage";
 
 // Pages
 import Topics from "./pages/Topics";
@@ -23,13 +25,18 @@ import Login from "./pages/Login";
 import TeacherPanel from "./pages/TeacherPanel";
 import MySubmissions from "./pages/MySubmissions";
 import Submissions from "./pages/Submissions";
-import SubmissionReview from "./pages/SubmissionReview"; 
+import ActivitySubmissionsPage from "./pages/ActivitySubmissionsPage"; // New import
+import SubmissionReview from "./pages/SubmissionReview";
 import StudentProgress from "./pages/StudentProgress";
 import AboutUs from "./pages/AboutUs";
 import FirstLoginChangePassword from "./components/FirstLoginChangePassword";
 import ChatCenter from "./pages/ChatCenter";
+import Profile from "./pages/Profile";
 import CollaborativeActivity from "./pages/CollaborativeActivity";
 import PeerDialogueActivity from "./pages/PeerDialogueActivity";
+import ReportAssemblyActivity from "./pages/ReportAssemblyActivity";
+import LandscapeDescriptionTutorial from "./pages/LandscapeDescriptionTutorial";
+import Activity from "./pages/Activity";
 
 export type UserRole = "student" | "teacher" | "admin" | null;
 
@@ -93,7 +100,7 @@ const AppContent = () => {
   };
 
   if (isSessionLoading) {
-    return <div className="container">تحميل...</div>;
+    return <SkeletonPage />;
   }
 
   if (showChangePassword && session) {
@@ -114,6 +121,7 @@ const AppContent = () => {
       className={`App fade-in-page ${isLoginPage ? "login-view" : ""}`}
     >
       {!isLoginPage && <Navbar session={session} userRole={userRole} />}
+      <AchievementToast />
 
       <main>
         <Routes>
@@ -172,6 +180,30 @@ const AppContent = () => {
             }
           />
           <Route
+            path="/report-assembly/:topicId"
+            element={
+              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+                <ReportAssemblyActivity />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activity/:topicId/tutorial"
+            element={
+              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+                <LandscapeDescriptionTutorial />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activity/:topicId"
+            element={
+              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+                <Activity />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/evaluate/:topicId"
             element={
               <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
@@ -204,6 +236,18 @@ const AppContent = () => {
                 requiredRole={["teacher", "admin"]}
               >
                 <TeacherPanel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activity-submissions"
+            element={
+              <ProtectedRoute
+                userRole={userRole}
+                isRoleLoading={isRoleLoading}
+                requiredRole={["teacher", "admin"]}
+              >
+                <ActivitySubmissionsPage />
               </ProtectedRoute>
             }
           />
@@ -252,6 +296,18 @@ const AppContent = () => {
                 requiredRole={["student", "teacher", "admin"]}
               >
                 <ChatCenter />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute
+                userRole={userRole}
+                isRoleLoading={isRoleLoading}
+                requiredRole={["student", "teacher", "admin"]}
+              >
+                <Profile />
               </ProtectedRoute>
             }
           />

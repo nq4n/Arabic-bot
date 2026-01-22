@@ -4,10 +4,13 @@ import { supabase } from "../supabaseClient";
 import { topics, WritingSection } from "../data/topics";
 import { rubrics } from "../data/rubrics";
 import { getAIAnalysis } from "../services/aiEvaluationService";
-import { isLessonSectionActive } from "../utils/lessonSettings";
+import { LessonVisibility, buildLessonVisibilityFromRows, getLessonVisibility } from "../utils/lessonSettings";
 import "../styles/Evaluate.css";
 import { Session } from "@supabase/supabase-js";
 import { logAdminNotification } from "../utils/adminNotifications";
+import { emitAchievementToast } from "../utils/achievementToast";
+import { trackEvaluationSubmission } from "../utils/studentTracking";
+import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 
 type WritingValues = { [key: string]: string };
 
@@ -17,6 +20,9 @@ export default function Evaluate() {
   const topic = topics.find((t) => t.id === topicId);
   const rubric = rubrics.find((r) => r.topicId === topicId);
   const topicIds = useMemo(() => topics.map((t) => t.id), []);
+  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
+    getLessonVisibility(topicIds)
+  );
 
   const initialWritingValues = topic?.writingSections
     ? topic.writingSections.reduce((acc: WritingValues, section: WritingSection) => ({ ...acc, [section.id]: "" }), {})
@@ -25,12 +31,65 @@ export default function Evaluate() {
 
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const [userProfile, setUserProfile] = useState<{ full_name: string; grade: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
   }, []);
+
+  useEffect(() => {
+    const loadLessonVisibilitySettings = async () => {
+      setIsLoading(true);
+      if (!session || !topic) {
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, added_by_teacher_id, full_name, grade")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profileError) {
+        setIsLoading(false);
+        return;
+      }
+
+      setUserProfile({ full_name: profile.full_name, grade: profile.grade });
+
+      const teacherId =
+        profile?.role === "teacher" || profile?.role === "admin"
+          ? session.user.id
+          : profile?.added_by_teacher_id;
+
+      if (!teacherId) {
+        setIsLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("lesson_visibility_settings")
+        .select("topic_id, settings")
+        .eq("teacher_id", teacherId);
+
+      if (error) {
+        setIsLoading(false);
+        return;
+      }
+
+      const next = buildLessonVisibilityFromRows(topicIds, data || []);
+      setLessonVisibility(next);
+      setIsLoading(false);
+    };
+
+    loadLessonVisibilitySettings();
+  }, [session, topic, topicIds]);
+
+
 
   const handleInputChange = (id: string, value: string) => {
     setWritingValues((prev) => ({ ...prev, [id]: value }));
@@ -61,6 +120,8 @@ export default function Evaluate() {
         evaluationTask: topic.evaluationTask.description,
         evaluationMode: topic.evaluationTask.mode,
         writingSections: topic.writingSections,
+        studentName: userProfile?.full_name,
+        studentGrade: userProfile?.grade,
       });
 
       // 2. Save submission with the correct schema and get the new ID
@@ -80,17 +141,31 @@ export default function Evaluate() {
         // Throw the specific error from Supabase to be caught below
         throw submissionError;
       }
-      
+
       // 3. Navigate to the new submission review page on success
       if (newSubmission) {
-          await logAdminNotification({
-            recipientId: session.user.id,
-            actorId: session.user.id,
-            actorRole: "student",
-            message: "تم تسليم الكتابة وحصلت على 10 نقاط.",
-            category: "points",
+        await logAdminNotification({
+          recipientId: session.user.id,
+          actorId: session.user.id,
+          actorRole: "student",
+          message: "تم تسليم الكتابة وحصلت على 10 نقاط.",
+          category: "points",
+        });
+        await trackEvaluationSubmission(session.user.id, topic.id, aiResult.score);
+        emitAchievementToast({
+          title: "تم احتساب النقاط",
+          message: "تم منحك 10 نقاط لإكمال التقييم.",
+          points: 10,
+          tone: "success",
+        });
+        if (typeof aiResult.score === "number" && aiResult.score >= 85) {
+          emitAchievementToast({
+            title: "نتيجة مميزة",
+            message: `درجة ممتازة! حصلت على ${aiResult.score} في التقييم.`,
+            tone: "info",
           });
-          navigate(`/submission/${newSubmission.id}`);
+        }
+        navigate(`/submission/${newSubmission.id}`);
       }
 
     } catch (error: any) {
@@ -106,10 +181,29 @@ export default function Evaluate() {
     return <div className="evaluate-page" dir="rtl">الموضوع غير موجود</div>;
   }
 
-  if (!isLessonSectionActive(topicIds, topic.id, "evaluation")) {
+  if (isLoading) {
     return (
       <div className="evaluate-page" dir="rtl">
-        <header className="evaluate-header">
+        <header className="evaluate-header page-header">
+          <SkeletonHeader titleWidthClass="skeleton-w-40" subtitleWidthClass="skeleton-w-70" />
+        </header>
+        <div className="evaluate-content-wrapper">
+          <div className="vertical-stack">
+            <SkeletonSection lines={4} />
+            <SkeletonSection lines={4} />
+          </div>
+          <div className="vertical-stack">
+            <SkeletonSection lines={5} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!(lessonVisibility[topic.id]?.evaluation ?? true)) {
+    return (
+      <div className="evaluate-page" dir="rtl">
+        <header className="evaluate-header page-header">
           <h1>قسم الكتابة والتقييم غير متاح حاليًا</h1>
           <p>تم إيقاف هذا القسم من قبل المعلم. يرجى الرجوع لاحقًا.</p>
         </header>
@@ -135,8 +229,8 @@ export default function Evaluate() {
 
   return (
     <div className="evaluate-page" dir="rtl">
-      <header className="evaluate-header">
-        <h1>{evaluationTitle}: {topic.title}</h1>
+      <header className="evaluate-header page-header">
+        <h1 className="page-title">{evaluationTitle}: {topic.title}</h1>
         <p>املأ الأقسام أدناه واحصل على تقييم فوري بناءً على المعايير الموضحة.</p>
       </header>
 

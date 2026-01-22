@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient";
 import type { Session } from "@supabase/supabase-js";
 import "../styles/ChatCenter.css";
 import { logAdminNotification } from "../utils/adminNotifications";
+import { SkeletonSection } from "../components/SkeletonBlocks";
 
 const CHAT_REFRESH_MS = 8000;
 const ADMIN_THREAD_ID = "admin-log";
@@ -12,6 +13,7 @@ type UserRole = "student" | "teacher" | "admin" | null;
 type Profile = {
   id: string;
   username: string | null;
+  full_name?: string | null;
   email: string | null;
   role: UserRole;
   added_by_teacher_id?: string | null;
@@ -51,7 +53,7 @@ type SidebarItem = {
 };
 
 const getDisplayName = (profile: Profile | null) =>
-  profile?.username || profile?.email || "مستخدم";
+  profile?.full_name || profile?.username || profile?.email || "مستخدم";
 
 export default function ChatCenter() {
   const [session, setSession] = useState<Session | null>(null);
@@ -64,6 +66,7 @@ export default function ChatCenter() {
   const [input, setInput] = useState("");
   const [chatEnabled, setChatEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [isThreadLoading, setIsThreadLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const isAdminThread = selectedPeerId === ADMIN_THREAD_ID;
@@ -82,8 +85,8 @@ export default function ChatCenter() {
     const base: SidebarItem[] = [
       {
         id: ADMIN_THREAD_ID,
-        label: "إشعارات الإدارة",
-        roleLabel: "سجل الأنشطة",
+        label: "سجل الإشعارات",
+        roleLabel: "توثيق الأنشطة",
         avatarLetter: "إ",
         isAdminThread: true,
       },
@@ -93,7 +96,7 @@ export default function ChatCenter() {
       id: peer.id,
       label: getDisplayName(peer),
       roleLabel:
-        peer.role === "admin" ? "مسؤول" : peer.role === "teacher" ? "معلم" : "طالب",
+        peer.role === "admin" ? "مشرف" : peer.role === "teacher" ? "معلم" : "طالب",
       avatarLetter: getDisplayName(peer).charAt(0),
     }));
 
@@ -111,12 +114,12 @@ export default function ChatCenter() {
       if (!session) return;
       const { data, error: profileError } = await supabase
         .from("profiles")
-        .select("id, username, email, role, added_by_teacher_id")
+        .select("id, username, full_name, email, role, added_by_teacher_id")
         .eq("id", session.user.id)
         .single();
 
       if (profileError) {
-        setError("تعذر تحميل بيانات المستخدم.");
+        setError("تعذر تحميل الملف الشخصي.");
         return;
       }
 
@@ -136,7 +139,7 @@ export default function ChatCenter() {
       const assignedTeacherId = currentProfile?.added_by_teacher_id ?? null;
       const { data, error: peersError } = await supabase
         .from("profiles")
-        .select("id, username, email, role")
+        .select("id, username, full_name, email, role")
         .in("role", ["teacher", "admin"])
         .order("username", { ascending: true });
 
@@ -158,7 +161,7 @@ export default function ChatCenter() {
 
     let studentsQuery = supabase
       .from("profiles")
-      .select("id, username, email, role")
+      .select("id, username, full_name, email, role")
       .eq("role", "student")
       .order("username", { ascending: true });
 
@@ -192,7 +195,7 @@ export default function ChatCenter() {
       .maybeSingle();
 
     if (settingsError) {
-      setError("تعذر تحميل حالة الدردشة.");
+      setError("تعذر تحديث إعدادات الدردشة.");
       return;
     }
 
@@ -202,6 +205,7 @@ export default function ChatCenter() {
 
   const loadMessages = useCallback(async () => {
     if (!teacherId || !studentId) return;
+    setIsThreadLoading(true);
 
     const { data, error: messagesError } = await supabase
       .from("teacher_chat_messages")
@@ -214,14 +218,17 @@ export default function ChatCenter() {
 
     if (messagesError) {
       setError("تعذر تحميل الرسائل.");
+      setIsThreadLoading(false);
       return;
     }
 
     setMessages((data as ChatMessage[]) ?? []);
+    setIsThreadLoading(false);
   }, [studentId, teacherId]);
 
   const loadAdminNotifications = useCallback(async () => {
     if (!session) return;
+    setIsThreadLoading(true);
 
     const { data, error: adminError } = await supabase
       .from("admin_notifications")
@@ -231,10 +238,12 @@ export default function ChatCenter() {
 
     if (adminError) {
       setError("تعذر تحميل إشعارات الإدارة.");
+      setIsThreadLoading(false);
       return;
     }
 
     setAdminNotifications((data as AdminNotification[]) ?? []);
+    setIsThreadLoading(false);
   }, [session]);
 
   useEffect(() => {
@@ -285,14 +294,14 @@ export default function ChatCenter() {
         recipientId: studentId,
         actorId: session.user.id,
         actorRole: currentRole ?? "teacher",
-        message: `تلقيت ردًا من ${senderName}.`,
+        message: `تم إرسال رد من ${senderName}.`,
         category: "teacher_reply",
       });
       await logAdminNotification({
         recipientId: session.user.id,
         actorId: session.user.id,
         actorRole: currentRole ?? "teacher",
-        message: `أرسلت ردًا إلى ${recipientName}.`,
+        message: `تم إرسال رد إلى ${recipientName}.`,
         category: "teacher_reply",
       });
     }
@@ -339,28 +348,38 @@ export default function ChatCenter() {
             <h3>{currentRole === "student" ? "المعلمون" : "الطلاب"}</h3>
           </div>
           <div className="chat-sidebar-list">
-            {loading && <div className="chat-empty">جاري التحميل...</div>}
-            {!loading && peers.length === 0 && (
-              <div className="chat-empty">لا يوجد مستخدمون</div>
+            {loading ? (
+              <div className="chat-sidebar-skeleton" aria-hidden="true">
+                <div className="skeleton skeleton-line skeleton-w-80" />
+                <div className="skeleton skeleton-line skeleton-w-70" />
+                <div className="skeleton skeleton-line skeleton-w-60" />
+                <div className="skeleton skeleton-line skeleton-w-80" />
+              </div>
+            ) : (
+              <>
+                {peers.length === 0 && (
+                  <div className="chat-empty">لا يوجد مستخدمون.</div>
+                )}
+                {sidebarItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`chat-sidebar-item ${
+                      selectedPeerId === item.id ? "is-active" : ""
+                    }`}
+                    onClick={() => setSelectedPeerId(item.id)}
+                  >
+                    <div className="chat-peer-avatar">
+                      {item.avatarLetter}
+                    </div>
+                    <div className="chat-peer-info">
+                      <span className="chat-peer-name">{item.label}</span>
+                      <span className="chat-peer-meta">{item.roleLabel}</span>
+                    </div>
+                  </button>
+                ))}
+              </>
             )}
-            {sidebarItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`chat-sidebar-item ${
-                  selectedPeerId === item.id ? "is-active" : ""
-                }`}
-                onClick={() => setSelectedPeerId(item.id)}
-              >
-                <div className="chat-peer-avatar">
-                  {item.avatarLetter}
-                </div>
-                <div className="chat-peer-info">
-                  <span className="chat-peer-name">{item.label}</span>
-                  <span className="chat-peer-meta">{item.roleLabel}</span>
-                </div>
-              </button>
-            ))}
           </div>
         </aside>
 
@@ -371,7 +390,7 @@ export default function ChatCenter() {
                 <>
                   <div className="chat-peer-avatar">إ</div>
                   <div>
-                    <div>إشعارات الإدارة</div>
+                    <div>سجل الإشعارات</div>
                     <div className="chat-peer-meta">توثيق الأنشطة</div>
                   </div>
                 </>
@@ -383,11 +402,7 @@ export default function ChatCenter() {
                   <div>
                     <div>{getDisplayName(selectedPeer)}</div>
                     <div className="chat-peer-meta">
-                      {selectedPeer.role === "admin"
-                        ? "مسؤول"
-                        : selectedPeer.role === "teacher"
-                          ? "معلم"
-                          : "طالب"}
+                      {selectedPeer.role === "admin" ? "مشرف" : selectedPeer.role === "teacher" ? "معلم" : "طالب"}
                     </div>
                   </div>
                 </>
@@ -400,7 +415,7 @@ export default function ChatCenter() {
                 <div>
                   <div>الدردشة للطلاب</div>
                   <div className="chat-toggle-status">
-                    {chatEnabled ? "مفعلة" : "متوقفة"}
+                    {chatEnabled ? "متاحة" : "معطلة"}
                   </div>
                 </div>
                 <button
@@ -416,54 +431,58 @@ export default function ChatCenter() {
           </div>
 
           {currentRole === "student" && !chatEnabled && !isAdminThread && (
-            <div className="chat-disabled-note">
-              قام المعلم بتعطيل الدردشة أثناء الحصة.
-            </div>
+            <div className="chat-disabled-note">الدردشة غير متاحة الآن. يرجى المحاولة لاحقاً.</div>
           )}
 
           {error && <div className="chat-error-banner">{error}</div>}
 
-          <div className="chat-thread">
-            {isThreadEmpty && (
-              <div className="chat-empty">
-                {isAdminThread ? "لا توجد إشعارات حتى الآن." : "ابدأ المحادثة بإرسال رسالة."}
-              </div>
-            )}
-            {activeMessages.map((message) =>
-              !isChatMessage(message) ? (
-                <div key={message.id} className="chat-bubble is-admin">
-                  <span className="chat-sender">إشعار النظام</span>
-                  <p>{message.message}</p>
-                  <span className="chat-time">
-                    {new Date(message.created_at).toLocaleTimeString("ar-SA", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-              ) : (
-                <div
-                  key={message.id}
-                  className={`chat-bubble ${
-                    message.sender_id === session?.user.id ? "is-sent" : "is-received"
-                  }`}
-                >
-                  <span className="chat-sender">
-                    {message.sender_id === session?.user.id
-                      ? "أنت"
-                      : message.sender_name ||
-                        getDisplayName(selectedPeer) ||
-                        "المعلم"}
-                  </span>
-                  <p>{message.message}</p>
-                  <span className="chat-time">
-                    {new Date(message.created_at).toLocaleTimeString("ar-SA", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-              )
+          <div className="chat-thread" aria-busy={isThreadLoading}>
+            {isThreadLoading ? (
+              <SkeletonSection lines={4} showTitle={false} />
+            ) : (
+              <>
+                {isThreadEmpty && (
+                  <div className="chat-empty">
+                    {isAdminThread ? "لا توجد إشعارات بعد." : "لا توجد رسائل. ابدأ المحادثة..."}
+                  </div>
+                )}
+                {activeMessages.map((message) =>
+                  !isChatMessage(message) ? (
+                    <div key={message.id} className="chat-bubble is-admin">
+                      <span className="chat-sender">إشعار النظام</span>
+                      <p>{message.message}</p>
+                      <span className="chat-time">
+                        {new Date(message.created_at).toLocaleTimeString("ar-SA", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      key={message.id}
+                      className={`chat-bubble ${
+                        message.sender_id === session?.user.id ? "is-sent" : "is-received"
+                      }`}
+                    >
+                      <span className="chat-sender">
+                        {message.sender_id === session?.user.id
+                          ? "أنا"
+                          : message.sender_name ||
+                            getDisplayName(selectedPeer) ||
+                            "المرسل"}
+                      </span>
+                      <p>{message.message}</p>
+                      <span className="chat-time">
+                        {new Date(message.created_at).toLocaleTimeString("ar-SA", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  )
+                )}
+              </>
             )}
           </div>
 
@@ -476,7 +495,7 @@ export default function ChatCenter() {
                 placeholder={
                   chatEnabled
                     ? `اكتب رسالة إلى ${getDisplayName(selectedPeer)}...`
-                    : "الدردشة معطلة حاليًا"
+                    : "الدردشة معطلة حالياً"
                 }
                 disabled={!chatEnabled || !selectedPeerId}
               />

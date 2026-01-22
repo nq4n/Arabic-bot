@@ -154,3 +154,25 @@
   background-color: var(--destructive-hover-bg);
   color: var(--destructive-hover-text);
 }
+
+.profile-dropdown-content a {
+  width: 100%;
+  border: none;
+  background: none;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  transition: background-color 0.18s ease, color 0.18s ease;
+  text-decoration: none;
+}
+
+.profile-dropdown-content a:hover {
+  background-color: var(--bg-main);
+}

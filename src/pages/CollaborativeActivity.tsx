@@ -3,8 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabaseClient";
 import { topics } from "../data/topics";
-import { isLessonSectionActive } from "../utils/lessonSettings";
+import { LessonVisibility, buildLessonVisibilityFromRows, getLessonVisibility } from "../utils/lessonSettings";
 import CollaborativeChat from "../components/CollaborativeChat";
+import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/Topic.css";
 
 export default function CollaborativeActivity() {
@@ -13,11 +14,18 @@ export default function CollaborativeActivity() {
   const topic = topics.find((t) => t.id === topicId);
   const topicIds = useMemo(() => topics.map((t) => t.id), []);
   const [session, setSession] = useState<Session | null>(null);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
+  const [isVisibilityLoading, setIsVisibilityLoading] = useState(true);
+  const [isCompletionLoading, setIsCompletionLoading] = useState(true);
+  const [isCaseLoading, setIsCaseLoading] = useState(true);
+  const [hasLoadedCases, setHasLoadedCases] = useState(false);
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
   const [chatId, setChatId] = useState<number | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [isCollaborativeActive, setIsCollaborativeActive] = useState(true);
+  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
+    getLessonVisibility(topicIds)
+  );
   const [isCompleted, setIsCompleted] = useState(false);
   const [caseStats, setCaseStats] = useState<
     Record<
@@ -25,10 +33,13 @@ export default function CollaborativeActivity() {
       { chatId: number; count: number; max: number; isParticipant: boolean }
     >
   >({});
+  const isPageLoading =
+    isSessionLoading || isVisibilityLoading || isCompletionLoading || isCaseLoading;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setIsSessionLoading(false);
     });
   }, []);
 
@@ -38,26 +49,26 @@ export default function CollaborativeActivity() {
     setStartError(null);
   }, [topicId]);
 
-  if (!topic) {
-    return <div className="topic-page">الموضوع غير موجود.</div>;
-  }
-
-  const isActivityActive = isLessonSectionActive(topicIds, topic.id, "activity");
-  const isDiscussingIssue = topic.id === "discussing-issue";
+  const isDiscussingIssue = topic?.id === "discussing-issue";
   const discussionCases = useMemo(
-    () => topic.writingPrompts?.list ?? [],
+    () => topic?.writingPrompts?.list ?? [],
     [topic]
   );
+
   const defaultCaseCapacity = 6;
 
   const loadCaseCounts = useCallback(async () => {
     if (!topic || !session || !isDiscussingIssue) return;
+    if (!hasLoadedCases) {
+      setIsCaseLoading(true);
+    }
 
     const { data, error } = await supabase.rpc("get_case_participant_counts", {
       _topic_id: topic.id,
     });
 
     if (error) {
+      setIsCaseLoading(false);
       return;
     }
 
@@ -82,11 +93,19 @@ export default function CollaborativeActivity() {
     });
 
     setCaseStats(nextStats);
-  }, [isDiscussingIssue, session, topic]);
+    if (!hasLoadedCases) {
+      setIsCaseLoading(false);
+      setHasLoadedCases(true);
+    }
+  }, [hasLoadedCases, isDiscussingIssue, session, topic]);
 
   useEffect(() => {
-    const loadCollaborativeVisibility = async () => {
-      if (!session) return;
+    const loadLessonVisibilitySettings = async () => {
+      setIsVisibilityLoading(true);
+      if (!session || !topic) {
+        setIsVisibilityLoading(false);
+        return;
+      }
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
@@ -95,7 +114,7 @@ export default function CollaborativeActivity() {
         .single();
 
       if (profileError) {
-        setIsCollaborativeActive(true);
+        setIsVisibilityLoading(false);
         return;
       }
 
@@ -105,32 +124,35 @@ export default function CollaborativeActivity() {
           : profile?.added_by_teacher_id;
 
       if (!teacherId) {
-        setIsCollaborativeActive(true);
+        setIsVisibilityLoading(false);
         return;
       }
 
       const { data, error } = await supabase
-        .from("lesson_section_visibility")
-        .select("is_enabled")
-        .eq("teacher_id", teacherId)
-        .eq("topic_id", topic.id)
-        .eq("section", "collaborative")
-        .limit(1);
+        .from("lesson_visibility_settings")
+        .select("topic_id, settings")
+        .eq("teacher_id", teacherId);
 
       if (error) {
-        setIsCollaborativeActive(true);
+        setIsVisibilityLoading(false);
         return;
       }
 
-      setIsCollaborativeActive(data?.[0]?.is_enabled ?? true);
+      const next = buildLessonVisibilityFromRows(topicIds, data || []);
+      setLessonVisibility(next);
+      setIsVisibilityLoading(false);
     };
 
-    loadCollaborativeVisibility();
-  }, [session, topic.id]);
+    loadLessonVisibilitySettings();
+  }, [session, topic, topicIds]);
 
   useEffect(() => {
     const loadCompletion = async () => {
-      if (!session || !topic) return;
+      setIsCompletionLoading(true);
+      if (!session || !topic) {
+        setIsCompletionLoading(false);
+        return;
+      }
       const { data, error } = await supabase
         .from("collaborative_activity_completions")
         .select("id")
@@ -139,8 +161,12 @@ export default function CollaborativeActivity() {
         .eq("activity_kind", "discussion")
         .maybeSingle();
 
-      if (error) return;
+      if (error) {
+        setIsCompletionLoading(false);
+        return;
+      }
       setIsCompleted(!!data);
+      setIsCompletionLoading(false);
     };
 
     loadCompletion();
@@ -154,14 +180,38 @@ export default function CollaborativeActivity() {
     return () => window.clearInterval(interval);
   }, [chatId, isDiscussingIssue, loadCaseCounts, session]);
 
+  if (!topic) {
+    return <div className="topic-page">عذرًا، الدرس غير موجود.</div>;
+  }
+
+  if (isPageLoading) {
+    return (
+      <div className="topic-page" dir="rtl">
+        <header className="topic-main-header page-header">
+          <SkeletonHeader titleWidthClass="skeleton-w-40" subtitleWidthClass="skeleton-w-70" />
+        </header>
+        <div className="topic-content-wrapper">
+          <div className="vertical-stack">
+            <SkeletonSection lines={3} />
+            <SkeletonSection lines={3} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isActivityActive = lessonVisibility[topic.id]?.activity ?? true;
+
+  const isCollaborativeActive = lessonVisibility[topic.id]?.collaborative ?? true;
+
   if (!isActivityActive || !isCollaborativeActive) {
     return (
       <div className="topic-page" dir="rtl">
         <div className="not-found-container">
-          <h1>نشاط المناقشة غير متاح</h1>
-          <p>هذا النشاط غير مفعل حالياً، يرجى العودة لاحقاً.</p>
+          <h1>هذا النشاط غير متاح الآن</h1>
+          <p>قد يكون معلمك عطّل نشاط المناقشة لهذا الدرس مؤقتًا. يمكنك العودة لاحقًا.</p>
           <button className="button" onClick={() => navigate(-1)}>
-            العودة
+            رجوع
           </button>
         </div>
       </div>
@@ -172,9 +222,9 @@ export default function CollaborativeActivity() {
     return (
       <div className="topic-page" dir="rtl">
         <div className="not-found-container">
-          <h1>O¦U. OU,OU+OO­ U+O'OOú OU,U.U+OU,O'Oc.</h1>
+          <h1>أحسنت! أنهيت نشاط المناقشة لهذا الدرس.</h1>
           <button className="button" onClick={() => navigate(`/topic/${topic.id}`)}>
-            OU,O1U^O_Oc
+            العودة إلى الدرس
           </button>
         </div>
       </div>
@@ -196,9 +246,9 @@ export default function CollaborativeActivity() {
 
     if (error) {
       if (error.message?.includes("case full")) {
-        setStartError("وصلت القضية للحد الأقصى من الطلاب.");
+        setStartError("هذه المجموعة ممتلئة الآن، اختر مجموعة أخرى.");
       } else {
-        setStartError("تعذر بدء جلسة المناقشة.");
+        setStartError("تعذر بدء نشاط المناقشة. حاول مرة أخرى.");
       }
       setIsStarting(false);
       return;
@@ -219,19 +269,16 @@ export default function CollaborativeActivity() {
         <div className="vertical-stack">
           <section className="topic-section card sequential-section">
             <h2 className="section-title">
-              <i className="fas fa-comments icon"></i> مناقشة القضية
+              <i className="fas fa-comments icon"></i> مناقشة جماعية موجّهة
             </h2>
             <p className="muted-note">
-              هذا النشاط مخصص لمناقشة قضية مع زملائك وفق آداب الحوار وتوجيهات
-              المعلم.
+              اختر قضية للنقاش وشارك بأفكارك وأدلتك، مع احترام آراء زملائك والالتزام بآداب الحوار وتوجيهات المعلم.
             </p>
           </section>
 
           {!isDiscussingIssue ? (
             <section className="topic-section card sequential-section">
-              <p className="muted-note">
-                هذا النشاط غير مرتبط بموضوع مناقشة القضية لهذا الدرس.
-              </p>
+              <p className="muted-note">هذا الدرس لا يتضمن نشاط مناقشة جماعية.</p>
             </section>
           ) : session ? (
             chatId ? (
@@ -242,10 +289,10 @@ export default function CollaborativeActivity() {
                   <i className="fas fa-list-check icon"></i> اختر قضية للنقاش
                 </h2>
                 <p className="muted-note">
-                  حدد القضية التي تريد مناقشتها، ثم اضغط على زر بدء المناقشة.
+                  اختر قضية للانضمام ثم شارك بأفكارك وأدلتك مع زملائك.
                 </p>
                 {discussionCases.length === 0 ? (
-                  <p className="muted-note">لا توجد قضايا متاحة لهذا الموضوع.</p>
+                  <p className="muted-note">لا توجد قضايا متاحة حاليًا.</p>
                 ) : (
                   <div className="case-picker">
                     {discussionCases.map((caseTitle) => {
@@ -288,14 +335,14 @@ export default function CollaborativeActivity() {
                         !(caseStats[selectedCase]?.isParticipant ?? false))
                     }
                   >
-                    {isStarting ? "جارٍ بدء النقاش..." : "ابدأ المناقشة"}
+                    {isStarting ? "جاري بدء المناقشة..." : "ابدأ المناقشة"}
                   </button>
                 </div>
               </section>
             )
           ) : (
             <section className="topic-section card sequential-section">
-              <p className="muted-note">جار تحميل بيانات الحساب...</p>
+              <p className="muted-note">جاري التحقق من الحساب...</p>
             </section>
           )}
         </div>

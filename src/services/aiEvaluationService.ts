@@ -25,6 +25,8 @@ const buildSystemPrompt = (
     topicTitle?: string;
     evaluationTask?: string;
     evaluationMode?: "writing" | "discussion" | "report" | "dialogue";
+    studentName?: string;
+    studentGrade?: string;
   }
 ): string => {
   // Simplified and safer score calculation
@@ -53,15 +55,14 @@ const buildSystemPrompt = (
   const firstId = rubric.criteria[0]?.id ?? 'criterion_1';
   const secondId = rubric.criteria[1]?.id ?? 'criterion_2';
   const modeGuidance = context?.evaluationMode
-    ? `**طبيعة المهمة:** ركّز في التقييم على خصائص "${context.evaluationMode}"، مثل ${
-        context.evaluationMode === "discussion"
-          ? "قوة الحجة، احترام الرأي الآخر، وترتيب الأفكار المنطقية."
-          : context.evaluationMode === "dialogue"
-            ? "طبيعية الحوار، وضوح الأصوات، وتسلسل تبادل الكلام."
-            : context.evaluationMode === "report"
-              ? "الوضوح والموضوعية والتنظيم وفق هيكل التقرير."
-              : "سلامة التعبير والأسلوب وتسلسل الأفكار."
-      }`
+    ? `**طبيعة المهمة:** ركّز في التقييم على خصائص "${context.evaluationMode}"، مثل ${context.evaluationMode === "discussion"
+      ? "قوة الحجة، احترام الرأي الآخر، وترتيب الأفكار المنطقية."
+      : context.evaluationMode === "dialogue"
+        ? "طبيعية الحوار، وضوح الأصوات، وتسلسل تبادل الكلام."
+        : context.evaluationMode === "report"
+          ? "الوضوح والموضوعية والتنظيم وفق هيكل التقرير."
+          : "سلامة التعبير والأسلوب وتسلسل الأفكار."
+    }`
     : "";
 
   return `
@@ -70,6 +71,8 @@ const buildSystemPrompt = (
 ${context?.topicTitle ? `**عنوان الدرس:** ${context.topicTitle}` : ""}
 ${context?.evaluationTask ? `**مهمة التقييم الخاصة بالدرس:** ${context.evaluationTask}` : ""}
 ${modeGuidance}
+${context?.studentName ? `**اسم الطالب:** ${context.studentName}` : ""}
+${context?.studentGrade ? `**الصف الدراسي:** ${context.studentGrade}` : ""}
 
 **معايير التقييم (المجموع الكلي المحتمل: ${totalScore} نقطة):**
 ${criteriaList}
@@ -127,13 +130,15 @@ export const getAIAnalysis = async (
     evaluationTask?: string;
     evaluationMode?: "writing" | "discussion" | "report" | "dialogue";
     writingSections?: WritingSection[];
+    studentName?: string;
+    studentGrade?: string;
   }
 ): Promise<AIResponseType> => {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = import.meta.env.VITE_REVIEW_API_KEY;
 
   if (!apiKey) {
-    console.error('OpenAI API key is missing.');
-    throw new Error('VITE_OPENAI_API_KEY is not configured in your .env file.');
+    console.error('Review API key is missing.');
+    throw new Error('VITE_REVIEW_API_KEY is not configured in your .env file.');
   }
 
   const systemPrompt = buildSystemPrompt(rubric, context);
