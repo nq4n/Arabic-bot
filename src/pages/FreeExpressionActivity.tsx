@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabaseClient";
@@ -13,6 +13,8 @@ import { emitAchievementToast } from "../utils/achievementToast";
 import { trackActivitySubmission } from "../utils/studentTracking";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/FreeExpressionActivity.css";
+import { SessionTimeTracker, requestTrackingConfirmation } from "../utils/enhancedStudentTracking";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 type ActivitySubmissionRow = {
   id: number;
@@ -74,6 +76,17 @@ export default function FreeExpressionActivity() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [sessionTimer, setSessionTimer] = useState<SessionTimeTracker | null>(null);
+
+  useEffect(() => {
+    const timer = new SessionTimeTracker('free_expression_activity');
+    setSessionTimer(timer);
+
+    return () => {
+        timer.endSession();
+    };
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -250,7 +263,7 @@ export default function FreeExpressionActivity() {
   const isSubmitted = submission?.status === "submitted";
   const isPageLoading = isSessionLoading || isVisibilityLoading || isSubmissionLoading;
 
-  const handleSubmit = async () => {
+  const handleConfirmSubmit = useCallback(async () => {
     if (!interactiveActivity || !session || !topic) return;
     if (!responseText.trim()) {
       setError("يرجى كتابة التعبير قبل الإرسال.");
@@ -261,6 +274,7 @@ export default function FreeExpressionActivity() {
     setError(null);
     setNotice(null);
     const hadSubmission = submission?.status === "submitted";
+    const sessionDuration = sessionTimer?.endSession() || 0;
 
     const { data, error } = await supabase
       .from("activity_submissions")
@@ -280,8 +294,18 @@ export default function FreeExpressionActivity() {
     if (error) {
       setError("حدث خطأ أثناء حفظ التعبير.");
       setIsSubmitting(false);
+      setShowConfirmation(false);
       return;
     }
+
+    await requestTrackingConfirmation({
+        studentId: session.user.id,
+        activityType: 'free_expression_activity',
+        activityId: interactiveActivity.activityId,
+        confirmed: true,
+        sessionDuration,
+        dataQualityScore: 100
+    });
 
     setSubmission(data as ActivitySubmissionRow);
     setNotice("تم حفظ التعبير بنجاح.");
@@ -309,7 +333,12 @@ export default function FreeExpressionActivity() {
     }
 
     setIsSubmitting(false);
-  };
+    setShowConfirmation(false);
+  }, [interactiveActivity, session, topic, responseText, submission, sessionTimer, submissionLabel]);
+
+  const handleSubmit = () => {
+      setShowConfirmation(true);
+  }
 
   const handlePrevPrompt = () => {
     if (promptCards.length === 0 || promptIndex <= 0) return;
@@ -434,7 +463,7 @@ export default function FreeExpressionActivity() {
                   type="button"
                   className="button button-compact free-expression-arrow"
                   onClick={handlePrevPrompt}
-                  disabled={promptIndex <= 0}
+                  disabled={.indexOf(selectedPrompt.id) <= 0}
                   aria-label={"\u0627\u0644\u0633\u0627\u0628\u0642"}
                   title={"\u0627\u0644\u0633\u0627\u0628\u0642"}
                 >
@@ -570,6 +599,14 @@ export default function FreeExpressionActivity() {
           {"\u0627\u0644\u062a\u0627\u0644\u064a"}
         </button>
       </div>
+
+        <ConfirmationDialog
+            isOpen={showConfirmation}
+            onClose={() => setShowConfirmation(false)}
+            onConfirm={handleConfirmSubmit}
+            title="Confirm Submission"
+            message="Are you sure you want to submit your work? This action cannot be undone."
+        />
     </div>
   );
 }

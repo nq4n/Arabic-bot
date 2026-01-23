@@ -4,7 +4,7 @@ import { supabase } from "../supabaseClient";
 import { topics, WritingSection } from "../data/topics";
 import { rubrics } from "../data/rubrics";
 import { getAIAnalysis } from "../services/aiEvaluationService";
-import { LessonVisibility, buildLessonVisibilityFromRows, getLessonVisibility } from "../utils/lessonSettings";
+import { LessonVisibility } from "../utils/lessonSettings";
 import "../styles/Evaluate.css";
 import { Session } from "@supabase/supabase-js";
 import { logAdminNotification } from "../utils/adminNotifications";
@@ -20,9 +20,19 @@ export default function Evaluate() {
   const topic = topics.find((t) => t.id === topicId);
   const rubric = rubrics.find((r) => r.topicId === topicId);
   const topicIds = useMemo(() => topics.map((t) => t.id), []);
-  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
-    getLessonVisibility(topicIds)
-  );
+  // Initialize with sensible defaults - evaluation visible by default
+  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() => {
+    const defaults: LessonVisibility = {};
+    topicIds.forEach((id) => {
+      defaults[id] = {
+        lesson: false,
+        review: false,
+        evaluation: true, // Evaluation is visible by default
+        activity: false
+      };
+    });
+    return defaults;
+  });
 
   const initialWritingValues = topic?.writingSections
     ? topic.writingSections.reduce((acc: WritingValues, section: WritingSection) => ({ ...acc, [section.id]: "" }), {})
@@ -81,8 +91,23 @@ export default function Evaluate() {
         return;
       }
 
-      const next = buildLessonVisibilityFromRows(topicIds, data || []);
-      setLessonVisibility(next);
+      // Build visibility from database - merge with current defaults
+      const updatedVisibility: LessonVisibility = {
+        // Keep existing defaults
+        ...lessonVisibility,
+      };
+      
+      // Override with database values for topics that exist in DB
+      (data || []).forEach((row) => {
+        updatedVisibility[row.topic_id] = {
+          lesson: row.settings?.lesson ?? false,
+          review: row.settings?.review ?? false,
+          evaluation: row.settings?.evaluation ?? true,
+          activity: row.settings?.activity ?? false,
+        };
+      });
+      
+      setLessonVisibility(updatedVisibility);
       setIsLoading(false);
     };
 

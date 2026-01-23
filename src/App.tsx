@@ -264,7 +264,7 @@ const AppContent = () => {
             }
           />
           <Route
-            path="/progress"
+            path="/student-progress"
             element={
               <ProtectedRoute
                 userRole={userRole}

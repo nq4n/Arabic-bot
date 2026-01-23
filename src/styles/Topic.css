@@ -489,12 +489,13 @@
 
 .goals-list {
   list-style: none;
+  direction: rtl;
   padding: 0;
   margin: 0;
 }
 
 .goals-list li {
-  position: relative;
+  position: relative;direction: rtl;
   padding: 0.5rem 2rem 0.5rem 0.5rem;
   margin-bottom: 0.5rem;
   font-size: 1.1rem;
@@ -504,12 +505,4 @@
 
 .goals-list li:last-child {
   border-bottom: none;
-}
-
-.goals-list li::before {
-  content: '?';
-  position: absolute;
-  right: 0;
-  color: var(--primary-color);
-  font-weight: bold;
 }

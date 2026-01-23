@@ -7,6 +7,8 @@ import { LessonVisibility, buildLessonVisibilityFromRows, getLessonVisibility } 
 import PeerDialogueChat from "../components/PeerDialogueChat";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/Topic.css";
+import { SessionTimeTracker, requestTrackingConfirmation } from "../utils/enhancedStudentTracking";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 export default function PeerDialogueActivity() {
   const { topicId } = useParams<{ topicId: string }>();
@@ -28,8 +30,20 @@ export default function PeerDialogueActivity() {
     getLessonVisibility(topicIds)
   );
   const [isCompleted, setIsCompleted] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [sessionTimer, setSessionTimer] = useState<SessionTimeTracker | null>(null);
+
   const isPageLoading =
     isSessionLoading || isVisibilityLoading || isCompletionLoading || isMatchLoading;
+
+  useEffect(() => {
+    const timer = new SessionTimeTracker('peer_dialogue_activity');
+    setSessionTimer(timer);
+
+    return () => {
+        timer.endSession();
+    };
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -145,10 +159,12 @@ export default function PeerDialogueActivity() {
     loadExistingSession();
   }, [loadExistingSession]);
 
-  const handleStart = async () => {
+  const handleConfirmStart = useCallback(async () => {
     if (!session || !topic) return;
     setIsStarting(true);
     setError(null);
+    
+    const sessionDuration = sessionTimer?.endSession() || 0;
 
     const { data, error: startError } = await supabase.rpc(
       "start_dialogue_peer_session",
@@ -158,13 +174,24 @@ export default function PeerDialogueActivity() {
     if (startError) {
       setError("تعذر بدء الحوار. حاول مرة أخرى.");
       setIsStarting(false);
+      setShowConfirmation(false);
       return;
     }
+
+    await requestTrackingConfirmation({
+        studentId: session.user.id,
+        activityType: 'peer_dialogue_activity',
+        activityId: 'peer_dialogue_activity',
+        confirmed: true,
+        sessionDuration,
+        dataQualityScore: 100
+    });
 
     const payload = Array.isArray(data) ? data[0] : data;
     if (!payload) {
       setError("تعذر بدء الحوار. حاول مرة أخرى.");
       setIsStarting(false);
+      setShowConfirmation(false);
       return;
     }
 
@@ -173,6 +200,11 @@ export default function PeerDialogueActivity() {
     setScenarioText(payload.scenario_text ?? null);
     setStatus(payload.session_id ? "matched" : "waiting");
     setIsStarting(false);
+    setShowConfirmation(false);
+  },[session, topic, sessionTimer]);
+
+  const handleStart = () => {
+    setShowConfirmation(true);
   };
 
   useEffect(() => {
@@ -230,7 +262,7 @@ export default function PeerDialogueActivity() {
   }
 
   const isCollaborativeActive = topic
-    ? lessonVisibility[topic.id]?.collaborative ?? true
+    ? lessonVisibility[topic.id]?.activity ?? true
     : true;
 
   if (!isActivityActive || !isCollaborativeActive) {
@@ -300,6 +332,13 @@ export default function PeerDialogueActivity() {
           )}
         </div>
       </div>
+      <ConfirmationDialog
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        onConfirm={handleConfirmStart}
+        title="Confirm Start"
+        message="Are you sure you want to start the peer dialogue? This will match you with another student."
+      />
     </div>
   );
 }

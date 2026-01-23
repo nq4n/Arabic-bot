@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { topics } from "../data/topics";
-import { LessonVisibility, buildLessonVisibilityFromRows, getLessonVisibility, markLessonCompleted } from "../utils/lessonSettings";
+import { LessonVisibility, getLessonProgress, markLessonCompleted } from "../utils/lessonSettings";
 import "../styles/LessonReview.css";
 import { supabase } from "../supabaseClient";
 import Chat from '../components/Chat';
@@ -12,9 +12,20 @@ export default function LessonReview() {
   const navigate = useNavigate();
   const topic = topics.find((t) => t.id === topicId);
   const topicIds = useMemo(() => topics.map((t) => t.id), []);
-  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
-    getLessonVisibility(topicIds)
-  );
+  
+  // Initialize with sensible defaults - review and evaluation visible by default
+  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() => {
+    const defaults: LessonVisibility = {};
+    topicIds.forEach((id) => {
+      defaults[id] = {
+        lesson: true,
+        review: true, // Review is visible by default
+        evaluation: true, // Evaluation is visible by default
+        activity: false,
+      };
+    });
+    return defaults;
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -62,13 +73,28 @@ export default function LessonReview() {
         return;
       }
 
-      const next = buildLessonVisibilityFromRows(topicIds, data || []);
-      setLessonVisibility(next);
+      // Build visibility from database - merge with current defaults
+      const updatedVisibility: LessonVisibility = {
+        // Keep existing defaults
+        ...lessonVisibility,
+      };
+      
+      // Override with database values for topics that exist in DB
+      (data || []).forEach((row) => {
+        updatedVisibility[row.topic_id] = {
+          lesson: row.settings?.lesson ?? true,
+          review: row.settings?.review ?? false,
+          evaluation: row.settings?.evaluation ?? false,
+          activity: row.settings?.activity ?? false,
+        };
+      });
+      
+      setLessonVisibility(updatedVisibility);
       setIsLoading(false);
     };
 
     loadLessonVisibilitySettings();
-  }, [topic, topicIds]);
+  }, [topic, topicIds, lessonVisibility]);
 
   useEffect(() => {
     if (!topic) return;

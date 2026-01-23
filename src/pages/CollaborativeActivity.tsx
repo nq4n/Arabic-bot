@@ -7,6 +7,8 @@ import { LessonVisibility, buildLessonVisibilityFromRows, getLessonVisibility } 
 import CollaborativeChat from "../components/CollaborativeChat";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/Topic.css";
+import { SessionTimeTracker, requestTrackingConfirmation } from "../utils/enhancedStudentTracking";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 export default function CollaborativeActivity() {
   const { topicId } = useParams<{ topicId: string }>();
@@ -33,8 +35,20 @@ export default function CollaborativeActivity() {
       { chatId: number; count: number; max: number; isParticipant: boolean }
     >
   >({});
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [sessionTimer, setSessionTimer] = useState<SessionTimeTracker | null>(null);
+
   const isPageLoading =
     isSessionLoading || isVisibilityLoading || isCompletionLoading || isCaseLoading;
+
+  useEffect(() => {
+    const timer = new SessionTimeTracker('collaborative_activity');
+    setSessionTimer(timer);
+
+    return () => {
+        timer.endSession();
+    };
+    }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -201,10 +215,7 @@ export default function CollaborativeActivity() {
   }
 
   const isActivityActive = lessonVisibility[topic.id]?.activity ?? true;
-
-  const isCollaborativeActive = lessonVisibility[topic.id]?.collaborative ?? true;
-
-  if (!isActivityActive || !isCollaborativeActive) {
+  if (!isActivityActive) {
     return (
       <div className="topic-page" dir="rtl">
         <div className="not-found-container">
@@ -231,10 +242,12 @@ export default function CollaborativeActivity() {
     );
   }
 
-  const handleStartDiscussion = async () => {
-    if (!session || !selectedCase) return;
+  const handleConfirmStartDiscussion = useCallback(async () => {
+    if (!session || !selectedCase || !topic) return;
     setIsStarting(true);
     setStartError(null);
+
+    const sessionDuration = sessionTimer?.endSession() || 0;
 
     const { data, error } = await supabase.rpc(
       "start_collaborative_chat_session",
@@ -251,12 +264,27 @@ export default function CollaborativeActivity() {
         setStartError("تعذر بدء نشاط المناقشة. حاول مرة أخرى.");
       }
       setIsStarting(false);
+      setShowConfirmation(false);
       return;
     }
+
+    await requestTrackingConfirmation({
+        studentId: session.user.id,
+        activityType: 'collaborative_activity',
+        activityId: 'collaborative_activity',
+        confirmed: true,
+        sessionDuration,
+        dataQualityScore: 100
+    });
 
     setChatId(data as number);
     loadCaseCounts();
     setIsStarting(false);
+    setShowConfirmation(false);
+  }, [session, selectedCase, topic, sessionTimer, loadCaseCounts]);
+
+  const handleStartDiscussion = () => {
+      setShowConfirmation(true);
   };
 
   return (
@@ -347,6 +375,13 @@ export default function CollaborativeActivity() {
           )}
         </div>
       </div>
+      <ConfirmationDialog
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        onConfirm={handleConfirmStartDiscussion}
+        title="Confirm Start"
+        message="Are you sure you want to start the discussion? This will join you with other students."
+      />
     </div>
   );
 }

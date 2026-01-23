@@ -13,6 +13,8 @@ import { emitAchievementToast } from "../utils/achievementToast";
 import { trackActivitySubmission } from "../utils/studentTracking";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/ReportAssemblyActivity.css";
+import { SessionTimeTracker, requestTrackingConfirmation } from "../utils/enhancedStudentTracking";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 type ActivitySubmissionRow = {
   id: number;
@@ -48,6 +50,8 @@ export default function ReportAssemblyActivity() {
   const [dropPulse, setDropPulse] = useState(false);
   const autoAdvanceTimer = useRef<number | null>(null);
   const pulseTimer = useRef<number | null>(null);
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [timeTracker, setTimeTracker] = useState<SessionTimeTracker | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -55,6 +59,18 @@ export default function ReportAssemblyActivity() {
       setIsSessionLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    if (session && topicId) {
+      const tracker = new SessionTimeTracker(session.user.id, topicId, 'activity');
+      tracker.startSession();
+      setTimeTracker(tracker);
+
+      return () => {
+        tracker.endSession();
+      };
+    }
+  }, [session, topicId]);
 
   useEffect(() => {
     return () => {
@@ -461,7 +477,7 @@ export default function ReportAssemblyActivity() {
     setNotice(`تم إنشاء ${submissionLabel} من الاختيارات. يمكنك تعديله الآن.`);
   };
 
-  const handleSubmit = async () => {
+  const handleConfirmSubmit = async () => {
     if (!interactiveActivity || !session || !topic) return;
     if (!reportText.trim()) {
       setError(`يرجى كتابة ${submissionLabel} قبل الإرسال.`);
@@ -505,6 +521,7 @@ export default function ReportAssemblyActivity() {
         category: "points",
       });
       await trackActivitySubmission(session.user.id, topic.id, interactiveActivity.activityId);
+      await requestTrackingConfirmation(session.user.id, 'activity', topic.id, interactiveActivity.activityId);
       emitAchievementToast({
         title: "تم احتساب النقاط",
         message: "تمت إضافة 5 نقاط إلى رصيدك.",
@@ -518,8 +535,15 @@ export default function ReportAssemblyActivity() {
         tone: "info",
       });
     }
+    if (timeTracker) {
+        await timeTracker.endSession();
+    }
     setIsSubmitting(false);
   };
+
+  const handleSubmit = () => {
+      setIsConfirmationOpen(true);
+  }
 
   const isSubmitted = submission?.status === "submitted";
   const tutorialPath = `/activity/${topic.id}/tutorial`;
@@ -531,6 +555,16 @@ export default function ReportAssemblyActivity() {
 
   return (
     <div className={pageClassName} dir="rtl">
+      <ConfirmationDialog
+        isOpen={isConfirmationOpen}
+        title={`تأكيد إرسال ${submissionLabel}`}
+        message="هل أنت متأكد من أنك تريد إرسال هذا النشاط؟"
+        onConfirm={() => {
+          setIsConfirmationOpen(false);
+          handleConfirmSubmit();
+        }}
+        onCancel={() => setIsConfirmationOpen(false)}
+      />
       <header className="report-assembly-header page-header">
         <div className="report-assembly-header-row">
           <div>

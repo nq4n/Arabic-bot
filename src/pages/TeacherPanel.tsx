@@ -14,6 +14,7 @@ import {
 import "../styles/global.css";
 import "../styles/Navbar.css";
 import "../styles/TeacherPanel.css";
+import { Link } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
 
 type UserRole = "student" | "teacher" | "admin" | null;
@@ -78,6 +79,7 @@ export default function TeacherPanel() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithStats | null>(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
 
 
   const loadData = useCallback(async () => {
@@ -348,43 +350,77 @@ export default function TeacherPanel() {
     setShowConfirmDelete(true);
   };
 
+  const handleToggleUserSelection = (userId: string) => {
+    const newSelected = new Set(selectedUsers);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedUsers(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedUsers.size === users.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(users.map((u) => u.id)));
+    }
+  };
+
   const confirmDelete = async () => {
-    if (!userToDelete) return;
+    if (!userToDelete && selectedUsers.size === 0) return;
 
     setLoading(true);
     setFormError(null);
 
-    try {
-      // Admin can delete any user.
-      // Teacher can only delete students they added (this logic will be in the backend)
-      const { data: responseBody, error } = await supabase.functions.invoke("delete-user", {
-        body: {
-          user_id: userToDelete.id, // The edge function expects 'user_id'
-        },
-      });
+    const usersToDelete = userToDelete ? [userToDelete] : users.filter((u) => selectedUsers.has(u.id));
+    let successCount = 0;
+    const errors: string[] = [];
 
-      if (error) {
-        throw new Error(`تعذّر الاتصال بوظيفة السيرفر: ${error.message}`);
+    for (const user of usersToDelete) {
+      try {
+        const { data: responseBody, error } = await supabase.functions.invoke("delete-user", {
+          body: {
+            user_id: user.id,
+          },
+        });
+
+        if (error) {
+          errors.push(`${getDisplayName(user, "—")}: ${error.message}`);
+          continue;
+        }
+
+        if (responseBody?.error) {
+          errors.push(`${getDisplayName(user, "—")}: ${responseBody.error}`);
+          continue;
+        }
+
+        successCount++;
+      } catch (err: any) {
+        errors.push(`${getDisplayName(user, "—")}: ${err.message}`);
       }
-
-      if (responseBody?.error) {
-        throw new Error(`فشل حذف المستخدم: ${responseBody.error} ${responseBody.details ? `(${responseBody.details})` : ""}`);
-      }
-
-      setSuccessMessage(`تم حذف المستخدم ${getDisplayName(userToDelete, "—")} بنجاح.`);
-      loadData(); // Reload data after deletion
-    } catch (err: any) {
-      setFormError(`فشل حذف المستخدم: ${err.message}`);
-    } finally {
-      setShowConfirmDelete(false);
-      setUserToDelete(null);
-      setLoading(false);
     }
+
+    if (successCount > 0) {
+      setSuccessMessage(`تم حذف ${successCount} مستخدم/مستخدمين بنجاح.`);
+      setSelectedUsers(new Set());
+      loadData();
+    }
+
+    if (errors.length > 0) {
+      setFormError(`فشل حذف بعض المستخدمين: ${errors.join(" | ")}`);
+    }
+
+    setShowConfirmDelete(false);
+    setUserToDelete(null);
+    setLoading(false);
   };
 
   const cancelDelete = () => {
     setShowConfirmDelete(false);
     setUserToDelete(null);
+    setSelectedUsers(new Set());
   };
 
   const handleChangeRole = async (userId: string, newRole: UserRole) => {
@@ -492,6 +528,14 @@ export default function TeacherPanel() {
       </p>
 
       <div className="teacher-cards-container">
+        <section className="card">
+          <h2 style={{ marginBottom: "1rem" }}>تقدم الطلاب</h2>
+          <p style={{ marginBottom: "0.75rem", fontSize: "0.9rem", color: "var(--text-muted)" }}>
+            عرض نشاط الطلاب وتأكيدات الدروس.
+          </p>
+          <Link to="/student-progress" className="button">عرض التقدم</Link>
+        </section>
+
         <section className="card lesson-visibility-card full-width-card">
           <div className="lesson-visibility-header">
             <h2>إدارة إتاحة الدروس للطلاب</h2>
@@ -505,11 +549,10 @@ export default function TeacherPanel() {
               <div key={topic.id} className="topic-grid-item">
                 <h3 className="topic-title">{topic.title}</h3>
                 <div className="topic-sections">
-                  {(["lesson", "review", "evaluation", "activity", "collaborative"] as LessonSection[]).map(
+                  {(["lesson", "review", "evaluation", "activity"] as LessonSection[]).map(
                     (section) => (
                       <div key={`${topic.id}-${section}`} className="topic-section-item">
                         <label className="topic-section-label">
-                          {section === "collaborative" && "نشاط المناقشة"}
                           {section === "activity" && "الأنشطة"}
                           {section === "lesson" && "الدرس"}
                           {section === "review" && "المراجعة"}
@@ -699,7 +742,23 @@ export default function TeacherPanel() {
 
       {/* جدول المستخدمين */}
       <section className="card" style={{ padding: "1.5rem" }}>
-        <h2 style={{ marginBottom: "1rem" }}>المستخدمون الحاليون</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <h2 style={{ margin: 0 }}>المستخدمون الحاليون</h2>
+          {selectedUsers.size > 0 && (
+            <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+              <span style={{ color: "#4b5563" }}>
+                تم تحديد {selectedUsers.size} {selectedUsers.size === 1 ? "مستخدم" : "مستخدمين"}
+              </span>
+              <button
+                className="button button-destructive button-compact"
+                onClick={confirmDelete}
+                disabled={loading}
+              >
+                {loading ? "جاري الحذف..." : "حذف المحددين"}
+              </button>
+            </div>
+          )}
+        </div>
 
         {loading ? (
           <SkeletonSection lines={5} showTitle={false} />
@@ -718,6 +777,14 @@ export default function TeacherPanel() {
             >
               <thead>
                 <tr>
+                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem", width: "40px" }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.size === users.length && users.length > 0}
+                      onChange={handleSelectAll}
+                      title="اختيار الكل"
+                    />
+                  </th>
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>الاسم</th>
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>اسم المستخدم</th>
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>البريد الإلكتروني</th>
@@ -725,13 +792,19 @@ export default function TeacherPanel() {
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>عدد التسليمات</th>
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>يحتاج تغيير كلمة المرور؟</th>
                   <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>تعديل الصلاحيات</th>
-                  <th style={{ borderBottom: "1px solid #e5e7eb", padding: "0.5rem" }}>حذف</th>
                 </tr>
               </thead>
 
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id}>
+                  <tr key={u.id} style={{ backgroundColor: selectedUsers.has(u.id) ? "#f0f4f8" : "transparent" }}>
+                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.has(u.id)}
+                        onChange={() => handleToggleUserSelection(u.id)}
+                      />
+                    </td>
                     <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>
                       {u.full_name || "—"}
                     </td>
@@ -771,17 +844,6 @@ export default function TeacherPanel() {
                         <span>{u.role === "admin" ? "مسؤول" : u.role === "teacher" ? "معلم" : "طالب"}</span>
                       )}
                     </td>
-                    <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>
-                      {(currentUserRole === "admin" || (currentUserRole === "teacher" && u.role === "student")) && (
-                        <button
-                          className="button button-compact button-destructive"
-                          onClick={() => handleDeleteClick(u)}
-                          disabled={loading}
-                        >
-                          حذف
-                        </button>
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -790,14 +852,33 @@ export default function TeacherPanel() {
         )}
       </section>
 
-      {showConfirmDelete && userToDelete && (
+      {showConfirmDelete && (userToDelete || selectedUsers.size > 0) && (
         <div className="modal-backdrop">
           <div className="modal-content card" dir="rtl">
             <h3>تأكيد الحذف</h3>
-            <p>
-              هل أنت متأكد أنك تريد حذف المستخدم {getDisplayName(userToDelete, "—")} (
-              {userToDelete.email})؟
-            </p>
+            {selectedUsers.size > 0 ? (
+              <>
+                <p>
+                  هل أنت متأكد أنك تريد حذف {selectedUsers.size} {selectedUsers.size === 1 ? "مستخدم" : "مستخدمين"}؟
+                </p>
+                <div style={{ maxHeight: "200px", overflowY: "auto", marginBottom: "1rem", backgroundColor: "#f9fafb", padding: "0.75rem", borderRadius: "0.375rem" }}>
+                  <ul style={{ margin: 0, paddingRight: "1.5rem" }}>
+                    {users
+                      .filter((u) => selectedUsers.has(u.id))
+                      .map((u) => (
+                        <li key={u.id} style={{ marginBottom: "0.5rem", fontSize: "0.9rem" }}>
+                          {getDisplayName(u, "—")} ({u.email})
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              </>
+            ) : userToDelete ? (
+              <p>
+                هل أنت متأكد أنك تريد حذف المستخدم {getDisplayName(userToDelete, "—")} (
+                {userToDelete.email})؟
+              </p>
+            ) : null}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "1rem", marginTop: "1.5rem" }}>
               <button className="button button-compact" onClick={cancelDelete}>
                 إلغاء
