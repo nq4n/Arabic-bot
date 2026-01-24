@@ -487,6 +487,15 @@
   }
 }
 
+.goals-intro {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  text-align: right;
+  line-height: 1.6;
+}
+
 .goals-list {
   list-style: none;
   direction: rtl;

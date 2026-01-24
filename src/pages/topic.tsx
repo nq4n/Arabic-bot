@@ -210,6 +210,7 @@ export default function Topic() {
             <h2 className="section-title">
               <i className="fas fa-bullseye icon"></i> أهداف الدرس
             </h2>
+            <p className="goals-intro">في نهاية الدرس يُتوقَّع من الطالب أن يكون قادراً على أن:</p>
             <ul className="goals-list  direction-rtl">
               {topic.lesson.goals.map((goal, index) => (
                 <li key={index}><span className="goal-number">{index + 1}</span>. <strong>{goal}</strong></li>
@@ -318,6 +319,7 @@ export default function Topic() {
           <h2 className="section-title">
             <i className="fas fa-bullseye icon"></i> أهداف الدرس
           </h2>
+          <p className="goals-intro">في نهاية الدرس يُتوقَّع من الطالب أن يكون قادراً على أن:</p>
           <ul className="goals-list">
             {topic.lesson.goals.map((goal, index) => (
               <li key={index}><span className="goal-number">{index + 1}</span>. <strong>{goal}</strong></li>

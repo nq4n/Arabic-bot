@@ -14,50 +14,137 @@ export const POINT_VALUES = {
 } as const;
 
 /**
- * Calculate points from tracking data
+ * Calculate points from tracking data (source of truth)
  */
 export const calculatePointsFromTracking = (trackingData: StudentTrackingData | null): number => {
   if (!trackingData) return 0;
 
   let points = 0;
+  let debugInfo: any = {};
 
   // Lessons: 20 points each
   if (trackingData.lessons) {
     const completedLessons = Object.values(trackingData.lessons).filter(
       (lesson) => lesson?.completed === true
     ).length;
-    points += completedLessons * POINT_VALUES.LESSON;
+    const lessonPoints = completedLessons * POINT_VALUES.LESSON;
+    points += lessonPoints;
+    debugInfo.lessons = { count: completedLessons, points: lessonPoints };
   }
 
   // Activities: 10 points each
   if (trackingData.activities) {
+    let activityCount = 0;
     Object.values(trackingData.activities).forEach((topicActivities) => {
       const completedIds = topicActivities?.completedIds || [];
-      points += completedIds.length * POINT_VALUES.ACTIVITY;
+      activityCount += completedIds.length;
     });
+    const activityPoints = activityCount * POINT_VALUES.ACTIVITY;
+    points += activityPoints;
+    debugInfo.activities = { count: activityCount, points: activityPoints };
   }
 
   // Evaluations: 10 points each
   if (trackingData.evaluations) {
     const completedEvaluations = Object.keys(trackingData.evaluations).length;
-    points += completedEvaluations * POINT_VALUES.EVALUATION;
+    const evaluationPoints = completedEvaluations * POINT_VALUES.EVALUATION;
+    points += evaluationPoints;
+    debugInfo.evaluations = { count: completedEvaluations, points: evaluationPoints };
   }
 
   // Collaborative: 10 points each (discussion or dialogue)
   if (trackingData.collaborative) {
+    let collaborativeCount = 0;
     Object.values(trackingData.collaborative).forEach((collab) => {
-      if (collab?.discussion) points += POINT_VALUES.COLLABORATIVE;
-      if (collab?.dialogue) points += POINT_VALUES.COLLABORATIVE;
+      if (collab?.discussion) collaborativeCount += 1;
+      if (collab?.dialogue) collaborativeCount += 1;
     });
+    const collaborativePoints = collaborativeCount * POINT_VALUES.COLLABORATIVE;
+    points += collaborativePoints;
+    debugInfo.collaborative = { count: collaborativeCount, points: collaborativePoints };
   }
 
+  // Only log in development to avoid console spam
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Point calculation breakdown:', debugInfo, 'Total:', points);
+  }
   return points;
 };
 
 /**
- * Get student points from database (preferred method - uses stored total)
+ * Recalculate and update points in database to ensure consistency
  */
-export const getStudentPoints = async (studentId: string): Promise<number> => {
+export const recalculateAndUpdatePoints = async (studentId: string): Promise<number> => {
+  const { data, error } = await supabase
+    .from('student_tracking')
+    .select('tracking_data, student_name')
+    .eq('student_id', studentId)
+    .maybeSingle();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching student tracking data:', error);
+    return 0;
+  }
+
+  if (!data) return 0;
+
+  const trackingData = (data.tracking_data as StudentTrackingData) || {};
+  
+  // Debug: Log what we're calculating from
+  console.log('Recalculating points for student:', studentId);
+  console.log('Tracking data:', {
+    lessons: trackingData.lessons ? Object.keys(trackingData.lessons).length : 0,
+    activities: trackingData.activities ? Object.values(trackingData.activities).reduce((sum: number, act: any) => sum + (act?.completedIds?.length || 0), 0) : 0,
+    evaluations: trackingData.evaluations ? Object.keys(trackingData.evaluations).length : 0,
+    collaborative: trackingData.collaborative ? Object.keys(trackingData.collaborative).length : 0,
+  });
+  
+  // Always recalculate from actual tracking data (source of truth)
+  const calculatedPoints = calculatePointsFromTracking(trackingData);
+  const oldPoints = trackingData.points?.total || 0;
+
+  console.log(`Points: ${oldPoints} → ${calculatedPoints}`);
+
+  // Update the stored total to match calculated value
+  const updatedTrackingData: StudentTrackingData = {
+    ...trackingData,
+    points: {
+      total: calculatedPoints,
+    },
+  };
+
+  // Update database with recalculated points
+  const { error: updateError } = await supabase
+    .from('student_tracking')
+    .update({
+      tracking_data: updatedTrackingData,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('student_id', studentId);
+
+  if (updateError) {
+    console.error('Error updating recalculated points:', updateError);
+    // Return calculated value even if update fails
+    return calculatedPoints;
+  }
+
+  console.log('Successfully updated points in database');
+  return calculatedPoints;
+};
+
+/**
+ * Get student points from database
+ * Always recalculates to ensure accuracy (especially after point value changes)
+ */
+export const getStudentPoints = async (studentId: string, forceRecalculate: boolean = true): Promise<number> => {
+  // Always recalculate to ensure consistency, especially after point value changes
+  if (forceRecalculate) {
+    const recalculated = await recalculateAndUpdatePoints(studentId);
+    console.log('getStudentPoints: Recalculated and returned', recalculated);
+    return recalculated;
+  }
+
+  // Fallback: use stored value (not recommended after point value changes)
   const { data, error } = await supabase
     .from('student_tracking')
     .select('tracking_data')
@@ -71,13 +158,10 @@ export const getStudentPoints = async (studentId: string): Promise<number> => {
 
   const trackingData = (data?.tracking_data as StudentTrackingData) || null;
 
-  // Use stored points total if available, otherwise calculate
-  if (trackingData?.points?.total !== undefined) {
-    return trackingData.points.total;
-  }
-
-  // Fallback: calculate from tracking data
-  return calculatePointsFromTracking(trackingData);
+  // Even in fallback mode, recalculate to ensure accuracy
+  const calculated = calculatePointsFromTracking(trackingData);
+  console.log('getStudentPoints: Fallback mode, calculated', calculated);
+  return calculated;
 };
 
 /**

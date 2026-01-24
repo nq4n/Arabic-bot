@@ -1,5 +1,6 @@
 // src/utils/studentTracking.ts
 import { supabase } from "../supabaseClient";
+import { calculatePointsFromTracking } from "./pointCalculation";
 
 export type LessonSection =
   | "lesson"
@@ -342,9 +343,7 @@ export const trackActivitySubmission = async (
     ? currentCompletedIds
     : [...currentCompletedIds, activityId];
 
-  const currentPoints = trackingData.points?.total || 0;
-  const updatedPoints = !wasAlreadyCompleted ? currentPoints + 10 : currentPoints;
-
+  // Recalculate points from actual tracking data (source of truth)
   const updatedTrackingData: StudentTrackingData = {
     ...trackingData,
     activities: {
@@ -353,10 +352,11 @@ export const trackActivitySubmission = async (
         completedIds: nextCompletedIds,
       },
     },
-    points: {
-      total: updatedPoints,
-    },
   };
+  
+  // Always recalculate total points from tracking data to ensure accuracy
+  const updatedPoints = calculatePointsFromTracking(updatedTrackingData);
+  updatedTrackingData.points = { total: updatedPoints };
 
   const studentName = await resolveStudentName(studentId);
 
@@ -392,10 +392,7 @@ export const trackLessonCompletion = async (studentId: string, topicId: string) 
   const trackingData: StudentTrackingData = currentTracking?.tracking_data || {};
   const currentLessons = trackingData.lessons || {};
 
-  const currentPoints = trackingData.points?.total || 0;
-  const wasCompleted = currentLessons[topicId]?.completed || false;
-  const updatedPoints = !wasCompleted ? currentPoints + 20 : currentPoints;
-
+  // Recalculate points from actual tracking data (source of truth)
   const updatedTrackingData: StudentTrackingData = {
     ...trackingData,
     lessons: {
@@ -404,10 +401,11 @@ export const trackLessonCompletion = async (studentId: string, topicId: string) 
         completed: true,
       },
     },
-    points: {
-      total: updatedPoints,
-    },
   };
+  
+  // Always recalculate total points from tracking data to ensure accuracy
+  const updatedPoints = calculatePointsFromTracking(updatedTrackingData);
+  updatedTrackingData.points = { total: updatedPoints };
 
   const studentName = await resolveStudentName(studentId);
 
@@ -447,10 +445,7 @@ export const trackEvaluationSubmission = async (
   const trackingData: StudentTrackingData = currentTracking?.tracking_data || {};
   const currentEvaluations = trackingData.evaluations || {};
 
-  const currentPoints = trackingData.points?.total || 0;
-  const wasEvaluated = !!currentEvaluations[topicId];
-  const updatedPoints = !wasEvaluated ? currentPoints + 10 : currentPoints;
-
+  // Recalculate points from actual tracking data (source of truth)
   const updatedTrackingData: StudentTrackingData = {
     ...trackingData,
     evaluations: {
@@ -460,10 +455,11 @@ export const trackEvaluationSubmission = async (
         timestamp: new Date().toISOString(),
       },
     },
-    points: {
-      total: updatedPoints,
-    },
   };
+  
+  // Always recalculate total points from tracking data to ensure accuracy
+  const updatedPoints = calculatePointsFromTracking(updatedTrackingData);
+  updatedTrackingData.points = { total: updatedPoints };
 
   const studentName = await resolveStudentName(studentId);
 
@@ -503,10 +499,6 @@ export const trackCollaborativeCompletion = async (
   const trackingData: StudentTrackingData = currentTracking?.tracking_data || {};
   const currentCollaborative = trackingData.collaborative || {};
 
-  const currentPoints = trackingData.points?.total || 0;
-  const wasCompleted = currentCollaborative[topicId]?.[activityKind] || false;
-  const updatedPoints = !wasCompleted ? currentPoints + 10 : currentPoints;
-
   const updatedCollaborative = {
     ...currentCollaborative,
     [topicId]: {
@@ -516,13 +508,15 @@ export const trackCollaborativeCompletion = async (
     },
   };
 
+  // Recalculate points from actual tracking data (source of truth)
   const updatedTrackingData: StudentTrackingData = {
     ...trackingData,
     collaborative: updatedCollaborative,
-    points: {
-      total: updatedPoints,
-    },
   };
+  
+  // Always recalculate total points from tracking data to ensure accuracy
+  const updatedPoints = calculatePointsFromTracking(updatedTrackingData);
+  updatedTrackingData.points = { total: updatedPoints };
 
   const studentName = await resolveStudentName(studentId);
 

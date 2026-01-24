@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useSession } from '../hooks/SessionContext';
-import { getStudentPoints } from '../utils/pointCalculation';
+import { calculatePointsFromData } from '../utils/pointCalculation';
 import '../styles/StudentProgress.css';
 
 type TrackingStats = {
@@ -35,24 +35,67 @@ export default function StudentProgress() {
             try {
                 setLoading(true);
 
-                // 1. Fetch points using unified calculation
-                const totalPointsValue = await getStudentPoints(session.user.id);
-                setTotalPoints(totalPointsValue);
-
-                // 2. Fetch stats from student_tracking
+                // 1. Fetch all data needed for point calculation (same as teacher panel)
                 const { data: trackData, error: trackError } = await supabase
                     .from('student_tracking')
                     .select('tracking_data')
                     .eq('student_id', session.user.id)
                     .maybeSingle();
 
+                const tracking = trackError && trackError.code !== 'PGRST116' 
+                    ? null 
+                    : ((trackData?.tracking_data as any) || null);
+
+                // Fetch activity submissions as fallback (in case activities aren't in tracking_data)
+                const { data: activityData } = await supabase
+                    .from('activity_submissions')
+                    .select('topic_id, activity_id')
+                    .eq('student_id', session.user.id);
+
+                // Fetch collaborative completions as fallback
+                const { data: collaborativeData } = await supabase
+                    .from('collaborative_activity_completions')
+                    .select('topic_id, activity_kind')
+                    .eq('student_id', session.user.id);
+
+                // Fetch submissions for evaluations
+                const { data: submissionsData } = await supabase
+                    .from('submissions')
+                    .select('topic_title')
+                    .eq('student_id', session.user.id);
+
+                // Calculate points using same method as teacher panel (with fallbacks)
+                const totalPointsValue = calculatePointsFromData({
+                    lessons: tracking?.lessons,
+                    activities: tracking?.activities,
+                    evaluations: tracking?.evaluations,
+                    collaborative: tracking?.collaborative,
+                    activitySubmissions: activityData || [],
+                    collaborativeCompletions: collaborativeData || [],
+                    submissions: submissionsData || [],
+                });
+
+                console.log('StudentProgress - Calculated points:', {
+                    lessons: tracking?.lessons ? Object.keys(tracking.lessons).length : 0,
+                    activities: tracking?.activities ? Object.values(tracking.activities).reduce((sum: number, act: any) => sum + (act?.completedIds?.length || 0), 0) : 0,
+                    activitySubmissions: activityData?.length || 0,
+                    evaluations: tracking?.evaluations ? Object.keys(tracking.evaluations).length : 0,
+                    submissions: submissionsData?.length || 0,
+                    collaborative: tracking?.collaborative ? Object.keys(tracking.collaborative).length : 0,
+                    collaborativeCompletions: collaborativeData?.length || 0,
+                    calculated: totalPointsValue,
+                    stored: tracking?.points?.total || 0,
+                });
+                setTotalPoints(totalPointsValue);
+
+                // 2. Calculate stats from tracking_data (using already fetched data)
                 let trackedLessons = 0;
                 let trackedActivities = 0;
                 let trackedEvaluations = 0;
                 let trackedCollaborative = 0;
 
-                if (!trackError && trackData?.tracking_data) {
-                    const data = trackData.tracking_data as any;
+                if (tracking) {
+                    const data = tracking;
 
                     // Calculate stats from tracking_data
                     trackedLessons = Object.keys(data.lessons || {}).length;

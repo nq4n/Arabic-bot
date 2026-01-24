@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { topics } from "../data/topics";
 import { supabase } from "../supabaseClient";
 import { getStudentTracking } from "../utils/studentTracking";
-import { getStudentPoints } from "../utils/pointCalculation";
+import { calculatePointsFromData } from "../utils/pointCalculation";
 import {
   LessonVisibility,
   buildLessonVisibilityFromRows,
@@ -149,8 +149,44 @@ export default function Topics() {
 
       setProgressMap(nextProgress);
 
-      // Fetch total points using unified calculation
-      const points = await getStudentPoints(session.user.id);
+      // Fetch activity submissions as fallback (in case activities aren't in tracking_data)
+      const { data: activityData } = await supabase
+        .from('activity_submissions')
+        .select('topic_id, activity_id')
+        .eq('student_id', session.user.id);
+
+      // Fetch collaborative completions as fallback
+      const { data: collaborativeData } = await supabase
+        .from('collaborative_activity_completions')
+        .select('topic_id, activity_kind')
+        .eq('student_id', session.user.id);
+
+      // Fetch submissions for evaluations
+      const { data: submissionsData } = await supabase
+        .from('submissions')
+        .select('topic_title')
+        .eq('student_id', session.user.id);
+
+      // Calculate points using same method as teacher panel (with fallbacks)
+      const points = calculatePointsFromData({
+        lessons: tracking?.lessons,
+        activities: tracking?.activities,
+        evaluations: tracking?.evaluations,
+        collaborative: tracking?.collaborative,
+        activitySubmissions: activityData || [],
+        collaborativeCompletions: collaborativeData || [],
+        submissions: submissionsData || [],
+      });
+
+      console.log('Topics page - Calculated points:', {
+        lessons: tracking?.lessons ? Object.keys(tracking.lessons).length : 0,
+        activities: tracking?.activities ? Object.values(tracking.activities).reduce((sum: number, act: any) => sum + (act?.completedIds?.length || 0), 0) : 0,
+        activitySubmissions: activityData?.length || 0,
+        evaluations: tracking?.evaluations ? Object.keys(tracking.evaluations).length : 0,
+        submissions: submissionsData?.length || 0,
+        calculated: points,
+        stored: tracking?.points?.total || 0,
+      });
       setTotalPoints(points);
 
       setIsLoading(false);
