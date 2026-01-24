@@ -35,6 +35,11 @@ export default function StudentProgress() {
                 setLoading(true);
 
                 // 1. Fetch points and stats from student_tracking
+                let trackedLessons = 0;
+                let trackedActivities = 0;
+                let trackedEvaluations = 0;
+                let pointsFromTracking = 0;
+
                 const { data: trackData, error: trackError } = await supabase
                     .from('student_tracking')
                     .select('tracking_data')
@@ -43,26 +48,119 @@ export default function StudentProgress() {
 
                 if (!trackError && trackData?.tracking_data) {
                     const data = trackData.tracking_data as any;
-                    setTotalPoints(data.points?.total || 0);
+                    pointsFromTracking = data.points?.total || 0;
 
-                    // Calculate stats
-                    const lessons = Object.keys(data.lessons || {}).length;
+                    // Calculate stats from tracking_data
+                    trackedLessons = Object.keys(data.lessons || {}).length;
 
-                    let activities = 0;
                     if (data.activities) {
                         Object.values(data.activities).forEach((topicActivities: any) => {
-                            activities += topicActivities.completedIds?.length || 0;
+                            trackedActivities += topicActivities.completedIds?.length || 0;
                         });
                     }
 
-                    const evaluations = Object.keys(data.evaluations || {}).length;
+                    trackedEvaluations = Object.keys(data.evaluations || {}).length;
+                }
 
-                    setStats({
-                        lessonsCompleted: lessons,
-                        activitiesCompleted: activities,
-                        totalEvaluations: evaluations
+                // Fallback counts (computed only if tracking_data count for that metric is zero)
+                let lessonsFallback = 0;
+                let activitiesFallback = 0;
+                let evaluationsFallback = 0;
+                let collaborativeFallback = 0;
+
+                // Compute fallback lessons if none tracked
+                if (trackedLessons === 0) {
+                    const { data: sessionRows, error: sessionError } = await supabase
+                        .from('session_durations')
+                        .select('topic_id')
+                        .eq('student_id', session.user.id)
+                        .eq('session_type', 'lesson')
+                        .eq('is_completed', true);
+
+                    if (!sessionError && sessionRows) {
+                        const lessonSet = new Set<string>();
+                        (sessionRows as any[]).forEach((row) => {
+                            if (row.topic_id) lessonSet.add(row.topic_id as string);
+                        });
+                        lessonsFallback = lessonSet.size;
+                    }
+                }
+
+                // Compute fallback activities if none tracked
+                if (trackedActivities === 0) {
+                    const { data: activityRows, error: activityError } = await supabase
+                        .from('activity_submissions')
+                        .select('topic_id, activity_id, status')
+                        .eq('student_id', session.user.id);
+
+                    if (!activityError && activityRows) {
+                        const activitySet = new Set<string>();
+                        (activityRows as any[]).forEach((row) => {
+                            // Count each unique topic/activity pair that has not been rejected
+                            if (!row.status || row.status !== 'rejected') {
+                                activitySet.add(`${row.topic_id}|${row.activity_id}`);
+                            }
+                        });
+                        activitiesFallback = activitySet.size;
+                    }
+                }
+
+                // Compute fallback evaluations if none tracked
+                if (trackedEvaluations === 0) {
+                    const { data: evalRows, error: evalError } = await supabase
+                        .from('submissions')
+                        .select('teacher_response')
+                        .eq('student_id', session.user.id);
+
+                    if (!evalError && evalRows) {
+                        evaluationsFallback = (evalRows as any[]).filter((row) => row.teacher_response).length;
+                    }
+                }
+
+                // Determine final counts by using tracked counts when available, otherwise fallback counts
+                const lessonsFinal = trackedLessons || lessonsFallback;
+                const activitiesFinal = trackedActivities || activitiesFallback;
+                const evaluationsFinal = trackedEvaluations || evaluationsFallback;
+
+                // Calculate collaborative completions from tracking_data
+                let trackedCollaborative = 0;
+                if (!trackError && trackData?.tracking_data?.collaborative) {
+                    const collabData: any = trackData.tracking_data.collaborative;
+                    Object.values(collabData).forEach((topic: any) => {
+                        if (topic.discussion) trackedCollaborative += 1;
+                        if (topic.dialogue) trackedCollaborative += 1;
                     });
                 }
+
+                // Compute fallback collaborative completions if none tracked
+                if (trackedCollaborative === 0) {
+                    const { data: collabRows, error: collabError } = await supabase
+                        .from('collaborative_activity_completions')
+                        .select('id')
+                        .eq('student_id', session.user.id);
+                    if (!collabError && collabRows) {
+                        collaborativeFallback = (collabRows as any[]).length;
+                    }
+                }
+                const collaborativeFinal = trackedCollaborative || collaborativeFallback;
+
+                // Combine interactive and collaborative into a single activities count for display
+                const totalActivitiesFinal = activitiesFinal + collaborativeFinal;
+
+                // Compute points: choose the maximum between pointsFromTracking and points based on final counts
+                const fallbackPoints =
+                    lessonsFinal * 20 +
+                    activitiesFinal * 5 +
+                    evaluationsFinal * 10 +
+                    collaborativeFinal * 15;
+                const computedPoints = Math.max(pointsFromTracking, fallbackPoints);
+
+                setTotalPoints(computedPoints);
+                setStats({
+                    lessonsCompleted: lessonsFinal,
+                    activitiesCompleted: totalActivitiesFinal,
+                    totalEvaluations: evaluationsFinal,
+                });
 
                 // 2. Fetch rewards to show progress
                 const { data: rewardsData } = await supabase

@@ -139,14 +139,29 @@ export default function Topics() {
       const tracking = await getStudentTracking(session.user.id);
       const counts: Record<string, number> = {};
 
-      if (tracking?.activities || tracking?.collaborative) {
+      // Determine if the tracking record contains actual activity completions or collaborative sessions.
+      const hasTrackingActivities =
+        tracking?.activities &&
+        Object.values(tracking.activities).some((entry: any) => {
+          return (
+            Array.isArray((entry as any).completedIds) &&
+            ((entry as any).completedIds as any[]).length > 0
+          );
+        });
+      const hasTrackingCollaborative =
+        tracking?.collaborative &&
+        Object.values(tracking.collaborative).some((entry: any) => {
+          return (entry as any).discussion || (entry as any).dialogue;
+        });
+
+      if (hasTrackingActivities || hasTrackingCollaborative) {
         Object.entries(tracking.activities || {}).forEach(([topicId, entry]) => {
-          counts[topicId] = entry.completedIds?.length ?? 0;
+          counts[topicId] = (entry as any).completedIds?.length ?? 0;
         });
 
         Object.entries(tracking.collaborative || {}).forEach(([topicId, entry]) => {
-          if (entry.discussion) counts[topicId] = (counts[topicId] || 0) + 1;
-          if (entry.dialogue) counts[topicId] = (counts[topicId] || 0) + 1;
+          if ((entry as any).discussion) counts[topicId] = (counts[topicId] || 0) + 1;
+          if ((entry as any).dialogue) counts[topicId] = (counts[topicId] || 0) + 1;
         });
       } else {
         const { data: activityRows } = await supabase
@@ -161,6 +176,7 @@ export default function Topics() {
 
         const activitySets: Record<string, Set<number>> = {};
         (activityRows || []).forEach((row) => {
+          // Only count activities that are pending teacher review
           if (row.status && row.status !== "submitted") return;
           const set = activitySets[row.topic_id] ?? new Set<number>();
           set.add(row.activity_id);
@@ -288,7 +304,6 @@ export default function Topics() {
         ) : (
           <>
             <div className="topics-overview-header">
-
               <div>
                 <h2>لوحة التقدم</h2>
                 <p>ملخص تقدمك العام في الدروس والتسليمات والتقييمات.</p>
@@ -342,9 +357,7 @@ export default function Topics() {
                 </div>
 
                 <div className="topic-points-action">
-                  <button className="button" onClick={() => navigate("/progress")}>
-                    عرض لوحة النقاط
-                  </button>
+                  <button className="button" onClick={() => navigate("/student-progress")}>عرض لوحة النقاط</button>
                 </div>
               </div>
             </div>
@@ -355,65 +368,65 @@ export default function Topics() {
       <div className="topics-grid" aria-busy={isLoading}>
         {isLoading
           ? Array.from({ length: Math.min(5, topics.length) }).map((_, index) => (
-            <div key={`topic-card-skeleton-${index}`} className="card topic-card skeleton-card">
-              <div className="card-content">
-                <div className="skeleton skeleton-line skeleton-w-60" />
-                <div className="skeleton skeleton-line skeleton-w-80" />
-                <div className="topic-status-summary">
-                  <span className="skeleton skeleton-line skeleton-w-30" />
-                  <span className="skeleton skeleton-line skeleton-w-30" />
-                  <span className="skeleton skeleton-line skeleton-w-30" />
-                </div>
-              </div>
-              <div className="card-actions">
-                <div className="skeleton skeleton-line skeleton-w-30" />
-              </div>
-            </div>
-          ))
-          : topics.map((topic) => {
-            const lessonCompleted = progressMap[topic.id]?.lessonCompleted ?? false;
-            const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
-            const hasRating = submissionStatus[topic.id]?.hasRating ?? false;
-            const isLessonActive = lessonVisibility[topic.id]?.lesson ?? false;
-            const topicImage = topicImages[topic.id];
-
-            return (
-              <div
-                key={topic.id}
-                className="card topic-card"
-                style={
-                  topicImage
-                    ? ({ ["--topic-image" as string]: `url(${topicImage})` } as CSSProperties)
-                    : undefined
-                }
-                role="img"
-                aria-label={`بطاقة موضوع ${topic.title}`}
-              >
+              <div key={`topic-card-skeleton-${index}`} className="card topic-card skeleton-card">
                 <div className="card-content">
-                  <h2>{topic.title}</h2>
-                  <p>{topic.description}</p>
+                  <div className="skeleton skeleton-line skeleton-w-60" />
+                  <div className="skeleton skeleton-line skeleton-w-80" />
                   <div className="topic-status-summary">
-                    <span className={lessonCompleted ? "done" : ""}>الدرس</span>
-                    <span className={hasSubmission ? "done" : ""}>التسليم</span>
-                    <span className={hasRating ? "done" : ""}>التقييم</span>
+                    <span className="skeleton skeleton-line skeleton-w-30" />
+                    <span className="skeleton skeleton-line skeleton-w-30" />
+                    <span className="skeleton skeleton-line skeleton-w-30" />
                   </div>
                 </div>
                 <div className="card-actions">
-                  <button
-                    className="button"
-                    onClick={() => navigate(`/topic/${topic.id}`)}
-                    disabled={!isLessonActive}
-                    aria-disabled={!isLessonActive}
-                  >
-                    عرض الدرس
-                  </button>
-                  {!isLessonActive && (
-                    <span className="topic-disabled-note">غير متاح حاليًا</span>
-                  )}
+                  <div className="skeleton skeleton-line skeleton-w-30" />
                 </div>
               </div>
-            );
-          })}
+            ))
+          : topics.map((topic) => {
+              const lessonCompleted = progressMap[topic.id]?.lessonCompleted ?? false;
+              const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
+              const hasRating = submissionStatus[topic.id]?.hasRating ?? false;
+              const isLessonActive = lessonVisibility[topic.id]?.lesson ?? false;
+              const topicImage = topicImages[topic.id];
+
+              return (
+                <div
+                  key={topic.id}
+                  className="card topic-card"
+                  style={
+                    topicImage
+                      ? ({ ["--topic-image" as string]: `url(${topicImage})` } as CSSProperties)
+                      : undefined
+                  }
+                  role="img"
+                  aria-label={`بطاقة موضوع ${topic.title}`}
+                >
+                  <div className="card-content">
+                    <h2>{topic.title}</h2>
+                    <p>{topic.description}</p>
+                    <div className="topic-status-summary">
+                      <span className={lessonCompleted ? "done" : ""}>الدرس</span>
+                      <span className={hasSubmission ? "done" : ""}>التسليم</span>
+                      <span className={hasRating ? "done" : ""}>التقييم</span>
+                    </div>
+                  </div>
+                  <div className="card-actions">
+                    <button
+                      className="button"
+                      onClick={() => navigate(`/topic/${topic.id}`)}
+                      disabled={!isLessonActive}
+                      aria-disabled={!isLessonActive}
+                    >
+                      عرض الدرس
+                    </button>
+                    {!isLessonActive && (
+                      <span className="topic-disabled-note">غير متاح حاليًا</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+// src/utils/studentTracking.ts
 import { supabase } from "../supabaseClient";
 
 export type LessonSection =
@@ -40,7 +41,8 @@ export type ActivityProgress = Record<
 export type StudentTrackingData = {
   lessons?: Record<string, { completed: boolean }>;
   activities?: Record<string, { completedIds: number[] }>;
-  collaborative?: Record<string, { discussion?: boolean; dialogue?: boolean }>;
+  evaluations?: Record<string, { score: number; timestamp: string }>;
+  collaborative?: Record<string, { discussion?: boolean; dialogue?: boolean; timestamp?: string }>;
   points?: {
     total: number;
   };
@@ -139,8 +141,7 @@ export const fetchLessonVisibilityRowsFromDB = async (
     .select("topic_id, settings")
     .in("topic_id", topicIds);
 
-  // If your table is per-teacher (like screenshot), filter by teacher_id.
-  // If your app should load "global" settings, you can remove this.
+  // If your table is per-teacher, filter by teacher_id.
   if (resolvedTeacherId) {
     q = q.eq("teacher_id", resolvedTeacherId);
   }
@@ -152,7 +153,6 @@ export const fetchLessonVisibilityRowsFromDB = async (
     return [];
   }
 
-  // Supabase returns jsonb already as object (not string), so this should match your type.
   return (data ?? []) as LessonVisibilitySettingsRow[];
 };
 
@@ -285,7 +285,20 @@ export const toggleActivityCompletion = (
 // Student Tracking (DB)
 // -------------------------
 
+// ✅ Fix 23502: student_name is NOT NULL in student_tracking, so always send it.
+const resolveStudentName = async (studentId: string): Promise<string> => {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("full_name, username")
+    .eq("id", studentId)
+    .maybeSingle();
 
+  if (error) {
+    console.warn("resolveStudentName error:", error);
+  }
+
+  return data?.full_name || data?.username || "طالب";
+};
 
 export const getStudentTracking = async (
   studentId: string
@@ -296,12 +309,12 @@ export const getStudentTracking = async (
     .eq("student_id", studentId)
     .maybeSingle();
 
-  if (error && error.code !== "PGRST116") { // PGRST116 means no rows found
+  if (error && error.code !== "PGRST116") {
     console.error("Error fetching student tracking data:", error);
     return null;
   }
 
-  return data?.tracking_data || null;
+  return (data?.tracking_data as StudentTrackingData) || null;
 };
 
 export const trackActivitySubmission = async (
@@ -315,41 +328,47 @@ export const trackActivitySubmission = async (
     .eq("student_id", studentId)
     .maybeSingle();
 
-  if (fetchError && fetchError.code !== "PGRST116") { // PGRST116 means no rows found
+  if (fetchError && fetchError.code !== "PGRST116") {
     console.error("Error fetching current tracking data:", fetchError);
     return;
   }
 
-  const trackingData = currentTracking?.tracking_data || {};
+  const trackingData: StudentTrackingData = currentTracking?.tracking_data || {};
   const currentActivities = trackingData.activities || {};
   const currentCompletedIds = currentActivities[topicId]?.completedIds || [];
 
-  if (!currentCompletedIds.includes(activityId)) {
-    currentCompletedIds.push(activityId);
-  }
+  const wasAlreadyCompleted = currentCompletedIds.includes(activityId);
+  const nextCompletedIds = wasAlreadyCompleted
+    ? currentCompletedIds
+    : [...currentCompletedIds, activityId];
 
   const currentPoints = trackingData.points?.total || 0;
-  const updatedPoints = currentCompletedIds.includes(activityId) && !currentTracking?.tracking_data?.activities?.[topicId]?.completedIds?.includes(activityId)
-    ? currentPoints + 5
-    : currentPoints;
+  const updatedPoints = !wasAlreadyCompleted ? currentPoints + 5 : currentPoints;
 
-  const updatedTrackingData = {
+  const updatedTrackingData: StudentTrackingData = {
     ...trackingData,
     activities: {
       ...currentActivities,
       [topicId]: {
-        completedIds: currentCompletedIds,
+        completedIds: nextCompletedIds,
       },
     },
     points: {
-      total: updatedPoints
-    }
+      total: updatedPoints,
+    },
   };
+
+  const studentName = await resolveStudentName(studentId);
 
   const { error: updateError } = await supabase
     .from("student_tracking")
     .upsert(
-      { student_id: studentId, tracking_data: updatedTrackingData, updated_at: new Date().toISOString() },
+      {
+        student_id: studentId,
+        student_name: studentName,
+        tracking_data: updatedTrackingData,
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "student_id" }
     );
 
@@ -358,29 +377,26 @@ export const trackActivitySubmission = async (
   }
 };
 
-export const trackLessonCompletion = async (
-  studentId: string,
-  topicId: string
-) => {
+export const trackLessonCompletion = async (studentId: string, topicId: string) => {
   const { data: currentTracking, error: fetchError } = await supabase
     .from("student_tracking")
     .select("tracking_data")
     .eq("student_id", studentId)
     .maybeSingle();
 
-  if (fetchError && fetchError.code !== "PGRST116") { // PGRST116 means no rows found
+  if (fetchError && fetchError.code !== "PGRST116") {
     console.error("Error fetching current tracking data:", fetchError);
     return;
   }
 
-  const trackingData = currentTracking?.tracking_data || {};
+  const trackingData: StudentTrackingData = currentTracking?.tracking_data || {};
   const currentLessons = trackingData.lessons || {};
 
   const currentPoints = trackingData.points?.total || 0;
   const wasCompleted = currentLessons[topicId]?.completed || false;
   const updatedPoints = !wasCompleted ? currentPoints + 20 : currentPoints;
 
-  const updatedTrackingData = {
+  const updatedTrackingData: StudentTrackingData = {
     ...trackingData,
     lessons: {
       ...currentLessons,
@@ -389,14 +405,21 @@ export const trackLessonCompletion = async (
       },
     },
     points: {
-      total: updatedPoints
-    }
+      total: updatedPoints,
+    },
   };
+
+  const studentName = await resolveStudentName(studentId);
 
   const { error: updateError } = await supabase
     .from("student_tracking")
     .upsert(
-      { student_id: studentId, tracking_data: updatedTrackingData, updated_at: new Date().toISOString() },
+      {
+        student_id: studentId,
+        student_name: studentName,
+        tracking_data: updatedTrackingData,
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "student_id" }
     );
 
@@ -416,36 +439,43 @@ export const trackEvaluationSubmission = async (
     .eq("student_id", studentId)
     .maybeSingle();
 
-  if (fetchError && fetchError.code !== "PGRST116") { // PGRST116 means no rows found
+  if (fetchError && fetchError.code !== "PGRST116") {
     console.error("Error fetching current tracking data:", fetchError);
     return;
   }
 
-  const trackingData = currentTracking?.tracking_data || {};
+  const trackingData: StudentTrackingData = currentTracking?.tracking_data || {};
   const currentEvaluations = trackingData.evaluations || {};
 
   const currentPoints = trackingData.points?.total || 0;
   const wasEvaluated = !!currentEvaluations[topicId];
   const updatedPoints = !wasEvaluated ? currentPoints + 10 : currentPoints;
 
-  const updatedTrackingData = {
+  const updatedTrackingData: StudentTrackingData = {
     ...trackingData,
     evaluations: {
       ...currentEvaluations,
       [topicId]: {
-        score: score,
+        score,
         timestamp: new Date().toISOString(),
       },
     },
     points: {
-      total: updatedPoints
-    }
+      total: updatedPoints,
+    },
   };
+
+  const studentName = await resolveStudentName(studentId);
 
   const { error: updateError } = await supabase
     .from("student_tracking")
     .upsert(
-      { student_id: studentId, tracking_data: updatedTrackingData, updated_at: new Date().toISOString() },
+      {
+        student_id: studentId,
+        student_name: studentName,
+        tracking_data: updatedTrackingData,
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "student_id" }
     );
 
@@ -465,17 +495,17 @@ export const trackCollaborativeCompletion = async (
     .eq("student_id", studentId)
     .maybeSingle();
 
-  if (fetchError && fetchError.code !== "PGRST116") { // PGRST116 means no rows found
+  if (fetchError && fetchError.code !== "PGRST116") {
     console.error("Error fetching current tracking data:", fetchError);
     return;
   }
 
-  const trackingData = currentTracking?.tracking_data || {};
+  const trackingData: StudentTrackingData = currentTracking?.tracking_data || {};
   const currentCollaborative = trackingData.collaborative || {};
 
   const currentPoints = trackingData.points?.total || 0;
   const wasCompleted = currentCollaborative[topicId]?.[activityKind] || false;
-  const updatedPoints = !wasCompleted ? currentPoints + 15 : currentPoints; // Collaborative gives 15 points
+  const updatedPoints = !wasCompleted ? currentPoints + 15 : currentPoints;
 
   const updatedCollaborative = {
     ...currentCollaborative,
@@ -486,18 +516,25 @@ export const trackCollaborativeCompletion = async (
     },
   };
 
-  const updatedTrackingData = {
+  const updatedTrackingData: StudentTrackingData = {
     ...trackingData,
     collaborative: updatedCollaborative,
     points: {
-      total: updatedPoints
-    }
+      total: updatedPoints,
+    },
   };
+
+  const studentName = await resolveStudentName(studentId);
 
   const { error: updateError } = await supabase
     .from("student_tracking")
     .upsert(
-      { student_id: studentId, tracking_data: updatedTrackingData, updated_at: new Date().toISOString() },
+      {
+        student_id: studentId,
+        student_name: studentName,
+        tracking_data: updatedTrackingData,
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "student_id" }
     );
 

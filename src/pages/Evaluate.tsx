@@ -32,15 +32,19 @@ export default function Evaluate() {
         lesson: false,
         review: false,
         evaluation: true,
-        activity: false
+        activity: false,
       };
     });
     return defaults;
   });
 
   const initialWritingValues = topic?.writingSections
-    ? topic.writingSections.reduce((acc: WritingValues, section: WritingSection) => ({ ...acc, [section.id]: "" }), {})
+    ? topic.writingSections.reduce(
+        (acc: WritingValues, section: WritingSection) => ({ ...acc, [section.id]: "" }),
+        {}
+      )
     : { main: "" };
+
   const [writingValues, setWritingValues] = useState<WritingValues>(initialWritingValues);
 
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -58,7 +62,7 @@ export default function Evaluate() {
 
   useEffect(() => {
     if (session && topicId) {
-      const tracker = new SessionTimeTracker(session.user.id, topicId, 'evaluation');
+      const tracker = new SessionTimeTracker(session.user.id, topicId, "evaluation");
       tracker.startSession();
       setTimeTracker(tracker);
 
@@ -87,12 +91,22 @@ export default function Evaluate() {
         return;
       }
 
-      setUserProfile({ full_name: profile.full_name, grade: profile.grade });
+      // ✅ Fix TS18047: profile might be null when maybeSingle() returns no row
+      if (!profile) {
+        setUserProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setUserProfile({
+        full_name: profile.full_name ?? "",
+        grade: profile.grade ?? "",
+      });
 
       const teacherId =
-        profile?.role === "teacher" || profile?.role === "admin"
+        profile.role === "teacher" || profile.role === "admin"
           ? session.user.id
-          : profile?.added_by_teacher_id;
+          : profile.added_by_teacher_id;
 
       if (!teacherId) {
         setIsLoading(false);
@@ -109,9 +123,7 @@ export default function Evaluate() {
         return;
       }
 
-      const updatedVisibility: LessonVisibility = {
-        ...lessonVisibility,
-      };
+      const updatedVisibility: LessonVisibility = { ...lessonVisibility };
 
       (data || []).forEach((row) => {
         updatedVisibility[row.topic_id] = {
@@ -127,6 +139,7 @@ export default function Evaluate() {
     };
 
     loadLessonVisibilitySettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, topic, topicIds]);
 
   const handleInputChange = (id: string, value: string) => {
@@ -143,13 +156,15 @@ export default function Evaluate() {
       return;
     }
 
-    const isTextProvided = Object.values(writingValues).some(value => value.trim() !== "");
+    const isTextProvided = Object.values(writingValues).some((value) => value.trim() !== "");
     if (!isTextProvided) {
       alert("الرجاء إدخال النص أولاً في قسم واحد على الأقل.");
       return;
     }
 
     try {
+      setIsEvaluating(true);
+
       const aiResult = await getAIAnalysis(writingValues, rubric, {
         topicTitle: topic.title,
         evaluationTask: topic.evaluationTask.description,
@@ -159,10 +174,8 @@ export default function Evaluate() {
         studentGrade: userProfile?.grade,
       });
 
-      // Award points and save submission
       setIsConfirming(true);
 
-      // 1. Save submission to submissions table
       const { data: newSubmission, error: submissionError } = await supabase
         .from("submissions")
         .insert({
@@ -170,7 +183,7 @@ export default function Evaluate() {
           topic_title: topic.title,
           submission_data: writingValues,
           ai_response: aiResult,
-          ai_grade: aiResult.score
+          ai_grade: aiResult.score,
         })
         .select("id")
         .maybeSingle();
@@ -179,11 +192,10 @@ export default function Evaluate() {
         throw submissionError;
       }
 
-      // 2. Auto-confirm tracking and award 10 points
       await autoConfirmTracking({
         studentId: session.user.id,
         topicId: topic.id,
-        trackingType: 'evaluation',
+        trackingType: "evaluation",
         score: aiResult.score,
         metadata: {
           topicTitle: topic.title,
@@ -192,7 +204,6 @@ export default function Evaluate() {
         },
       });
 
-      // Log notification
       await logAdminNotification({
         recipientId: session.user.id,
         actorId: session.user.id,
@@ -216,7 +227,6 @@ export default function Evaluate() {
         });
       }
 
-      // End session
       if (timeTracker) {
         await timeTracker.endSession(true);
       }
@@ -227,7 +237,6 @@ export default function Evaluate() {
       if (newSubmission) {
         navigate(`/submission/${newSubmission.id}`);
       }
-
     } catch (error: any) {
       console.error("Evaluation/Confirmation process failed:", error);
       alert(`فشلت العملية. يرجى المحاولة مرة أخرى. الخطأ: ${error.message}`);
@@ -279,35 +288,41 @@ export default function Evaluate() {
     topic.evaluationTask.mode === "discussion"
       ? "تقييم المناقشة"
       : topic.evaluationTask.mode === "dialogue"
-        ? "تقييم الحوار"
-        : topic.evaluationTask.mode === "report"
-          ? "تقييم التقرير"
-          : "تقييم الكتابة";
+      ? "تقييم الحوار"
+      : topic.evaluationTask.mode === "report"
+      ? "تقييم التقرير"
+      : "تقييم الكتابة";
 
-  const sectionsToRender = topic.writingSections || [{ id: "main", title: "النص الرئيسي", placeholder: "اكتب النص هنا...", description: "" }];
+  const sectionsToRender =
+    topic.writingSections || [
+      { id: "main", title: "النص الرئيسي", placeholder: "اكتب النص هنا...", description: "" },
+    ];
 
   return (
     <div className="evaluate-page" dir="rtl">
-      {/* Confirmation dialog hidden, auto-confirming now */}
       {false && (
         <ConfirmationDialog
           isOpen={false}
           title=""
           message=""
-          onConfirm={async () => { }}
-          onCancel={async () => { }}
+          onConfirm={async () => {}}
+          onCancel={async () => {}}
         />
       )}
 
       <header className="evaluate-header page-header">
-        <h1 className="page-title">{evaluationTitle}: {topic.title}</h1>
+        <h1 className="page-title">
+          {evaluationTitle}: {topic.title}
+        </h1>
         <p>املأ الأقسام أدناه واحصل على تقييم فوري بناءً على المعايير الموضحة.</p>
       </header>
 
       <div className="evaluate-content-wrapper">
         <div className="vertical-stack">
           <section className="card rubric-area evaluate-section">
-            <h2><i className="fas fa-clipboard-check"></i> {topic.evaluationTask.title}</h2>
+            <h2>
+              <i className="fas fa-clipboard-check"></i> {topic.evaluationTask.title}
+            </h2>
             <p>{topic.evaluationTask.description}</p>
             {topic.evaluationTask.mode === "discussion" && (
               <p className="text-note">هذه المهمة تركّز على وضوح الحجة والاحترام في عرض الرأي.</p>
@@ -338,7 +353,11 @@ export default function Evaluate() {
                 ></textarea>
               </div>
             ))}
-            <button onClick={handleEvaluate} disabled={isEvaluating || isConfirming} className="button button-primary cta-button">
+            <button
+              onClick={handleEvaluate}
+              disabled={isEvaluating || isConfirming}
+              className="button button-primary cta-button"
+            >
               {isEvaluating ? "...جاري التقييم" : isConfirming ? "...جاري الحفظ" : "قيّم النص الآن"}
             </button>
           </div>
@@ -347,7 +366,9 @@ export default function Evaluate() {
         <div className="vertical-stack">
           {rubric && (
             <section className="card rubric-area evaluate-section">
-              <h2><i className="fas fa-tasks"></i> معايير التقييم</h2>
+              <h2>
+                <i className="fas fa-tasks"></i> معايير التقييم
+              </h2>
               <div className="rubric-table-wrapper">
                 <table className="rubric-table">
                   <thead>
@@ -394,8 +415,12 @@ export default function Evaluate() {
       )}
 
       <div className="page-actions">
-        <button className="button button-secondary" onClick={() => navigate(-1)}><i className="fas fa-arrow-right"></i> رجوع</button>
-        <button className="button button-light" onClick={() => navigate(`/my-submissions`)}>عرض كل كتاباتي</button>
+        <button className="button button-secondary" onClick={() => navigate(-1)}>
+          <i className="fas fa-arrow-right"></i> رجوع
+        </button>
+        <button className="button button-light" onClick={() => navigate(`/my-submissions`)}>
+          عرض كل كتاباتي
+        </button>
       </div>
     </div>
   );

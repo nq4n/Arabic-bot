@@ -33,9 +33,10 @@ export default function MySubmissions() {
   useEffect(() => {
     const fetchSubmissions = async () => {
       console.log('Attempting to fetch session...');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
       if (sessionError || !session) {
         setError('You must be logged in to view your submissions.');
@@ -44,8 +45,9 @@ export default function MySubmissions() {
       }
 
       console.log('Fetching submissions for user ID:', session.user.id);
+
       try {
-        // Fetch formal writing submissions
+        // 1) Fetch formal writing submissions
         const { data: subData, error: subError } = await supabase
           .from('submissions')
           .select('id, topic_title, created_at, ai_grade, teacher_response')
@@ -55,16 +57,64 @@ export default function MySubmissions() {
         if (subError) throw subError;
         setSubmissions(subData || []);
 
-        // Fetch tracking confirmations (lessons, activities)
+        // 2) Fetch tracking confirmations (lessons, evaluation, collaborative if you store it there...)
         const { data: confData, error: confError } = await supabase
           .from('tracking_confirmations')
           .select('id, tracking_type, topic_id, activity_id, is_confirmed, confirmation_timestamp, created_at')
-          .eq('student_id', session.user.id)
-          .order('created_at', { ascending: false });
+          .eq('student_id', session.user.id);
 
         if (confError) throw confError;
-        setConfirmations(confData || []);
+        let confirmationsList: TrackingConfirmation[] = (confData as any[]) || [];
 
+        // 3) Fetch interactive activity submissions and convert them into confirmation-like objects
+        const { data: activityData, error: activityError } = await supabase
+          .from('activity_submissions')
+          .select('id, topic_id, activity_id, status, created_at')
+          .eq('student_id', session.user.id);
+
+        if (!activityError && activityData) {
+          const interactiveConfs: TrackingConfirmation[] = (activityData as any[]).map((row: any) => ({
+            // negative id to avoid collision with real confirmations
+            id: -row.id,
+            tracking_type: 'activity',
+            topic_id: row.topic_id,
+            activity_id: row.activity_id,
+            is_confirmed: true,
+            confirmation_timestamp: row.created_at,
+            created_at: row.created_at,
+          }));
+          confirmationsList = [...confirmationsList, ...interactiveConfs];
+        }
+
+        // 4) Fetch collaborative activity completions and convert them into confirmation-like objects
+        //    table: collaborative_activity_completions(id, student_id, topic_id, activity_kind, completed_at)
+        const { data: collabData, error: collabError } = await supabase
+          .from('collaborative_activity_completions')
+          .select('id, topic_id, activity_kind, completed_at')
+          .eq('student_id', session.user.id);
+
+        if (!collabError && collabData) {
+          const collabConfs: TrackingConfirmation[] = (collabData as any[]).map((row: any) => ({
+            // use a different negative range to avoid collision with interactive (-id)
+            id: -(1000000000 + row.id),
+            tracking_type: 'collaborative',
+            topic_id: row.topic_id,
+            activity_id: null,
+            is_confirmed: true,
+            confirmation_timestamp: row.completed_at || row.created_at || null,
+            created_at: row.completed_at || row.created_at || new Date().toISOString(),
+          }));
+          confirmationsList = [...confirmationsList, ...collabConfs];
+        }
+
+        // 5) Sort confirmations by time desc
+        confirmationsList.sort((a, b) => {
+          const da = new Date(a.confirmation_timestamp || a.created_at).getTime();
+          const db = new Date(b.confirmation_timestamp || b.created_at).getTime();
+          return db - da;
+        });
+
+        setConfirmations(confirmationsList);
       } catch (e: any) {
         setError('Failed to fetch data.');
         console.error('Error fetching submissions/activities:', e);
@@ -79,14 +129,14 @@ export default function MySubmissions() {
   const calculateTeacherScore = (response: Submission['teacher_response']) => {
     if (!response || response.total_score === undefined) return null;
     return response.total_score;
-  }
+  };
 
   const getTrackingTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      'lesson': 'درس',
-      'activity': 'نشاط',
-      'evaluation': 'تقييم',
-      'collaborative': 'تعاوني'
+      lesson: 'درس',
+      activity: 'نشاط',
+      evaluation: 'تقييم',
+      collaborative: 'تعاوني',
     };
     return labels[type] || type;
   };
@@ -101,6 +151,7 @@ export default function MySubmissions() {
       <div className='card submissions-list' aria-busy={loading}>
         {loading && <SkeletonSection lines={5} />}
         {error && <p className='error-message'>{error}</p>}
+
         <div className="tabs-navigation" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
           <button
             className={`button ${activeTab === 'submissions' ? 'button-primary' : 'button-light'}`}
@@ -108,6 +159,7 @@ export default function MySubmissions() {
           >
             كتاباتي وتقييماتي
           </button>
+
           <button
             className={`button ${activeTab === 'activities' ? 'button-primary' : 'button-light'}`}
             onClick={() => setActiveTab('activities')}
@@ -129,7 +181,9 @@ export default function MySubmissions() {
             </thead>
             <tbody>
               {submissions.length === 0 ? (
-                <tr><td colSpan={5}>لم تقم بأي تسليمات بعد.</td></tr>
+                <tr>
+                  <td colSpan={5}>لم تقم بأي تسليمات بعد.</td>
+                </tr>
               ) : (
                 submissions.map((sub) => {
                   const teacherScore = calculateTeacherScore(sub.teacher_response);
@@ -148,7 +202,7 @@ export default function MySubmissions() {
                         </button>
                       </td>
                     </tr>
-                  )
+                  );
                 })
               )}
             </tbody>
@@ -167,7 +221,9 @@ export default function MySubmissions() {
             </thead>
             <tbody>
               {confirmations.length === 0 ? (
-                <tr><td colSpan={5}>لا يوجد سجل أنشطة بعد.</td></tr>
+                <tr>
+                  <td colSpan={4}>لا يوجد سجل أنشطة بعد.</td>
+                </tr>
               ) : (
                 confirmations.map((c) => (
                   <tr key={c.id}>

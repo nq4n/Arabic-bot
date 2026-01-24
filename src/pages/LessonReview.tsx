@@ -6,6 +6,7 @@ import "../styles/LessonReview.css";
 import { supabase } from "../supabaseClient";
 import Chat from '../components/Chat';
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
+import { autoConfirmTracking } from '../utils/enhancedStudentTracking';
 
 export default function LessonReview() {
   const { topicId } = useParams<{ topicId: string }>();
@@ -134,7 +135,7 @@ export default function LessonReview() {
           <p className="page-subtitle">تم إيقاف هذا القسم من قبل المعلم. يرجى الرجوع لاحقًا.</p>
         </header>
         <div className="page-actions">
-          <button className="button button-secondary" onClick={() => navigate("/")}>
+          <button className="button button-secondary" onClick={() => navigate("/")}> 
             <i className="fas fa-arrow-right"></i>
             العودة إلى قائمة المواضيع
           </button>
@@ -169,6 +170,20 @@ export default function LessonReview() {
     نموذج تطبيقي للكتابة:
     ${topic.writingModel.content}
   `;
+
+  // Handler: update tracking before navigating to evaluation
+  const handleProceedToEvaluation = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session;
+    if (session) {
+      await autoConfirmTracking({
+        studentId: session.user.id,
+        topicId: topic.id,
+        trackingType: 'lesson'
+      });
+    }
+    navigate(`/evaluate/${topic.id}`);
+  };
 
   return (
     <div className="review-page" dir="rtl">
@@ -220,7 +235,7 @@ export default function LessonReview() {
           </button>
          <button
             className="button button-primary cta-button"
-            onClick={() => navigate(`/evaluate/${topic.id}`)}
+            onClick={handleProceedToEvaluation}
             disabled={!isEvaluationActive}
             aria-disabled={!isEvaluationActive}
           >
@@ -234,4 +249,3 @@ export default function LessonReview() {
     </div>
   );
 }
-
