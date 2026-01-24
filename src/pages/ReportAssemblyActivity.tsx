@@ -10,10 +10,14 @@ import {
 } from "../utils/lessonSettings";
 import { logAdminNotification } from "../utils/adminNotifications";
 import { emitAchievementToast } from "../utils/achievementToast";
-import { trackActivitySubmission } from "../utils/studentTracking";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/ReportAssemblyActivity.css";
-import { SessionTimeTracker, requestTrackingConfirmation } from "../utils/enhancedStudentTracking";
+import {
+  SessionTimeTracker,
+  confirmTracking,
+  executeTracking,
+  TrackingPayload,
+} from "../utils/enhancedStudentTracking";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
 type ActivitySubmissionRow = {
@@ -481,6 +485,7 @@ export default function ReportAssemblyActivity() {
     if (!interactiveActivity || !session || !topic) return;
     if (!reportText.trim()) {
       setError(`يرجى كتابة ${submissionLabel} قبل الإرسال.`);
+      setIsConfirmationOpen(false);
       return;
     }
 
@@ -489,60 +494,117 @@ export default function ReportAssemblyActivity() {
     setNotice(null);
     const hadSubmission = submission?.status === "submitted";
 
-    const { data, error } = await supabase
-      .from("activity_submissions")
-      .upsert(
-        {
-          student_id: session.user.id,
-          topic_id: topic.id,
-          activity_id: interactiveActivity.activityId,
-          response_text: reportText,
-          status: "submitted",
+    try {
+      // Create tracking confirmation first
+      const payload: TrackingPayload = {
+        studentId: session.user.id,
+        topicId: topic.id,
+        trackingType: 'activity',
+        activityId: interactiveActivity.activityId,
+        metadata: {
+          activityTitle: interactiveActivity.title,
+          timestamp: new Date().toISOString(),
         },
-        { onConflict: "student_id,topic_id,activity_id" }
-      )
-      .select("id, response_text, status")
-      .single();
+      };
 
-    if (error) {
-      setError(`تعذر حفظ ${submissionLabel}. حاول مرة أخرى.`);
+      const { data: confirmData, error: confirmError } = await supabase
+        .from('tracking_confirmations')
+        .insert({
+          student_id: payload.studentId,
+          tracking_type: payload.trackingType,
+          topic_id: payload.topicId,
+          activity_id: payload.activityId,
+          is_confirmed: false,
+          data_quality_score: 100,
+          validation_status: 'valid',
+          confirmation_data: payload.metadata || {},
+        })
+        .select('id')
+        .single();
+
+      if (confirmError || !confirmData) {
+        console.error('Failed to create tracking confirmation:', confirmError);
+      }
+
+      // Save submission
+      const { data, error } = await supabase
+        .from("activity_submissions")
+        .upsert(
+          {
+            student_id: session.user.id,
+            topic_id: topic.id,
+            activity_id: interactiveActivity.activityId,
+            response_text: reportText,
+            status: "submitted",
+          },
+          { onConflict: "student_id,topic_id,activity_id" }
+        )
+        .select("id, response_text, status")
+        .single();
+
+      if (error) {
+        setError(`تعذر حفظ ${submissionLabel}. حاول مرة أخرى.`);
+        setIsSubmitting(false);
+        setIsConfirmationOpen(false);
+        return;
+      }
+
+      setSubmission(data as ActivitySubmissionRow);
+      setNotice(`تم حفظ ${submissionLabel} بنجاح.`);
+
+      if (!hadSubmission) {
+        // Execute tracking
+        await executeTracking({
+          studentId: session.user.id,
+          topicId: topic.id,
+          trackingType: 'activity',
+          activityId: interactiveActivity.activityId,
+        });
+
+        // Confirm tracking
+        if (confirmData) {
+          await confirmTracking(confirmData.id, async () => {
+            // Additional confirmation logic if needed
+          });
+        }
+
+        await logAdminNotification({
+          recipientId: session.user.id,
+          actorId: session.user.id,
+          actorRole: "student",
+          message: `تم منحك 5 نقاط لإكمال ${submissionLabel}.`,
+          category: "points",
+        });
+
+        emitAchievementToast({
+          title: "تم احتساب النقاط",
+          message: "تمت إضافة 5 نقاط إلى رصيدك.",
+          points: 5,
+          tone: "success",
+        });
+      } else {
+        emitAchievementToast({
+          title: "تم تحديث الإرسال",
+          message: `تم تحديث ${submissionLabel} بنجاح.`,
+          tone: "info",
+        });
+      }
+
+      if (timeTracker) {
+        await timeTracker.endSession(true);
+      }
+
+      setIsConfirmationOpen(false);
+    } catch (error) {
+      console.error('Error in submission:', error);
+      setError('حدث خطأ أثناء الإرسال. حاول مرة أخرى.');
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    setSubmission(data as ActivitySubmissionRow);
-    setNotice(`تم حفظ ${submissionLabel} بنجاح.`);
-    if (!hadSubmission) {
-      await logAdminNotification({
-        recipientId: session.user.id,
-        actorId: session.user.id,
-        actorRole: "student",
-        message: `تم منحك 5 نقاط لإكمال ${submissionLabel}.`,
-        category: "points",
-      });
-      await trackActivitySubmission(session.user.id, topic.id, interactiveActivity.activityId);
-      await requestTrackingConfirmation(session.user.id, 'activity', topic.id, interactiveActivity.activityId);
-      emitAchievementToast({
-        title: "تم احتساب النقاط",
-        message: "تمت إضافة 5 نقاط إلى رصيدك.",
-        points: 5,
-        tone: "success",
-      });
-    } else {
-      emitAchievementToast({
-        title: "تم تحديث الإرسال",
-        message: `تم تحديث ${submissionLabel} بنجاح.`,
-        tone: "info",
-      });
-    }
-    if (timeTracker) {
-        await timeTracker.endSession();
-    }
-    setIsSubmitting(false);
   };
 
   const handleSubmit = () => {
-      setIsConfirmationOpen(true);
+    setIsConfirmationOpen(true);
   }
 
   const isSubmitted = submission?.status === "submitted";
@@ -680,9 +742,8 @@ export default function ReportAssemblyActivity() {
                     <button
                       key={scene.id}
                       type="button"
-                      className={`scene-nav-item${index === sceneIndex ? " active" : ""}${
-                        isSelected ? " done" : ""
-                      }`}
+                      className={`scene-nav-item${index === sceneIndex ? " active" : ""}${isSelected ? " done" : ""
+                        }`}
                       onClick={() => handleJumpToScene(index)}
                     >
                       <span className="scene-nav-index">{index + 1}</span>
@@ -760,9 +821,8 @@ export default function ReportAssemblyActivity() {
                       {activeScene.options.map((option, optionIndex) => (
                         <label
                           key={`${activeScene.id}-${optionIndex}`}
-                          className={`scene-option${
-                            sceneSelections[sceneIndex] === optionIndex ? " selected" : ""
-                          }`}
+                          className={`scene-option${sceneSelections[sceneIndex] === optionIndex ? " selected" : ""
+                            }`}
                           draggable
                           onDragStart={handleOptionDragStart(optionIndex)}
                         >

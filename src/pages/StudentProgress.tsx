@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { useSession } from '../hooks/SessionContext';
 import { SkeletonSection } from '../components/SkeletonBlocks';
@@ -7,16 +7,18 @@ import '../styles/StudentProgress.css';
 type TrackingConfirmation = {
     id: number;
     student_id: string;
-    activity_type: string;
-    activity_id: string;
-    confirmed: boolean;
-    confirmed_at: string;
-    session_duration: number;
+    tracking_type: string;
+    topic_id: string;
+    activity_id: number | null;
+    is_confirmed: boolean;
+    confirmation_timestamp: string | null;
     data_quality_score: number;
+    validation_status: string;
+    created_at: string;
     profiles: {
         username: string;
         full_name: string;
-    };
+    } | null;
 };
 
 export default function StudentProgress() {
@@ -39,23 +41,26 @@ export default function StudentProgress() {
                     .select(`
                         id,
                         student_id,
-                        activity_type,
+                        tracking_type,
+                        topic_id,
                         activity_id,
-                        confirmed,
-                        confirmed_at,
-                        session_duration,
+                        is_confirmed,
+                        confirmation_timestamp,
                         data_quality_score,
+                        validation_status,
+                        created_at,
                         profiles (
                             username,
                             full_name
                         )
-                    `);
+                    `)
+                    .order('created_at', { ascending: false });
 
                 if (error) {
                     throw error;
                 }
 
-                setConfirmations(data as TrackingConfirmation[]);
+                setConfirmations(data as any as TrackingConfirmation[]);
             } catch (err: any) {
                 setError(`Error fetching student progress: ${err.message}`);
             } finally {
@@ -68,11 +73,21 @@ export default function StudentProgress() {
 
     const memoizedConfirmations = useMemo(() => confirmations, [confirmations]);
 
+    const getTrackingTypeLabel = (type: string) => {
+        const labels: Record<string, string> = {
+            'lesson': 'درس',
+            'activity': 'نشاط',
+            'evaluation': 'تقييم',
+            'collaborative': 'تعاوني'
+        };
+        return labels[type] || type;
+    };
+
     return (
         <div className="student-progress-page" dir="rtl">
             <header className="student-progress-header">
-                <h1>Student Activity Confirmations</h1>
-                <p>Review student confirmations for activities and lessons.</p>
+                <h1>تأكيدات النشاط الطلابي</h1>
+                <p>مراجعة تأكيدات الطلاب للأنشطة والدروس.</p>
             </header>
 
             <section className="card">
@@ -81,29 +96,49 @@ export default function StudentProgress() {
                 ) : error ? (
                     <p className="error-message">{error}</p>
                 ) : memoizedConfirmations.length === 0 ? (
-                    <p>No activity confirmations found.</p>
+                    <p>لا توجد تأكيدات نشاط.</p>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Student</th>
-                                    <th>Activity Type</th>
-                                    <th>Activity ID</th>
-                                    <th>Duration (s)</th>
-                                    <th>Confirmed At</th>
-                                    <th>Data Quality</th>
+                                    <th>الطالب</th>
+                                    <th>نوع النشاط</th>
+                                    <th>الموضوع</th>
+                                    <th>رقم النشاط</th>
+                                    <th>الحالة</th>
+                                    <th>تاريخ التأكيد</th>
+                                    <th>جودة البيانات</th>
+                                    <th>حالة التحقق</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {memoizedConfirmations.map((c) => (
                                     <tr key={c.id}>
                                         <td>{c.profiles?.full_name || c.profiles?.username || c.student_id}</td>
-                                        <td>{c.activity_type}</td>
-                                        <td>{c.activity_id}</td>
-                                        <td>{c.session_duration}</td>
-                                        <td>{new Date(c.confirmed_at).toLocaleString()}</td>
-                                        <td>{c.data_quality_score}</td>
+                                        <td>{getTrackingTypeLabel(c.tracking_type)}</td>
+                                        <td>{c.topic_id}</td>
+                                        <td>{c.activity_id || '-'}</td>
+                                        <td>
+                                            <span className={c.is_confirmed ? 'status-confirmed' : 'status-pending'}>
+                                                {c.is_confirmed ? 'مؤكد' : 'قيد الانتظار'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {c.confirmation_timestamp
+                                                ? new Date(c.confirmation_timestamp).toLocaleString('ar-SA')
+                                                : new Date(c.created_at).toLocaleString('ar-SA')}
+                                        </td>
+                                        <td>
+                                            <span className={c.data_quality_score >= 80 ? 'quality-high' : c.data_quality_score >= 50 ? 'quality-medium' : 'quality-low'}>
+                                                {c.data_quality_score}%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={c.validation_status === 'valid' ? 'validation-valid' : 'validation-invalid'}>
+                                                {c.validation_status === 'valid' ? 'صالح' : 'غير صالح'}
+                                            </span>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

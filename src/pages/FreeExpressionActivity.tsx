@@ -10,10 +10,14 @@ import {
 } from "../utils/lessonSettings";
 import { logAdminNotification } from "../utils/adminNotifications";
 import { emitAchievementToast } from "../utils/achievementToast";
-import { trackActivitySubmission } from "../utils/studentTracking";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/FreeExpressionActivity.css";
-import { SessionTimeTracker, requestTrackingConfirmation } from "../utils/enhancedStudentTracking";
+import {
+  SessionTimeTracker,
+  confirmTracking,
+  executeTracking,
+  TrackingPayload,
+} from "../utils/enhancedStudentTracking";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
 type ActivitySubmissionRow = {
@@ -80,13 +84,16 @@ export default function FreeExpressionActivity() {
   const [sessionTimer, setSessionTimer] = useState<SessionTimeTracker | null>(null);
 
   useEffect(() => {
-    const timer = new SessionTimeTracker('free_expression_activity');
-    setSessionTimer(timer);
+    if (session && topicId) {
+      const tracker = new SessionTimeTracker(session.user.id, topicId, 'activity');
+      tracker.startSession();
+      setSessionTimer(tracker);
 
-    return () => {
-        timer.endSession();
-    };
-  }, []);
+      return () => {
+        tracker.endSession(false);
+      };
+    }
+  }, [session, topicId]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -267,6 +274,7 @@ export default function FreeExpressionActivity() {
     if (!interactiveActivity || !session || !topic) return;
     if (!responseText.trim()) {
       setError("يرجى كتابة التعبير قبل الإرسال.");
+      setShowConfirmation(false);
       return;
     }
 
@@ -274,70 +282,118 @@ export default function FreeExpressionActivity() {
     setError(null);
     setNotice(null);
     const hadSubmission = submission?.status === "submitted";
-    const sessionDuration = sessionTimer?.endSession() || 0;
 
-    const { data, error } = await supabase
-      .from("activity_submissions")
-      .upsert(
-        {
-          student_id: session.user.id,
-          topic_id: topic.id,
-          activity_id: interactiveActivity.activityId,
-          response_text: responseText,
-          status: "submitted",
-        },
-        { onConflict: "student_id,topic_id,activity_id" }
-      )
-      .select("id, response_text, status")
-      .single();
-
-    if (error) {
-      setError("حدث خطأ أثناء حفظ التعبير.");
-      setIsSubmitting(false);
-      setShowConfirmation(false);
-      return;
-    }
-
-    await requestTrackingConfirmation({
+    try {
+      // Create tracking confirmation
+      const payload: TrackingPayload = {
         studentId: session.user.id,
-        activityType: 'free_expression_activity',
+        topicId: topic.id,
+        trackingType: 'activity',
         activityId: interactiveActivity.activityId,
-        confirmed: true,
-        sessionDuration,
-        dataQualityScore: 100
-    });
+        metadata: {
+          activityTitle: interactiveActivity.title,
+          timestamp: new Date().toISOString(),
+        },
+      };
 
-    setSubmission(data as ActivitySubmissionRow);
-    setNotice("تم حفظ التعبير بنجاح.");
-    if (!hadSubmission) {
-      await logAdminNotification({
-        recipientId: session.user.id,
-        actorId: session.user.id,
-        actorRole: "student",
-        message: `تم منحك 5 نقاط لإكمال ${submissionLabel}.`,
-        category: "points",
-      });
-      await trackActivitySubmission(session.user.id, topic.id, interactiveActivity.activityId);
-      emitAchievementToast({
-        title: "تم احتساب النقاط",
-        message: "تمت إضافة 5 نقاط إلى رصيدك.",
-        points: 5,
-        tone: "success",
-      });
-    } else {
-      emitAchievementToast({
-        title: "تم تحديث التعبير",
-        message: "تم تحديث التعبير بنجاح.",
-        tone: "info",
-      });
+      const { data: confirmData, error: confirmError } = await supabase
+        .from('tracking_confirmations')
+        .insert({
+          student_id: payload.studentId,
+          tracking_type: payload.trackingType,
+          topic_id: payload.topicId,
+          activity_id: payload.activityId,
+          is_confirmed: false,
+          data_quality_score: 100,
+          validation_status: 'valid',
+          confirmation_data: payload.metadata || {},
+        })
+        .select('id')
+        .single();
+
+      if (confirmError || !confirmData) {
+        console.error('Failed to create tracking confirmation:', confirmError);
+      }
+
+      // Save submission
+      const { data, error } = await supabase
+        .from("activity_submissions")
+        .upsert(
+          {
+            student_id: session.user.id,
+            topic_id: topic.id,
+            activity_id: interactiveActivity.activityId,
+            response_text: responseText,
+            status: "submitted",
+          },
+          { onConflict: "student_id,topic_id,activity_id" }
+        )
+        .select("id, response_text, status")
+        .single();
+
+      if (error) {
+        setError("حدث خطأ أثناء حفظ التعبير.");
+        setIsSubmitting(false);
+        setShowConfirmation(false);
+        return;
+      }
+
+      setSubmission(data as ActivitySubmissionRow);
+      setNotice("تم حفظ التعبير بنجاح.");
+
+      if (!hadSubmission) {
+        // Execute tracking
+        await executeTracking({
+          studentId: session.user.id,
+          topicId: topic.id,
+          trackingType: 'activity',
+          activityId: interactiveActivity.activityId,
+        });
+
+        // Confirm tracking
+        if (confirmData) {
+          await confirmTracking(confirmData.id, async () => {
+            // Additional confirmation logic if needed
+          });
+        }
+
+        await logAdminNotification({
+          recipientId: session.user.id,
+          actorId: session.user.id,
+          actorRole: "student",
+          message: `تم منحك 5 نقاط لإكمال ${submissionLabel}.`,
+          category: "points",
+        });
+
+        emitAchievementToast({
+          title: "تم احتساب النقاط",
+          message: "تمت إضافة 5 نقاط إلى رصيدك.",
+          points: 5,
+          tone: "success",
+        });
+      } else {
+        emitAchievementToast({
+          title: "تم تحديث التعبير",
+          message: "تم تحديث التعبير بنجاح.",
+          tone: "info",
+        });
+      }
+
+      if (sessionTimer) {
+        await sessionTimer.endSession(true);
+      }
+
+      setShowConfirmation(false);
+    } catch (error) {
+      console.error('Error in submission:', error);
+      setError('حدث خطأ أثناء الإرسال. حاول مرة أخرى.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
-    setShowConfirmation(false);
   }, [interactiveActivity, session, topic, responseText, submission, sessionTimer, submissionLabel]);
 
   const handleSubmit = () => {
-      setShowConfirmation(true);
+    setShowConfirmation(true);
   }
 
   const handlePrevPrompt = () => {
@@ -463,7 +519,7 @@ export default function FreeExpressionActivity() {
                   type="button"
                   className="button button-compact free-expression-arrow"
                   onClick={handlePrevPrompt}
-                  disabled={.indexOf(selectedPrompt.id) <= 0}
+                  disabled={promptIndex <= 0}
                   aria-label={"\u0627\u0644\u0633\u0627\u0628\u0642"}
                   title={"\u0627\u0644\u0633\u0627\u0628\u0642"}
                 >
@@ -600,13 +656,14 @@ export default function FreeExpressionActivity() {
         </button>
       </div>
 
-        <ConfirmationDialog
-            isOpen={showConfirmation}
-            onClose={() => setShowConfirmation(false)}
-            onConfirm={handleConfirmSubmit}
-            title="Confirm Submission"
-            message="Are you sure you want to submit your work? This action cannot be undone."
-        />
+      <ConfirmationDialog
+        isOpen={showConfirmation}
+        onCancel={() => setShowConfirmation(false)}
+        onConfirm={handleConfirmSubmit}
+        title="تأكيد إرسال التعبير"
+        message="هل أنت متأكد من أنك تريد إرسال هذا التعبير؟"
+        loading={isSubmitting}
+      />
     </div>
   );
 }

@@ -9,8 +9,15 @@ import "../styles/Evaluate.css";
 import { Session } from "@supabase/supabase-js";
 import { logAdminNotification } from "../utils/adminNotifications";
 import { emitAchievementToast } from "../utils/achievementToast";
-import { trackEvaluationSubmission } from "../utils/studentTracking";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
+import {
+  SessionTimeTracker,
+  confirmTracking,
+  rejectTracking,
+  executeTracking,
+  TrackingPayload,
+} from "../utils/enhancedStudentTracking";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 type WritingValues = { [key: string]: string };
 
@@ -20,14 +27,14 @@ export default function Evaluate() {
   const topic = topics.find((t) => t.id === topicId);
   const rubric = rubrics.find((r) => r.topicId === topicId);
   const topicIds = useMemo(() => topics.map((t) => t.id), []);
-  // Initialize with sensible defaults - evaluation visible by default
+
   const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() => {
     const defaults: LessonVisibility = {};
     topicIds.forEach((id) => {
       defaults[id] = {
         lesson: false,
         review: false,
-        evaluation: true, // Evaluation is visible by default
+        evaluation: true,
         activity: false
       };
     });
@@ -43,12 +50,30 @@ export default function Evaluate() {
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<{ full_name: string; grade: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeTracker, setTimeTracker] = useState<SessionTimeTracker | null>(null);
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [pendingConfirmationId, setPendingConfirmationId] = useState<number | null>(null);
+  const [confirmationDetails, setConfirmationDetails] = useState<string[]>([]);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [pendingEvaluationData, setPendingEvaluationData] = useState<any>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
   }, []);
+
+  useEffect(() => {
+    if (session && topicId) {
+      const tracker = new SessionTimeTracker(session.user.id, topicId, 'evaluation');
+      tracker.startSession();
+      setTimeTracker(tracker);
+
+      return () => {
+        tracker.endSession(false);
+      };
+    }
+  }, [session, topicId]);
 
   useEffect(() => {
     const loadLessonVisibilitySettings = async () => {
@@ -91,13 +116,10 @@ export default function Evaluate() {
         return;
       }
 
-      // Build visibility from database - merge with current defaults
       const updatedVisibility: LessonVisibility = {
-        // Keep existing defaults
         ...lessonVisibility,
       };
-      
-      // Override with database values for topics that exist in DB
+
       (data || []).forEach((row) => {
         updatedVisibility[row.topic_id] = {
           lesson: row.settings?.lesson ?? false,
@@ -106,15 +128,13 @@ export default function Evaluate() {
           activity: row.settings?.activity ?? false,
         };
       });
-      
+
       setLessonVisibility(updatedVisibility);
       setIsLoading(false);
     };
 
     loadLessonVisibilitySettings();
   }, [session, topic, topicIds]);
-
-
 
   const handleInputChange = (id: string, value: string) => {
     setWritingValues((prev) => ({ ...prev, [id]: value }));
@@ -139,7 +159,6 @@ export default function Evaluate() {
     setIsEvaluating(true);
 
     try {
-      // 1. Get the real AI analysis
       const aiResult = await getAIAnalysis(writingValues, rubric, {
         topicTitle: topic.title,
         evaluationTask: topic.evaluationTask.description,
@@ -149,57 +168,146 @@ export default function Evaluate() {
         studentGrade: userProfile?.grade,
       });
 
-      // 2. Save submission with the correct schema and get the new ID
+      // Store evaluation data for confirmation
+      setPendingEvaluationData({
+        writingValues,
+        aiResult,
+        topicTitle: topic.title,
+        topicId: topic.id,
+      });
+
+      // Create tracking confirmation
+      const payload: TrackingPayload = {
+        studentId: session.user.id,
+        topicId: topic.id,
+        trackingType: 'evaluation',
+        score: aiResult.score,
+        metadata: {
+          topicTitle: topic.title,
+          timestamp: new Date().toISOString(),
+        },
+      };
+
+      const { data, error } = await supabase
+        .from('tracking_confirmations')
+        .insert({
+          student_id: payload.studentId,
+          tracking_type: payload.trackingType,
+          topic_id: payload.topicId,
+          is_confirmed: false,
+          data_quality_score: 100,
+          validation_status: 'valid',
+          confirmation_data: payload.metadata || {},
+        })
+        .select('id')
+        .single();
+
+      if (error || !data) {
+        console.error('Failed to create tracking confirmation:', error);
+        setIsEvaluating(false);
+        return;
+      }
+
+      setPendingConfirmationId(data.id);
+      setConfirmationDetails([
+        `الموضوع: ${topic.title}`,
+        `الدرجة: ${aiResult.score}`,
+        `النقاط: 10`,
+      ]);
+      setIsConfirmationOpen(true);
+      setIsEvaluating(false);
+
+    } catch (error: any) {
+      console.error("Evaluation process failed:", error);
+      alert(`فشلت عملية التقييم. يرجى المحاولة مرة أخرى. الخطأ: ${error.message}`);
+      setIsEvaluating(false);
+    }
+  };
+
+  const handleConfirmEvaluation = async () => {
+    if (!session || !topic || !pendingConfirmationId || !pendingEvaluationData) return;
+
+    setIsConfirming(true);
+
+    try {
+      // Save submission
       const { data: newSubmission, error: submissionError } = await supabase
         .from("submissions")
         .insert({
           student_id: session.user.id,
-          topic_title: topic.title, // Use topic_title instead of topic_id
-          submission_data: writingValues,
-          ai_response: aiResult,
-          ai_grade: aiResult.score
+          topic_title: pendingEvaluationData.topicTitle,
+          submission_data: pendingEvaluationData.writingValues,
+          ai_response: pendingEvaluationData.aiResult,
+          ai_grade: pendingEvaluationData.aiResult.score
         })
         .select("id")
         .single();
 
       if (submissionError) {
-        // Throw the specific error from Supabase to be caught below
         throw submissionError;
       }
 
-      // 3. Navigate to the new submission review page on success
-      if (newSubmission) {
-        await logAdminNotification({
-          recipientId: session.user.id,
-          actorId: session.user.id,
-          actorRole: "student",
-          message: "تم تسليم الكتابة وحصلت على 10 نقاط.",
-          category: "points",
-        });
-        await trackEvaluationSubmission(session.user.id, topic.id, aiResult.score);
+      // Execute tracking
+      await executeTracking({
+        studentId: session.user.id,
+        topicId: topic.id,
+        trackingType: 'evaluation',
+        score: pendingEvaluationData.aiResult.score,
+      });
+
+      // Confirm in database
+      await confirmTracking(pendingConfirmationId, async () => {
+        // Additional confirmation logic if needed
+      });
+
+      // Log notification
+      await logAdminNotification({
+        recipientId: session.user.id,
+        actorId: session.user.id,
+        actorRole: "student",
+        message: "تم تسليم الكتابة وحصلت على 10 نقاط.",
+        category: "points",
+      });
+
+      emitAchievementToast({
+        title: "تم احتساب النقاط",
+        message: "تم منحك 10 نقاط لإكمال التقييم.",
+        points: 10,
+        tone: "success",
+      });
+
+      if (typeof pendingEvaluationData.aiResult.score === "number" && pendingEvaluationData.aiResult.score >= 85) {
         emitAchievementToast({
-          title: "تم احتساب النقاط",
-          message: "تم منحك 10 نقاط لإكمال التقييم.",
-          points: 10,
-          tone: "success",
+          title: "نتيجة مميزة",
+          message: `درجة ممتازة! حصلت على ${pendingEvaluationData.aiResult.score} في التقييم.`,
+          tone: "info",
         });
-        if (typeof aiResult.score === "number" && aiResult.score >= 85) {
-          emitAchievementToast({
-            title: "نتيجة مميزة",
-            message: `درجة ممتازة! حصلت على ${aiResult.score} في التقييم.`,
-            tone: "info",
-          });
-        }
-        navigate(`/submission/${newSubmission.id}`);
       }
 
+      // End session
+      if (timeTracker) {
+        await timeTracker.endSession(true);
+      }
+
+      setIsConfirmationOpen(false);
+      if (newSubmission) {
+        navigate(`/submission/${newSubmission.id}`);
+      }
     } catch (error: any) {
-      // Catch and log the specific error
-      console.error("Evaluation process failed:", error);
-      alert(`فشلت عملية التقييم. يرجى المحاولة مرة أخرى. الخطأ: ${error.message}`);
+      console.error("Confirmation failed:", error);
+      alert(`فشلت عملية التأكيد. يرجى المحاولة مرة أخرى. الخطأ: ${error.message}`);
     } finally {
-      setIsEvaluating(false);
+      setIsConfirming(false);
     }
+  };
+
+  const handleCancelConfirmation = async () => {
+    if (pendingConfirmationId) {
+      await rejectTracking(pendingConfirmationId);
+    }
+    setIsConfirmationOpen(false);
+    setPendingConfirmationId(null);
+    setPendingEvaluationData(null);
   };
 
   if (!topic) {
@@ -254,6 +362,16 @@ export default function Evaluate() {
 
   return (
     <div className="evaluate-page" dir="rtl">
+      <ConfirmationDialog
+        isOpen={isConfirmationOpen}
+        title="تأكيد تسليم التقييم"
+        message="هل أنت متأكد من أنك تريد تسليم التقييم؟"
+        details={confirmationDetails}
+        onConfirm={handleConfirmEvaluation}
+        onCancel={handleCancelConfirmation}
+        loading={isConfirming}
+      />
+
       <header className="evaluate-header page-header">
         <h1 className="page-title">{evaluationTitle}: {topic.title}</h1>
         <p>املأ الأقسام أدناه واحصل على تقييم فوري بناءً على المعايير الموضحة.</p>

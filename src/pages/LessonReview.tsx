@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { topics } from "../data/topics";
-import { LessonVisibility, getLessonProgress, markLessonCompleted } from "../utils/lessonSettings";
+import { LessonVisibility, markLessonCompleted } from "../utils/lessonSettings";
 import "../styles/LessonReview.css";
 import { supabase } from "../supabaseClient";
 import Chat from '../components/Chat';

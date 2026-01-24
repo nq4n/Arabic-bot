@@ -11,9 +11,14 @@ import "../styles/Topic.css";
 import type { Session } from "@supabase/supabase-js";
 import { logAdminNotification } from "../utils/adminNotifications";
 import { emitAchievementToast } from "../utils/achievementToast";
-import { trackLessonCompletion } from "../utils/studentTracking";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
-import { SessionTimeTracker, requestTrackingConfirmation } from "../utils/enhancedStudentTracking";
+import {
+  SessionTimeTracker,
+  confirmTracking,
+  rejectTracking,
+  executeTracking,
+  TrackingPayload,
+} from "../utils/enhancedStudentTracking";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
 export default function Topic() {
@@ -43,6 +48,9 @@ export default function Topic() {
   const [isCollaborativeLoading, setIsCollaborativeLoading] = useState(true);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [timeTracker, setTimeTracker] = useState<SessionTimeTracker | null>(null);
+  const [pendingConfirmationId, setPendingConfirmationId] = useState<number | null>(null);
+  const [confirmationDetails, setConfirmationDetails] = useState<string[]>([]);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const isPageLoading =
     isSessionLoading || isVisibilityLoading || isActivityLoading || isCollaborativeLoading;
@@ -134,13 +142,81 @@ export default function Topic() {
   }, []);
 
   const handleCompleteLesson = async () => {
-    if (!topic) return;
+    if (!topic || !session) return;
+
     const progress = getLessonProgress(topicIds);
     const wasCompleted = progress[topic.id]?.lessonCompleted ?? false;
-    markLessonCompleted(topicIds, topic.id);
 
-    if (session && !wasCompleted) {
-      logAdminNotification({
+    if (wasCompleted) {
+      // Already completed, just navigate
+      if (timeTracker) {
+        await timeTracker.endSession(true);
+      }
+      navigate(`/lesson-review/${topic.id}`);
+      return;
+    }
+
+    // Create tracking confirmation request
+    const payload: TrackingPayload = {
+      studentId: session.user.id,
+      topicId: topic.id,
+      trackingType: 'lesson',
+      metadata: {
+        topicTitle: topic.title,
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    const { data, error } = await supabase
+      .from('tracking_confirmations')
+      .insert({
+        student_id: payload.studentId,
+        tracking_type: payload.trackingType,
+        topic_id: payload.topicId,
+        is_confirmed: false,
+        data_quality_score: 100,
+        validation_status: 'valid',
+        confirmation_data: payload.metadata || {},
+      })
+      .select('id')
+      .single();
+
+    if (error || !data) {
+      console.error('Failed to create tracking confirmation:', error);
+      return;
+    }
+
+    setPendingConfirmationId(data.id);
+    setConfirmationDetails([
+      `الدرس: ${topic.title}`,
+      `النقاط: 20`,
+    ]);
+    setIsConfirmationOpen(true);
+  };
+
+  const handleConfirmLesson = async () => {
+    if (!topic || !session || !pendingConfirmationId) return;
+
+    setIsConfirming(true);
+
+    try {
+      // Mark lesson as completed locally
+      markLessonCompleted(topicIds, topic.id);
+
+      // Execute tracking
+      await executeTracking({
+        studentId: session.user.id,
+        topicId: topic.id,
+        trackingType: 'lesson',
+      });
+
+      // Confirm in database
+      await confirmTracking(pendingConfirmationId, async () => {
+        // Additional confirmation logic if needed
+      });
+
+      // Log notification and achievement
+      await logAdminNotification({
         recipientId: session.user.id,
         actorId: session.user.id,
         actorRole: "student",
@@ -148,23 +224,33 @@ export default function Topic() {
         category: "points",
       });
 
-      await trackLessonCompletion(session.user.id, topic.id);
-      
-      await requestTrackingConfirmation(session.user.id, 'lesson', topic.id);
-
       emitAchievementToast({
         title: "تم إكمال الدرس",
         message: "رائع! حصلت على 20 نقطة لإكمال الدرس.",
         points: 20,
         tone: "success",
       });
-    }
 
-    if (timeTracker) {
-        await timeTracker.endSession();
-    }
+      // End session
+      if (timeTracker) {
+        await timeTracker.endSession(true);
+      }
 
-    navigate(`/lesson-review/${topic.id}`);
+      setIsConfirmationOpen(false);
+      navigate(`/lesson-review/${topic.id}`);
+    } catch (error) {
+      console.error('Error confirming lesson:', error);
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
+  const handleCancelConfirmation = async () => {
+    if (pendingConfirmationId) {
+      await rejectTracking(pendingConfirmationId);
+    }
+    setIsConfirmationOpen(false);
+    setPendingConfirmationId(null);
   };
 
   if (!topic) {
@@ -274,11 +360,10 @@ export default function Topic() {
         isOpen={isConfirmationOpen}
         title="تأكيد إكمال الدرس"
         message="هل أنت متأكد من أنك تريد إنهاء الدرس والانتقال إلى المراجعة؟"
-        onConfirm={() => {
-          setIsConfirmationOpen(false);
-          handleCompleteLesson();
-        }}
-        onCancel={() => setIsConfirmationOpen(false)}
+        details={confirmationDetails}
+        onConfirm={handleConfirmLesson}
+        onCancel={handleCancelConfirmation}
+        loading={isConfirming}
       />
       <header className="topic-main-header page-header">
         <h1 className="page-title">{topic.lesson.header}</h1>
@@ -392,7 +477,7 @@ export default function Topic() {
         <div className="page-actions">
           <button
             className="button button-primary cta-button"
-            onClick={() => setIsConfirmationOpen(true)}
+            onClick={handleCompleteLesson}
             disabled={!isReviewActive}
             aria-disabled={!isReviewActive}
           >

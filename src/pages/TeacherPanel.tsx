@@ -345,10 +345,6 @@ export default function TeacherPanel() {
     }
   };
 
-  const handleDeleteClick = (user: UserWithStats) => {
-    setUserToDelete(user);
-    setShowConfirmDelete(true);
-  };
 
   const handleToggleUserSelection = (userId: string) => {
     const newSelected = new Set(selectedUsers);

@@ -3,11 +3,18 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabaseClient";
 import { topics } from "../data/topics";
-import { LessonVisibility, buildLessonVisibilityFromRows, getLessonVisibility } from "../utils/lessonSettings";
+import {
+  LessonVisibility,
+  buildLessonVisibilityFromRows,
+  getLessonVisibility,
+} from "../utils/lessonSettings";
 import PeerDialogueChat from "../components/PeerDialogueChat";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/Topic.css";
-import { SessionTimeTracker, requestTrackingConfirmation } from "../utils/enhancedStudentTracking";
+import {
+  SessionTimeTracker,
+  executeTracking,
+} from "../utils/enhancedStudentTracking";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
 export default function PeerDialogueActivity() {
@@ -26,24 +33,35 @@ export default function PeerDialogueActivity() {
   const [status, setStatus] = useState<"idle" | "waiting" | "matched">("idle");
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
-    getLessonVisibility(topicIds)
+  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(
+    () => getLessonVisibility(topicIds)
   );
   const [isCompleted, setIsCompleted] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [sessionTimer, setSessionTimer] = useState<SessionTimeTracker | null>(null);
+  const [sessionTimer, setSessionTimer] =
+    useState<SessionTimeTracker | null>(null);
 
   const isPageLoading =
-    isSessionLoading || isVisibilityLoading || isCompletionLoading || isMatchLoading;
+    isSessionLoading ||
+    isVisibilityLoading ||
+    isCompletionLoading ||
+    isMatchLoading;
 
-  useEffect(() => {
-    const timer = new SessionTimeTracker('peer_dialogue_activity');
-    setSessionTimer(timer);
-
-    return () => {
-        timer.endSession();
-    };
-  }, []);
+    useEffect(() => {
+      if (session && topicId) {
+        const timer = new SessionTimeTracker(
+          session.user.id,
+          topicId,
+          "collaborative"
+        );
+        setSessionTimer(timer);
+        timer.startSession();
+  
+        return () => {
+          timer.endSession();
+        };
+      }
+    }, [session, topicId]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -163,8 +181,8 @@ export default function PeerDialogueActivity() {
     if (!session || !topic) return;
     setIsStarting(true);
     setError(null);
-    
-    const sessionDuration = sessionTimer?.endSession() || 0;
+
+    const sessionDuration = (await sessionTimer?.endSession()) || 0;
 
     const { data, error: startError } = await supabase.rpc(
       "start_dialogue_peer_session",
@@ -178,13 +196,14 @@ export default function PeerDialogueActivity() {
       return;
     }
 
-    await requestTrackingConfirmation({
-        studentId: session.user.id,
-        activityType: 'peer_dialogue_activity',
-        activityId: 'peer_dialogue_activity',
-        confirmed: true,
+    await executeTracking({
+      studentId: session.user.id,
+      topicId: topic.id,
+      trackingType: "collaborative",
+      activityKind: "dialogue",
+      metadata: {
         sessionDuration,
-        dataQualityScore: 100
+      },
     });
 
     const payload = Array.isArray(data) ? data[0] : data;
@@ -201,7 +220,7 @@ export default function PeerDialogueActivity() {
     setStatus(payload.session_id ? "matched" : "waiting");
     setIsStarting(false);
     setShowConfirmation(false);
-  },[session, topic, sessionTimer]);
+  }, [session, topic, sessionTimer]);
 
   const handleStart = () => {
     setShowConfirmation(true);
@@ -239,7 +258,10 @@ export default function PeerDialogueActivity() {
     return (
       <div className="topic-page" dir="rtl">
         <header className="topic-main-header page-header">
-          <SkeletonHeader titleWidthClass="skeleton-w-40" subtitleWidthClass="skeleton-w-70" />
+          <SkeletonHeader
+            titleWidthClass="skeleton-w-40"
+            subtitleWidthClass="skeleton-w-70"
+          />
         </header>
         <div className="topic-content-wrapper">
           <div className="vertical-stack">
@@ -283,7 +305,10 @@ export default function PeerDialogueActivity() {
       <div className="topic-page" dir="rtl">
         <div className="not-found-container">
           <h1>أحسنت! أنهيت نشاط الحوار لهذا الدرس.</h1>
-          <button className="button" onClick={() => navigate(`/topic/${topic.id}`)}>
+          <button
+            className="button"
+            onClick={() => navigate(`/topic/${topic.id}`)}
+          >
             العودة إلى الدرس
           </button>
         </div>
@@ -295,7 +320,9 @@ export default function PeerDialogueActivity() {
     <div className="topic-page" dir="rtl">
       <header className="topic-main-header page-header">
         <h1 className="page-title">نشاط الحوار: {topic.title}</h1>
-        <p className="page-subtitle">حوار ثنائي منظّم مع زميلك لاستخلاص الأفكار وتبادل الأدوار.</p>
+        <p className="page-subtitle">
+          حوار ثنائي منظّم مع زميلك لاستخلاص الأفكار وتبادل الأدوار.
+        </p>
       </header>
 
       <div className="topic-content-wrapper">
@@ -312,7 +339,9 @@ export default function PeerDialogueActivity() {
             <section className="topic-section card sequential-section">
               <h2 className="section-title">ابدأ الحوار مع زميلك</h2>
               <p className="muted-note">
-                ستدخلون غرفة حوار ثنائية، وعند انضمام زميلك ستظهر لكم فكرة الحوار والأدوار. التزم بآداب النقاش وتبادل الأدوار حتى تكتمل المهمة.
+                ستدخلون غرفة حوار ثنائية، وعند انضمام زميلك ستظهر لكم فكرة
+                الحوار والأدوار. التزم بآداب النقاش وتبادل الأدوار حتى تكتمل
+                المهمة.
               </p>
               {status === "waiting" && (
                 <p className="muted-note">بانتظار انضمام طالب آخر...</p>
@@ -334,7 +363,7 @@ export default function PeerDialogueActivity() {
       </div>
       <ConfirmationDialog
         isOpen={showConfirmation}
-        onClose={() => setShowConfirmation(false)}
+        onCancel={() => setShowConfirmation(false)}
         onConfirm={handleConfirmStart}
         title="Confirm Start"
         message="Are you sure you want to start the peer dialogue? This will match you with another student."

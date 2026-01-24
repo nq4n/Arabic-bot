@@ -206,6 +206,11 @@ CREATE TABLE public.tracking_confirmations (
   confirmation_timestamp timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  data_quality_score numeric DEFAULT 100 CHECK (data_quality_score >= 0::numeric AND data_quality_score <= 100::numeric),
+  validation_status text DEFAULT 'valid'::text CHECK (validation_status = ANY (ARRAY['valid'::text, 'invalid'::text])),
+  validation_message text,
+  rejection_timestamp timestamp with time zone,
+  rejection_metadata jsonb DEFAULT '{}'::jsonb,
   CONSTRAINT tracking_confirmations_pkey PRIMARY KEY (id),
   CONSTRAINT tracking_confirmations_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.profiles(id)
 );

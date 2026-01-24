@@ -3,11 +3,18 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabaseClient";
 import { topics } from "../data/topics";
-import { LessonVisibility, buildLessonVisibilityFromRows, getLessonVisibility } from "../utils/lessonSettings";
+import {
+  LessonVisibility,
+  buildLessonVisibilityFromRows,
+  getLessonVisibility,
+} from "../utils/lessonSettings";
 import CollaborativeChat from "../components/CollaborativeChat";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/Topic.css";
-import { SessionTimeTracker, requestTrackingConfirmation } from "../utils/enhancedStudentTracking";
+import {
+  SessionTimeTracker,
+  executeTracking,
+} from "../utils/enhancedStudentTracking";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
 export default function CollaborativeActivity() {
@@ -25,8 +32,8 @@ export default function CollaborativeActivity() {
   const [chatId, setChatId] = useState<number | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() =>
-    getLessonVisibility(topicIds)
+  const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(
+    () => getLessonVisibility(topicIds)
   );
   const [isCompleted, setIsCompleted] = useState(false);
   const [caseStats, setCaseStats] = useState<
@@ -36,19 +43,30 @@ export default function CollaborativeActivity() {
     >
   >({});
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [sessionTimer, setSessionTimer] = useState<SessionTimeTracker | null>(null);
+  const [sessionTimer, setSessionTimer] =
+    useState<SessionTimeTracker | null>(null);
 
   const isPageLoading =
-    isSessionLoading || isVisibilityLoading || isCompletionLoading || isCaseLoading;
+    isSessionLoading ||
+    isVisibilityLoading ||
+    isCompletionLoading ||
+    isCaseLoading;
 
   useEffect(() => {
-    const timer = new SessionTimeTracker('collaborative_activity');
-    setSessionTimer(timer);
+    if (session && topicId) {
+      const timer = new SessionTimeTracker(
+        session.user.id,
+        topicId,
+        "collaborative"
+      );
+      setSessionTimer(timer);
+      timer.startSession();
 
-    return () => {
+      return () => {
         timer.endSession();
-    };
-    }, []);
+      };
+    }
+  }, [session, topicId]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -91,13 +109,15 @@ export default function CollaborativeActivity() {
       { chatId: number; count: number; max: number; isParticipant: boolean }
     > = {};
 
-    (data as Array<{
-      chat_id: number;
-      case_title: string;
-      participant_count: number;
-      max_students: number;
-      is_participant: boolean;
-    }>).forEach((item) => {
+    (
+      data as Array<{
+        chat_id: number;
+        case_title: string;
+        participant_count: number;
+        max_students: number;
+        is_participant: boolean;
+      }>
+    ).forEach((item) => {
       nextStats[item.case_title] = {
         chatId: item.chat_id,
         count: item.participant_count,
@@ -194,60 +214,13 @@ export default function CollaborativeActivity() {
     return () => window.clearInterval(interval);
   }, [chatId, isDiscussingIssue, loadCaseCounts, session]);
 
-  if (!topic) {
-    return <div className="topic-page">عذرًا، الدرس غير موجود.</div>;
-  }
-
-  if (isPageLoading) {
-    return (
-      <div className="topic-page" dir="rtl">
-        <header className="topic-main-header page-header">
-          <SkeletonHeader titleWidthClass="skeleton-w-40" subtitleWidthClass="skeleton-w-70" />
-        </header>
-        <div className="topic-content-wrapper">
-          <div className="vertical-stack">
-            <SkeletonSection lines={3} />
-            <SkeletonSection lines={3} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const isActivityActive = lessonVisibility[topic.id]?.activity ?? true;
-  if (!isActivityActive) {
-    return (
-      <div className="topic-page" dir="rtl">
-        <div className="not-found-container">
-          <h1>هذا النشاط غير متاح الآن</h1>
-          <p>قد يكون معلمك عطّل نشاط المناقشة لهذا الدرس مؤقتًا. يمكنك العودة لاحقًا.</p>
-          <button className="button" onClick={() => navigate(-1)}>
-            رجوع
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isCompleted) {
-    return (
-      <div className="topic-page" dir="rtl">
-        <div className="not-found-container">
-          <h1>أحسنت! أنهيت نشاط المناقشة لهذا الدرس.</h1>
-          <button className="button" onClick={() => navigate(`/topic/${topic.id}`)}>
-            العودة إلى الدرس
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // Define all callbacks before any conditional returns to maintain hook order
   const handleConfirmStartDiscussion = useCallback(async () => {
     if (!session || !selectedCase || !topic) return;
     setIsStarting(true);
     setStartError(null);
 
-    const sessionDuration = sessionTimer?.endSession() || 0;
+    const sessionDuration = (await sessionTimer?.endSession()) || 0;
 
     const { data, error } = await supabase.rpc(
       "start_collaborative_chat_session",
@@ -268,13 +241,15 @@ export default function CollaborativeActivity() {
       return;
     }
 
-    await requestTrackingConfirmation({
-        studentId: session.user.id,
-        activityType: 'collaborative_activity',
-        activityId: 'collaborative_activity',
-        confirmed: true,
+    await executeTracking({
+      studentId: session.user.id,
+      topicId: topic.id,
+      trackingType: "collaborative",
+      activityKind: "discussion",
+      metadata: {
         sessionDuration,
-        dataQualityScore: 100
+        case: selectedCase,
+      },
     });
 
     setChatId(data as number);
@@ -283,8 +258,65 @@ export default function CollaborativeActivity() {
     setShowConfirmation(false);
   }, [session, selectedCase, topic, sessionTimer, loadCaseCounts]);
 
+  if (!topic) {
+    return <div className="topic-page">عذرًا، الدرس غير موجود.</div>;
+  }
+
+  if (isPageLoading) {
+    return (
+      <div className="topic-page" dir="rtl">
+        <header className="topic-main-header page-header">
+          <SkeletonHeader
+            titleWidthClass="skeleton-w-40"
+            subtitleWidthClass="skeleton-w-70"
+          />
+        </header>
+        <div className="topic-content-wrapper">
+          <div className="vertical-stack">
+            <SkeletonSection lines={3} />
+            <SkeletonSection lines={3} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isActivityActive = lessonVisibility[topic.id]?.activity ?? true;
+  if (!isActivityActive) {
+    return (
+      <div className="topic-page" dir="rtl">
+        <div className="not-found-container">
+          <h1>هذا النشاط غير متاح الآن</h1>
+          <p>
+            قد يكون معلمك عطّل نشاط المناقشة لهذا الدرس مؤقتًا. يمكنك العودة
+            لاحقًا.
+          </p>
+          <button className="button" onClick={() => navigate(-1)}>
+            رجوع
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isCompleted) {
+    return (
+      <div className="topic-page" dir="rtl">
+        <div className="not-found-container">
+          <h1>أحسنت! أنهيت نشاط المناقشة لهذا الدرس.</h1>
+          <button
+            className="button"
+            onClick={() => navigate(`/topic/${topic.id}`)}
+          >
+            العودة إلى الدرس
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const handleStartDiscussion = () => {
-      setShowConfirmation(true);
+    setShowConfirmation(true);
   };
 
   return (
@@ -300,17 +332,24 @@ export default function CollaborativeActivity() {
               <i className="fas fa-comments icon"></i> مناقشة جماعية موجّهة
             </h2>
             <p className="muted-note">
-              اختر قضية للنقاش وشارك بأفكارك وأدلتك، مع احترام آراء زملائك والالتزام بآداب الحوار وتوجيهات المعلم.
+              اختر قضية للنقاش وشارك بأفكارك وأدلتك، مع احترام آراء زملائك
+              والالتزام بآداب الحوار وتوجيهات المعلم.
             </p>
           </section>
 
           {!isDiscussingIssue ? (
             <section className="topic-section card sequential-section">
-              <p className="muted-note">هذا الدرس لا يتضمن نشاط مناقشة جماعية.</p>
+              <p className="muted-note">
+                هذا الدرس لا يتضمن نشاط مناقشة جماعية.
+              </p>
             </section>
           ) : session ? (
             chatId ? (
-              <CollaborativeChat topicId={topic.id} chatId={chatId} session={session} />
+              <CollaborativeChat
+                topicId={topic.id}
+                chatId={chatId}
+                session={session}
+              />
             ) : (
               <section className="topic-section card sequential-section">
                 <h2 className="section-title">
@@ -334,9 +373,8 @@ export default function CollaborativeActivity() {
                         <button
                           key={caseTitle}
                           type="button"
-                          className={`case-option ${
-                            selectedCase === caseTitle ? "is-selected" : ""
-                          } ${isFull ? "is-full" : ""}`}
+                          className={`case-option ${selectedCase === caseTitle ? "is-selected" : ""
+                            } ${isFull ? "is-full" : ""}`}
                           onClick={() => setSelectedCase(caseTitle)}
                           disabled={isFull}
                         >
@@ -377,7 +415,7 @@ export default function CollaborativeActivity() {
       </div>
       <ConfirmationDialog
         isOpen={showConfirmation}
-        onClose={() => setShowConfirmation(false)}
+        onCancel={() => setShowConfirmation(false)}
         onConfirm={handleConfirmStartDiscussion}
         title="Confirm Start"
         message="Are you sure you want to start the discussion? This will join you with other students."
