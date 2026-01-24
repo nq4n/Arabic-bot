@@ -275,9 +275,7 @@ export default function Topic() {
         <div className="not-found-container">
           <h1>هذا الدرس غير متاح حاليًا</h1>
           <p>هذا القسم غير متاح الآن. حاول لاحقًا.</p>
-          <button className="button" onClick={() => navigate("/")}>
-            العودة إلى قائمة الموضوعات
-          </button>
+          <button className="button" onClick={() => navigate("/")}> العودة إلى قائمة الموضوعات </button>
         </div>
       </div>
     );
@@ -289,9 +287,7 @@ export default function Topic() {
         <div className="not-found-container">
           <h1>لا توجد معلومات لهذا الدرس</h1>
           <p>يرجى المحاولة لاحقًا أو التواصل مع المعلم.</p>
-          <button className="button" onClick={() => navigate("/")}>
-            العودة إلى قائمة الموضوعات
-          </button>
+          <button className="button" onClick={() => navigate("/")}> العودة إلى قائمة الموضوعات </button>
         </div>
       </div>
     );
@@ -350,10 +346,26 @@ export default function Topic() {
               <h2 className="section-title">
                 <i className="fas fa-video icon"></i> فيديو توضيحي
               </h2>
-              <div className="video-placeholder">
-                <i className="fas fa-play-circle"></i>
-              </div>
-              <p>لا يوجد فيديو مضاف بعد.</p>
+              {/* Video section: display embedded video if URL is provided, otherwise show placeholder */}
+              {topic.lesson.videoUrl ? (
+                <div className="video-wrapper" style={{ width: '100%', marginBottom: '1rem' }}>
+                  {/* Use iframe to support external video URLs (e.g., YouTube). Adjust attributes as needed. */}
+                  <iframe
+                    src={topic.lesson.videoUrl}
+                    title="فيديو الدرس"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;"
+                    allowFullScreen
+                    style={{ width: '100%', aspectRatio: '16/9', borderRadius: '8px', border: 0 }}
+                  ></iframe>
+                </div>
+              ) : (
+                <>
+                  <div className="video-placeholder">
+                    <i className="fas fa-play-circle"></i>
+                  </div>
+                  <p>لا يوجد فيديو مضاف بعد.</p>
+                </>
+              )}
             </section>
           </div>
 
