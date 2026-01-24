@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../supabaseClient";
-import { topics } from "../data/topics";
 import { User } from "@supabase/supabase-js";
+import { calculatePointsFromData } from "../utils/pointCalculation";
 import ActivitySubmissionPanel from "./ActivitySubmissionPanel"; // Import the renamed component
 import SkeletonPage from "../components/SkeletonPage";
 
@@ -188,30 +188,26 @@ export default function ActivitySubmissionsPage() {
       setCollaborativeCompletions(completionData);
       setStudentTrackingData(tempTrackingData);
 
-      // Calculate Leaderboard
+      // Calculate Leaderboard using unified point calculation
       const students = list.filter(u => u.role === 'student');
       const entries: LeaderboardEntry[] = students.map(student => {
         const studentTrack = tempTrackingData.find((t: StudentTrackingEntry) => t.student_id === student.id);
         const tracks = studentTrack?.tracking_data || {};
 
-        let points = 0;
-        // 1. Lesson Completion (20 pts)
-        topics.forEach(topic => {
-          if (tracks.lessons?.[topic.id]?.completed) points += 20;
-        });
-
-        // 2. Activities (5 pts each)
+        // Use unified point calculation
         const studentActivities = activityData.filter(a => a.student_id === student.id);
-        const uniqueActivities = new Set(studentActivities.map(a => `${a.topic_id}-${a.activity_id}`));
-        points += uniqueActivities.size * 5;
+        const studentCollaborative = completionData.filter(c => c.student_id === student.id);
+        const studentSubmissions = subs.filter(s => s.student_id === student.id);
 
-        // 3. Submissions (10 pts per topic if submission exists)
-        // Correctly linking submissions to topics
-        const submittedTopicIds = new Set(subs
-            .filter(s => s.student_id === student.id && s.topic_title)
-            .map(s => topics.find(t => t.title === s.topic_title)?.id)
-            .filter((id): id is string => id !== undefined));
-        points += submittedTopicIds.size * 10;
+        const points = calculatePointsFromData({
+          lessons: tracks.lessons,
+          activities: tracks.activities,
+          evaluations: tracks.evaluations,
+          collaborative: tracks.collaborative,
+          activitySubmissions: studentActivities,
+          collaborativeCompletions: studentCollaborative,
+          submissions: studentSubmissions,
+        });
 
         // Determine Level
         const level = (rewardsData || []).find((r: any) => r.min_points <= points) || { title: "مبتدئ" };

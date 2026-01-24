@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { topics } from "../data/topics";
 import { supabase } from "../supabaseClient";
 import { getStudentTracking } from "../utils/studentTracking";
+import { getStudentPoints } from "../utils/pointCalculation";
 import {
   LessonVisibility,
   buildLessonVisibilityFromRows,
@@ -28,13 +29,13 @@ export default function Topics() {
   const [progressMap, setProgressMap] = useState<LessonProgressMap>(() =>
     buildEmptyProgress(topicIds)
   );
-  const [activityCounts, setActivityCounts] = useState<Record<string, number>>({});
   const [submissionStatus, setSubmissionStatus] = useState<
     Record<string, { hasSubmission: boolean; hasRating: boolean }>
   >({});
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [rewards, setRewards] = useState<{ title: string; min_points: number }[]>([]);
+  const [totalPoints, setTotalPoints] = useState(0);
   const topicImages: Record<string, string> = {
     "landscape-description":
       "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
@@ -57,11 +58,10 @@ export default function Topics() {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) {
-        setIsAuthenticated(false);
-        setProfileName(null);
-        setSubmissionStatus({});
-        setActivityCounts({});
-        setProgressMap(buildEmptyProgress(topicIds));
+      setIsAuthenticated(false);
+      setProfileName(null);
+      setSubmissionStatus({});
+      setProgressMap(buildEmptyProgress(topicIds));
         setIsLoading(false);
         return;
       }
@@ -137,62 +137,6 @@ export default function Topics() {
       setSubmissionStatus(statusMap);
 
       const tracking = await getStudentTracking(session.user.id);
-      const counts: Record<string, number> = {};
-
-      // Determine if the tracking record contains actual activity completions or collaborative sessions.
-      const hasTrackingActivities =
-        tracking?.activities &&
-        Object.values(tracking.activities).some((entry: any) => {
-          return (
-            Array.isArray((entry as any).completedIds) &&
-            ((entry as any).completedIds as any[]).length > 0
-          );
-        });
-      const hasTrackingCollaborative =
-        tracking?.collaborative &&
-        Object.values(tracking.collaborative).some((entry: any) => {
-          return (entry as any).discussion || (entry as any).dialogue;
-        });
-
-      if (hasTrackingActivities || hasTrackingCollaborative) {
-        Object.entries(tracking.activities || {}).forEach(([topicId, entry]) => {
-          counts[topicId] = (entry as any).completedIds?.length ?? 0;
-        });
-
-        Object.entries(tracking.collaborative || {}).forEach(([topicId, entry]) => {
-          if ((entry as any).discussion) counts[topicId] = (counts[topicId] || 0) + 1;
-          if ((entry as any).dialogue) counts[topicId] = (counts[topicId] || 0) + 1;
-        });
-      } else {
-        const { data: activityRows } = await supabase
-          .from("activity_submissions")
-          .select("topic_id, activity_id, status")
-          .eq("student_id", session.user.id);
-
-        const { data: collaborativeRows } = await supabase
-          .from("collaborative_activity_completions")
-          .select("topic_id, activity_kind")
-          .eq("student_id", session.user.id);
-
-        const activitySets: Record<string, Set<number>> = {};
-        (activityRows || []).forEach((row) => {
-          // Only count activities that are pending teacher review
-          if (row.status && row.status !== "submitted") return;
-          const set = activitySets[row.topic_id] ?? new Set<number>();
-          set.add(row.activity_id);
-          activitySets[row.topic_id] = set;
-        });
-
-        Object.entries(activitySets).forEach(([topicId, set]) => {
-          counts[topicId] = set.size;
-        });
-
-        (collaborativeRows || []).forEach((row) => {
-          counts[row.topic_id] = (counts[row.topic_id] || 0) + 1;
-        });
-      }
-
-      setActivityCounts(counts);
 
       const nextProgress = buildEmptyProgress(topicIds);
       if (tracking?.lessons) {
@@ -204,6 +148,11 @@ export default function Topics() {
       }
 
       setProgressMap(nextProgress);
+
+      // Fetch total points using unified calculation
+      const points = await getStudentPoints(session.user.id);
+      setTotalPoints(points);
+
       setIsLoading(false);
     };
 
@@ -226,15 +175,7 @@ export default function Topics() {
     return `${value}/${topics.length}`;
   };
 
-  const totalPoints = topics.reduce((total, topic) => {
-    const completedLesson = progressMap[topic.id]?.lessonCompleted ?? false;
-    const completedActivities = activityCounts[topic.id] ?? 0;
-    const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
-    const lessonPoints = completedLesson ? 20 : 0;
-    const activityPoints = completedActivities * 5;
-    const submissionPoints = hasSubmission ? 10 : 0;
-    return total + lessonPoints + activityPoints + submissionPoints;
-  }, 0);
+  // Use the unified totalPoints state instead of calculating
 
   const currentLevel = useMemo(() => {
     if (rewards.length === 0) return null;

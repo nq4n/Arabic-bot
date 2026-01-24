@@ -172,14 +172,14 @@ export default function CollaborativeChat({
         recipientId: session.user.id,
         actorId: session.user.id,
         actorRole: "student",
-        message: "تم منحك 5 نقاط لإكمال نشاط المناقشة الجماعية.",
+        message: "تم منحك 10 نقاط لإكمال نشاط المناقشة الجماعية.",
         category: "points",
       });
       await trackCollaborativeCompletion(session.user.id, topicId, "discussion");
       emitAchievementToast({
         title: "تم احتساب النقاط",
-        message: "رائع! حصلت على 5 نقاط لإكمال المناقشة الجماعية.",
-        points: 5,
+        message: "رائع! حصلت على 10 نقاط لإكمال المناقشة الجماعية.",
+        points: 10,
         tone: "success",
       });
     }

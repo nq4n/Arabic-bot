@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useSession } from '../hooks/SessionContext';
+import { getStudentPoints } from '../utils/pointCalculation';
 import '../styles/StudentProgress.css';
 
 type TrackingStats = {
@@ -34,21 +35,24 @@ export default function StudentProgress() {
             try {
                 setLoading(true);
 
-                // 1. Fetch points and stats from student_tracking
-                let trackedLessons = 0;
-                let trackedActivities = 0;
-                let trackedEvaluations = 0;
-                let pointsFromTracking = 0;
+                // 1. Fetch points using unified calculation
+                const totalPointsValue = await getStudentPoints(session.user.id);
+                setTotalPoints(totalPointsValue);
 
+                // 2. Fetch stats from student_tracking
                 const { data: trackData, error: trackError } = await supabase
                     .from('student_tracking')
                     .select('tracking_data')
                     .eq('student_id', session.user.id)
                     .maybeSingle();
 
+                let trackedLessons = 0;
+                let trackedActivities = 0;
+                let trackedEvaluations = 0;
+                let trackedCollaborative = 0;
+
                 if (!trackError && trackData?.tracking_data) {
                     const data = trackData.tracking_data as any;
-                    pointsFromTracking = data.points?.total || 0;
 
                     // Calculate stats from tracking_data
                     trackedLessons = Object.keys(data.lessons || {}).length;
@@ -60,6 +64,14 @@ export default function StudentProgress() {
                     }
 
                     trackedEvaluations = Object.keys(data.evaluations || {}).length;
+
+                    // Calculate collaborative completions
+                    if (data.collaborative) {
+                        Object.values(data.collaborative).forEach((topic: any) => {
+                            if (topic.discussion) trackedCollaborative += 1;
+                            if (topic.dialogue) trackedCollaborative += 1;
+                        });
+                    }
                 }
 
                 // Fallback counts (computed only if tracking_data count for that metric is zero)
@@ -117,21 +129,6 @@ export default function StudentProgress() {
                     }
                 }
 
-                // Determine final counts by using tracked counts when available, otherwise fallback counts
-                const lessonsFinal = trackedLessons || lessonsFallback;
-                const activitiesFinal = trackedActivities || activitiesFallback;
-                const evaluationsFinal = trackedEvaluations || evaluationsFallback;
-
-                // Calculate collaborative completions from tracking_data
-                let trackedCollaborative = 0;
-                if (!trackError && trackData?.tracking_data?.collaborative) {
-                    const collabData: any = trackData.tracking_data.collaborative;
-                    Object.values(collabData).forEach((topic: any) => {
-                        if (topic.discussion) trackedCollaborative += 1;
-                        if (topic.dialogue) trackedCollaborative += 1;
-                    });
-                }
-
                 // Compute fallback collaborative completions if none tracked
                 if (trackedCollaborative === 0) {
                     const { data: collabRows, error: collabError } = await supabase
@@ -142,20 +139,16 @@ export default function StudentProgress() {
                         collaborativeFallback = (collabRows as any[]).length;
                     }
                 }
+
+                // Determine final counts by using tracked counts when available, otherwise fallback counts
+                const lessonsFinal = trackedLessons || lessonsFallback;
+                const activitiesFinal = trackedActivities || activitiesFallback;
+                const evaluationsFinal = trackedEvaluations || evaluationsFallback;
                 const collaborativeFinal = trackedCollaborative || collaborativeFallback;
 
                 // Combine interactive and collaborative into a single activities count for display
                 const totalActivitiesFinal = activitiesFinal + collaborativeFinal;
 
-                // Compute points: choose the maximum between pointsFromTracking and points based on final counts
-                const fallbackPoints =
-                    lessonsFinal * 20 +
-                    activitiesFinal * 5 +
-                    evaluationsFinal * 10 +
-                    collaborativeFinal * 15;
-                const computedPoints = Math.max(pointsFromTracking, fallbackPoints);
-
-                setTotalPoints(computedPoints);
                 setStats({
                     lessonsCompleted: lessonsFinal,
                     activitiesCompleted: totalActivitiesFinal,

@@ -572,14 +572,14 @@ export default function ReportAssemblyActivity() {
           recipientId: session.user.id,
           actorId: session.user.id,
           actorRole: "student",
-          message: `تم منحك 5 نقاط لإكمال ${submissionLabel}.`,
+          message: `تم منحك 10 نقاط لإكمال ${submissionLabel}.`,
           category: "points",
         });
 
         emitAchievementToast({
           title: "تم احتساب النقاط",
-          message: "تمت إضافة 5 نقاط إلى رصيدك.",
-          points: 5,
+          message: "تمت إضافة 10 نقاط إلى رصيدك.",
+          points: 10,
           tone: "success",
         });
       } else {

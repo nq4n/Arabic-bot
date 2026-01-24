@@ -343,7 +343,7 @@ export const trackActivitySubmission = async (
     : [...currentCompletedIds, activityId];
 
   const currentPoints = trackingData.points?.total || 0;
-  const updatedPoints = !wasAlreadyCompleted ? currentPoints + 5 : currentPoints;
+  const updatedPoints = !wasAlreadyCompleted ? currentPoints + 10 : currentPoints;
 
   const updatedTrackingData: StudentTrackingData = {
     ...trackingData,
@@ -505,7 +505,7 @@ export const trackCollaborativeCompletion = async (
 
   const currentPoints = trackingData.points?.total || 0;
   const wasCompleted = currentCollaborative[topicId]?.[activityKind] || false;
-  const updatedPoints = !wasCompleted ? currentPoints + 15 : currentPoints;
+  const updatedPoints = !wasCompleted ? currentPoints + 10 : currentPoints;
 
   const updatedCollaborative = {
     ...currentCollaborative,

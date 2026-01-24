@@ -138,14 +138,14 @@ export default function PeerDialogueChat({
         recipientId: session.user.id,
         actorId: session.user.id,
         actorRole: "student",
-        message: "تم منحك 5 نقاط لإكمال الحوار.",
+        message: "تم منحك 10 نقاط لإكمال الحوار.",
         category: "points",
       });
       await trackCollaborativeCompletion(session.user.id, topicId, "dialogue");
       emitAchievementToast({
         title: "تم احتساب النقاط",
-        message: "رائع! حصلت على 5 نقاط لإكمال الحوار.",
-        points: 5,
+        message: "رائع! حصلت على 10 نقاط لإكمال الحوار.",
+        points: 10,
         tone: "success",
       });
     }
