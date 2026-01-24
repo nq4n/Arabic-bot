@@ -328,6 +328,11 @@ export const trackActivitySubmission = async (
     currentCompletedIds.push(activityId);
   }
 
+  const currentPoints = trackingData.points?.total || 0;
+  const updatedPoints = currentCompletedIds.includes(activityId) && !currentTracking?.tracking_data?.activities?.[topicId]?.completedIds?.includes(activityId)
+    ? currentPoints + 5
+    : currentPoints;
+
   const updatedTrackingData = {
     ...trackingData,
     activities: {
@@ -336,12 +341,15 @@ export const trackActivitySubmission = async (
         completedIds: currentCompletedIds,
       },
     },
+    points: {
+      total: updatedPoints
+    }
   };
 
   const { error: updateError } = await supabase
     .from("student_tracking")
     .upsert(
-      { student_id: studentId, tracking_data: updatedTrackingData },
+      { student_id: studentId, tracking_data: updatedTrackingData, updated_at: new Date().toISOString() },
       { onConflict: "student_id" }
     );
 
@@ -368,6 +376,10 @@ export const trackLessonCompletion = async (
   const trackingData = currentTracking?.tracking_data || {};
   const currentLessons = trackingData.lessons || {};
 
+  const currentPoints = trackingData.points?.total || 0;
+  const wasCompleted = currentLessons[topicId]?.completed || false;
+  const updatedPoints = !wasCompleted ? currentPoints + 20 : currentPoints;
+
   const updatedTrackingData = {
     ...trackingData,
     lessons: {
@@ -376,12 +388,15 @@ export const trackLessonCompletion = async (
         completed: true,
       },
     },
+    points: {
+      total: updatedPoints
+    }
   };
 
   const { error: updateError } = await supabase
     .from("student_tracking")
     .upsert(
-      { student_id: studentId, tracking_data: updatedTrackingData },
+      { student_id: studentId, tracking_data: updatedTrackingData, updated_at: new Date().toISOString() },
       { onConflict: "student_id" }
     );
 
@@ -409,22 +424,28 @@ export const trackEvaluationSubmission = async (
   const trackingData = currentTracking?.tracking_data || {};
   const currentEvaluations = trackingData.evaluations || {};
 
+  const currentPoints = trackingData.points?.total || 0;
+  const wasEvaluated = !!currentEvaluations[topicId];
+  const updatedPoints = !wasEvaluated ? currentPoints + 10 : currentPoints;
+
   const updatedTrackingData = {
     ...trackingData,
     evaluations: {
       ...currentEvaluations,
       [topicId]: {
         score: score,
-        // You might want to add a timestamp or other details here
         timestamp: new Date().toISOString(),
       },
     },
+    points: {
+      total: updatedPoints
+    }
   };
 
   const { error: updateError } = await supabase
     .from("student_tracking")
     .upsert(
-      { student_id: studentId, tracking_data: updatedTrackingData },
+      { student_id: studentId, tracking_data: updatedTrackingData, updated_at: new Date().toISOString() },
       { onConflict: "student_id" }
     );
 
@@ -452,12 +473,15 @@ export const trackCollaborativeCompletion = async (
   const trackingData = currentTracking?.tracking_data || {};
   const currentCollaborative = trackingData.collaborative || {};
 
+  const currentPoints = trackingData.points?.total || 0;
+  const wasCompleted = currentCollaborative[topicId]?.[activityKind] || false;
+  const updatedPoints = !wasCompleted ? currentPoints + 15 : currentPoints; // Collaborative gives 15 points
+
   const updatedCollaborative = {
     ...currentCollaborative,
     [topicId]: {
       ...currentCollaborative[topicId],
       [activityKind]: true,
-      // You might want to add a timestamp or other details here
       timestamp: new Date().toISOString(),
     },
   };
@@ -465,12 +489,15 @@ export const trackCollaborativeCompletion = async (
   const updatedTrackingData = {
     ...trackingData,
     collaborative: updatedCollaborative,
+    points: {
+      total: updatedPoints
+    }
   };
 
   const { error: updateError } = await supabase
     .from("student_tracking")
     .upsert(
-      { student_id: studentId, tracking_data: updatedTrackingData },
+      { student_id: studentId, tracking_data: updatedTrackingData, updated_at: new Date().toISOString() },
       { onConflict: "student_id" }
     );
 

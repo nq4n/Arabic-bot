@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabaseClient";
@@ -14,9 +14,7 @@ import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import "../styles/FreeExpressionActivity.css";
 import {
   SessionTimeTracker,
-  confirmTracking,
-  executeTracking,
-  TrackingPayload,
+  autoConfirmTracking,
 } from "../utils/enhancedStudentTracking";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
@@ -80,7 +78,6 @@ export default function FreeExpressionActivity() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [showConfirmation, setShowConfirmation] = useState(false);
   const [sessionTimer, setSessionTimer] = useState<SessionTimeTracker | null>(null);
 
   useEffect(() => {
@@ -265,16 +262,13 @@ export default function FreeExpressionActivity() {
     loadSubmission();
   }, [session, topic, interactiveActivity]);
 
-  const submissionLabel = "التعبير الحر";
-  const placeholderMap = PROMPT_PLACEHOLDERS;
   const isSubmitted = submission?.status === "submitted";
   const isPageLoading = isSessionLoading || isVisibilityLoading || isSubmissionLoading;
 
-  const handleConfirmSubmit = useCallback(async () => {
+  const handleSubmit = async () => {
     if (!interactiveActivity || !session || !topic) return;
     if (!responseText.trim()) {
       setError("يرجى كتابة التعبير قبل الإرسال.");
-      setShowConfirmation(false);
       return;
     }
 
@@ -284,39 +278,8 @@ export default function FreeExpressionActivity() {
     const hadSubmission = submission?.status === "submitted";
 
     try {
-      // Create tracking confirmation
-      const payload: TrackingPayload = {
-        studentId: session.user.id,
-        topicId: topic.id,
-        trackingType: 'activity',
-        activityId: interactiveActivity.activityId,
-        metadata: {
-          activityTitle: interactiveActivity.title,
-          timestamp: new Date().toISOString(),
-        },
-      };
-
-      const { data: confirmData, error: confirmError } = await supabase
-        .from('tracking_confirmations')
-        .insert({
-          student_id: payload.studentId,
-          tracking_type: payload.trackingType,
-          topic_id: payload.topicId,
-          activity_id: payload.activityId,
-          is_confirmed: false,
-          data_quality_score: 100,
-          validation_status: 'valid',
-          confirmation_data: payload.metadata || {},
-        })
-        .select('id')
-        .single();
-
-      if (confirmError || !confirmData) {
-        console.error('Failed to create tracking confirmation:', confirmError);
-      }
-
-      // Save submission
-      const { data, error } = await supabase
+      // 1. Save submission to activity_submissions
+      const { data, error: submitError } = await supabase
         .from("activity_submissions")
         .upsert(
           {
@@ -331,37 +294,31 @@ export default function FreeExpressionActivity() {
         .select("id, response_text, status")
         .single();
 
-      if (error) {
-        setError("حدث خطأ أثناء حفظ التعبير.");
-        setIsSubmitting(false);
-        setShowConfirmation(false);
-        return;
+      if (submitError) {
+        throw submitError;
       }
 
       setSubmission(data as ActivitySubmissionRow);
       setNotice("تم حفظ التعبير بنجاح.");
 
       if (!hadSubmission) {
-        // Execute tracking
-        await executeTracking({
+        // 2. Auto-confirm tracking and award 5 points
+        await autoConfirmTracking({
           studentId: session.user.id,
           topicId: topic.id,
           trackingType: 'activity',
           activityId: interactiveActivity.activityId,
+          metadata: {
+            activityTitle: interactiveActivity.title,
+            timestamp: new Date().toISOString(),
+          },
         });
-
-        // Confirm tracking
-        if (confirmData) {
-          await confirmTracking(confirmData.id, async () => {
-            // Additional confirmation logic if needed
-          });
-        }
 
         await logAdminNotification({
           recipientId: session.user.id,
           actorId: session.user.id,
           actorRole: "student",
-          message: `تم منحك 5 نقاط لإكمال ${submissionLabel}.`,
+          message: `تم منحك 5 نقاط لإكمال نشاط "${interactiveActivity.title}".`,
           category: "points",
         });
 
@@ -382,19 +339,13 @@ export default function FreeExpressionActivity() {
       if (sessionTimer) {
         await sessionTimer.endSession(true);
       }
-
-      setShowConfirmation(false);
-    } catch (error) {
-      console.error('Error in submission:', error);
+    } catch (err: any) {
+      console.error('Error in submission:', err);
       setError('حدث خطأ أثناء الإرسال. حاول مرة أخرى.');
     } finally {
       setIsSubmitting(false);
     }
-  }, [interactiveActivity, session, topic, responseText, submission, sessionTimer, submissionLabel]);
-
-  const handleSubmit = () => {
-    setShowConfirmation(true);
-  }
+  };
 
   const handlePrevPrompt = () => {
     if (promptCards.length === 0 || promptIndex <= 0) return;
@@ -611,7 +562,7 @@ export default function FreeExpressionActivity() {
                 id="free-expression-text"
                 value={responseText}
                 onChange={(event) => setResponseText(event.target.value)}
-                placeholder={placeholderMap[selectedPrompt.type]}
+                placeholder={PROMPT_PLACEHOLDERS[selectedPrompt.type]}
               />
               {error && <div className="free-expression-alert is-error">{error}</div>}
               {notice && <div className="free-expression-alert is-success">{notice}</div>}
@@ -656,14 +607,16 @@ export default function FreeExpressionActivity() {
         </button>
       </div>
 
-      <ConfirmationDialog
-        isOpen={showConfirmation}
-        onCancel={() => setShowConfirmation(false)}
-        onConfirm={handleConfirmSubmit}
-        title="تأكيد إرسال التعبير"
-        message="هل أنت متأكد من أنك تريد إرسال هذا التعبير؟"
-        loading={isSubmitting}
-      />
+      {/* Confirmation dialog hidden, auto-confirming now */}
+      {false && (
+        <ConfirmationDialog
+          isOpen={false}
+          onCancel={() => { }}
+          onConfirm={async () => { }}
+          title=""
+          message=""
+        />
+      )}
     </div>
   );
 }

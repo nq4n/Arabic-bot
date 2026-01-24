@@ -14,7 +14,6 @@ import {
 import "../styles/global.css";
 import "../styles/Navbar.css";
 import "../styles/TeacherPanel.css";
-import { Link } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
 
 type UserRole = "student" | "teacher" | "admin" | null;
@@ -524,13 +523,6 @@ export default function TeacherPanel() {
       </p>
 
       <div className="teacher-cards-container">
-        <section className="card">
-          <h2 style={{ marginBottom: "1rem" }}>تقدم الطلاب</h2>
-          <p style={{ marginBottom: "0.75rem", fontSize: "0.9rem", color: "var(--text-muted)" }}>
-            عرض نشاط الطلاب وتأكيدات الدروس.
-          </p>
-          <Link to="/student-progress" className="button">عرض التقدم</Link>
-        </section>
 
         <section className="card lesson-visibility-card full-width-card">
           <div className="lesson-visibility-header">

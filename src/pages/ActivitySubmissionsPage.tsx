@@ -191,7 +191,7 @@ export default function ActivitySubmissionsPage() {
       // Calculate Leaderboard
       const students = list.filter(u => u.role === 'student');
       const entries: LeaderboardEntry[] = students.map(student => {
-        const studentTrack = studentTrackingData.find((t: StudentTrackingEntry) => t.student_id === student.id);
+        const studentTrack = tempTrackingData.find((t: StudentTrackingEntry) => t.student_id === student.id);
         const tracks = studentTrack?.tracking_data || {};
 
         let points = 0;
@@ -235,7 +235,7 @@ export default function ActivitySubmissionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentUser?.id, currentUserRole, studentTrackingData]);
+  }, [currentUser?.id, currentUserRole]);
 
   useEffect(() => {
     if (!currentUserRole) return;

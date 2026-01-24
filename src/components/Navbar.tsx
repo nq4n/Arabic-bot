@@ -138,7 +138,7 @@ export default function Navbar({ session, userRole }: NavbarProps) {
           الموضوعات
         </NavLink>
         <NavLink to="/my-submissions">تسليماتي</NavLink>
-        <NavLink to="/progress">نقاطي</NavLink>
+        <NavLink to="/student-progress">نقاطي</NavLink>
         <NavLink to="/chats">الدردشة</NavLink>
       </>
     );

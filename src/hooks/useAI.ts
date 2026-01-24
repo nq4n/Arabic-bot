@@ -37,7 +37,7 @@ export const useAI = (systemInstruction: string) => {
 
     const requestPayload = {
       // FINAL FIX: Using a reliable and confirmed free model from Google.
-      model: 'x-ai/grok-4.1-fast:free',
+      model: 'nvidia/nemotron-3-nano-30b-a3b:free',
       messages: messagesForAPI,
     };
     

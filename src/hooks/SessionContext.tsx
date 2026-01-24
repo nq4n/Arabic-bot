@@ -34,6 +34,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     const fetchSessionAndProfile = async () => {
       try {
         setLoading(true);
+        // Clean up: only attempt fetch if online
+        if (!window.navigator.onLine) {
+          setLoading(false);
+          return;
+        }
+
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -58,8 +64,13 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         } else {
           setProfile(null);
         }
-      } catch (error) {
-        console.error('Error fetching session and profile:', error);
+      } catch (error: any) {
+        // Suppress "Failed to fetch" noise when offline or on network error
+        if (error.message === 'TypeError: Failed to fetch' || !window.navigator.onLine) {
+          // Stay silent or handle offline state logic here if needed
+        } else {
+          console.error('Error fetching session and profile:', error);
+        }
         setProfile(null);
         setSession(null);
       } finally {

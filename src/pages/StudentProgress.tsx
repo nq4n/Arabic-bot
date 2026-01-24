@@ -1,34 +1,31 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useSession } from '../hooks/SessionContext';
-import { SkeletonSection } from '../components/SkeletonBlocks';
 import '../styles/StudentProgress.css';
 
-type TrackingConfirmation = {
-    id: number;
-    student_id: string;
-    tracking_type: string;
-    topic_id: string;
-    activity_id: number | null;
-    is_confirmed: boolean;
-    confirmation_timestamp: string | null;
-    data_quality_score: number;
-    validation_status: string;
-    created_at: string;
-    profiles: {
-        username: string;
-        full_name: string;
-    } | null;
+type TrackingStats = {
+    lessonsCompleted: number;
+    activitiesCompleted: number;
+    totalEvaluations: number;
+};
+
+type PointReward = {
+    id: string;
+    title: string;
+    min_points: number;
+    description: string;
 };
 
 export default function StudentProgress() {
     const { session } = useSession();
-    const [confirmations, setConfirmations] = useState<TrackingConfirmation[]>([]);
+    const [totalPoints, setTotalPoints] = useState(0);
+    const [rewards, setRewards] = useState<PointReward[]>([]);
+    const [stats, setStats] = useState<TrackingStats>({ lessonsCompleted: 0, activitiesCompleted: 0, totalEvaluations: 0 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchConfirmations = async () => {
+        const fetchData = async () => {
             if (!session?.user?.id) {
                 setLoading(false);
                 return;
@@ -36,115 +33,143 @@ export default function StudentProgress() {
 
             try {
                 setLoading(true);
-                const { data, error } = await supabase
-                    .from('tracking_confirmations')
-                    .select(`
-                        id,
-                        student_id,
-                        tracking_type,
-                        topic_id,
-                        activity_id,
-                        is_confirmed,
-                        confirmation_timestamp,
-                        data_quality_score,
-                        validation_status,
-                        created_at,
-                        profiles (
-                            username,
-                            full_name
-                        )
-                    `)
-                    .order('created_at', { ascending: false });
 
-                if (error) {
-                    throw error;
+                // 1. Fetch points and stats from student_tracking
+                const { data: trackData, error: trackError } = await supabase
+                    .from('student_tracking')
+                    .select('tracking_data')
+                    .eq('student_id', session.user.id)
+                    .single();
+
+                if (!trackError && trackData?.tracking_data) {
+                    const data = trackData.tracking_data as any;
+                    setTotalPoints(data.points?.total || 0);
+
+                    // Calculate stats
+                    const lessons = Object.keys(data.lessons || {}).length;
+
+                    let activities = 0;
+                    if (data.activities) {
+                        Object.values(data.activities).forEach((topicActivities: any) => {
+                            activities += topicActivities.completedIds?.length || 0;
+                        });
+                    }
+
+                    const evaluations = Object.keys(data.evaluations || {}).length;
+
+                    setStats({
+                        lessonsCompleted: lessons,
+                        activitiesCompleted: activities,
+                        totalEvaluations: evaluations
+                    });
                 }
 
-                setConfirmations(data as any as TrackingConfirmation[]);
+                // 2. Fetch rewards to show progress
+                const { data: rewardsData } = await supabase
+                    .from('point_rewards')
+                    .select('*')
+                    .order('min_points', { ascending: true });
+
+                if (rewardsData) setRewards(rewardsData as PointReward[]);
+
             } catch (err: any) {
-                setError(`Error fetching student progress: ${err.message}`);
+                setError(`Error fetching achievement data: ${err.message}`);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchConfirmations();
+        fetchData();
     }, [session]);
-
-    const memoizedConfirmations = useMemo(() => confirmations, [confirmations]);
-
-    const getTrackingTypeLabel = (type: string) => {
-        const labels: Record<string, string> = {
-            'lesson': 'درس',
-            'activity': 'نشاط',
-            'evaluation': 'تقييم',
-            'collaborative': 'تعاوني'
-        };
-        return labels[type] || type;
-    };
 
     return (
         <div className="student-progress-page" dir="rtl">
             <header className="student-progress-header">
-                <h1>تأكيدات النشاط الطلابي</h1>
-                <p>مراجعة تأكيدات الطلاب للأنشطة والدروس.</p>
+                <h1>نقاطي وإنجازاتي</h1>
+                <p>تتبع تقدمك في التعلم والمكافآت التي حصلت عليها.</p>
             </header>
 
-            <section className="card">
-                {loading ? (
-                    <SkeletonSection lines={10} />
-                ) : error ? (
-                    <p className="error-message">{error}</p>
-                ) : memoizedConfirmations.length === 0 ? (
-                    <p>لا توجد تأكيدات نشاط.</p>
-                ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>الطالب</th>
-                                    <th>نوع النشاط</th>
-                                    <th>الموضوع</th>
-                                    <th>رقم النشاط</th>
-                                    <th>الحالة</th>
-                                    <th>تاريخ التأكيد</th>
-                                    <th>جودة البيانات</th>
-                                    <th>حالة التحقق</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {memoizedConfirmations.map((c) => (
-                                    <tr key={c.id}>
-                                        <td>{c.profiles?.full_name || c.profiles?.username || c.student_id}</td>
-                                        <td>{getTrackingTypeLabel(c.tracking_type)}</td>
-                                        <td>{c.topic_id}</td>
-                                        <td>{c.activity_id || '-'}</td>
-                                        <td>
-                                            <span className={c.is_confirmed ? 'status-confirmed' : 'status-pending'}>
-                                                {c.is_confirmed ? 'مؤكد' : 'قيد الانتظار'}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {c.confirmation_timestamp
-                                                ? new Date(c.confirmation_timestamp).toLocaleString('ar-SA')
-                                                : new Date(c.created_at).toLocaleString('ar-SA')}
-                                        </td>
-                                        <td>
-                                            <span className={c.data_quality_score >= 80 ? 'quality-high' : c.data_quality_score >= 50 ? 'quality-medium' : 'quality-low'}>
-                                                {c.data_quality_score}%
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span className={c.validation_status === 'valid' ? 'validation-valid' : 'validation-invalid'}>
-                                                {c.validation_status === 'valid' ? 'صالح' : 'غير صالح'}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+            {!loading && !error && (
+                <section className="points-summary-card card">
+                    <div className="points-main">
+                        <div className="points-display">
+                            <span className="points-value">{totalPoints}</span>
+                            <span className="points-label">نقطة</span>
+                        </div>
+                        <div className="points-description">
+                            <h3>رصيد نقاطك الحالي</h3>
+                            <p>استمر في إكمال الدروس والأنشطة لزيادة نقاطك!</p>
+                        </div>
                     </div>
-                )}
+                    {rewards.length > 0 && (
+                        <div className="rewards-progress">
+                            <h4>الهدف القادم:</h4>
+                            {(() => {
+                                const nextReward = rewards.find(r => r.min_points > totalPoints) || rewards[rewards.length - 1];
+                                const prevPoints = rewards.filter(r => r.min_points <= totalPoints).slice(-1)[0]?.min_points || 0;
+                                const progress = Math.min(100, Math.max(0, ((totalPoints - prevPoints) / (nextReward.min_points - prevPoints)) * 100));
+
+                                return (
+                                    <div className="reward-item">
+                                        <div className="reward-info">
+                                            <span>{nextReward.title}</span>
+                                            <span>{totalPoints} / {nextReward.min_points}</span>
+                                        </div>
+                                        <div className="progress-bar-container">
+                                            <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
+                </section>
+            )}
+
+            <section className="achievements-grid">
+                <div className="card achievement-stat-card">
+                    <i className="fas fa-book-open stat-icon"></i>
+                    <div className="stat-content">
+                        <span className="stat-value">{stats.lessonsCompleted}</span>
+                        <span className="stat-label">دروس مكتملة</span>
+                    </div>
+                </div>
+                <div className="card achievement-stat-card">
+                    <i className="fas fa-tasks stat-icon"></i>
+                    <div className="stat-content">
+                        <span className="stat-value">{stats.activitiesCompleted}</span>
+                        <span className="stat-label">أنشطة تفاعلية</span>
+                    </div>
+                </div>
+                <div className="card achievement-stat-card">
+                    <i className="fas fa-pen-nib stat-icon"></i>
+                    <div className="stat-content">
+                        <span className="stat-value">{stats.totalEvaluations}</span>
+                        <span className="stat-label">تقييمات كتابية</span>
+                    </div>
+                </div>
+            </section>
+
+            <section className="rewards-list-section card">
+                <h3><i className="fas fa-award"></i> المستويات والمكافآت</h3>
+                <div className="rewards-grid">
+                    {rewards.map((reward) => {
+                        const isUnlocked = totalPoints >= reward.min_points;
+                        return (
+                            <div key={reward.id} className={`reward-card ${isUnlocked ? 'unlocked' : 'locked'}`}>
+                                <div className="reward-icon-wrapper">
+                                    <i className={`fas ${isUnlocked ? 'fa-medal' : 'fa-lock'} reward-medal`}></i>
+                                </div>
+                                <div className="reward-details">
+                                    <h4>{reward.title}</h4>
+                                    <p>{reward.description}</p>
+                                    <span className="reward-requirement">{reward.min_points} نقطة</span>
+                                </div>
+                                {isUnlocked && <span className="unlocked-badge">تم الإنجاز</span>}
+                            </div>
+                        );
+                    })}
+                </div>
             </section>
         </div>
     );

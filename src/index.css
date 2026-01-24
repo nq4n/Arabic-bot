@@ -25,7 +25,8 @@
   --primary-icon: #ffffff;
 
   --accent: #d4a23b;
-  --accent-2: #f2d38a; /* subtle highlight */
+  --accent-2: #f2d38a;
+  /* subtle highlight */
   --accent-soft: rgba(212, 162, 59, 0.16);
 
   /* Neutrals */
@@ -140,10 +141,7 @@ body {
 }
 
 .App main {
-  padding: calc(var(--nav-h) + var(--layout-top-gap))
-    var(--layout-inline-padding)
-    var(--layout-block-padding)
-    calc(var(--layout-inline-padding) + var(--sidebar-width));
+  padding: calc(var(--nav-h) + var(--layout-top-gap)) var(--layout-inline-padding) var(--layout-block-padding) calc(var(--layout-inline-padding) + var(--sidebar-width));
 }
 
 .App.login-view main {
@@ -180,14 +178,15 @@ body {
 /* ============================
    BUTTONS (Richer + consistent)
 ============================ */
-button, .button {
+button,
+.button {
   cursor: pointer;
   padding: 10px 18px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.14);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0)) ,
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
     linear-gradient(135deg, var(--primary-dark), var(--primary));
   color: var(--primary-icon);
 
@@ -211,7 +210,8 @@ button, .button {
   width: auto;
 }
 
-button:hover, .button:hover {
+button:hover,
+.button:hover {
   transform: translateY(-1px);
   box-shadow: 0 22px 50px rgba(15, 23, 42, 0.28);
   filter: brightness(1.03);
@@ -219,20 +219,23 @@ button:hover, .button:hover {
   text-decoration: none;
 }
 
-button:active, .button:active {
+button:active,
+.button:active {
   transform: translateY(0px) scale(0.99);
 }
 
-button:focus-visible, .button:focus-visible {
+button:focus-visible,
+.button:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring), 0 22px 50px rgba(15, 23, 42, 0.18);
 }
 
 /* Secondary button */
-button.secondary, .button.secondary {
+button.secondary,
+.button.secondary {
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0)) ,
-    linear-gradient(135deg, rgba(91,100,112,0.85), rgba(91,100,112,0.65));
+    linear-gradient(135deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0)),
+    linear-gradient(135deg, rgba(91, 100, 112, 0.85), rgba(91, 100, 112, 0.65));
   border: 1px solid var(--border-color);
   color: var(--text-main);
 }
@@ -243,21 +246,24 @@ button.secondary, .button.secondary {
 }
 
 /* Accent button (gold) if you want */
-button.accent, .button.accent {
+button.accent,
+.button.accent {
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0)) ,
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
     linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #1b1a17;
 }
 
-button.accent:focus-visible, .button.accent:focus-visible {
+button.accent:focus-visible,
+.button.accent:focus-visible {
   box-shadow: var(--focus-ring-accent), 0 22px 50px rgba(15, 23, 42, 0.18);
 }
 
-button:disabled, .button:disabled {
+button:disabled,
+.button:disabled {
   cursor: not-allowed;
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0)) ,
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0)),
     linear-gradient(135deg, rgba(91, 100, 112, 0.5), rgba(91, 100, 112, 0.32));
   border-color: var(--border-color);
   color: rgba(15, 23, 42, 0.65);
@@ -270,7 +276,7 @@ button:disabled, .button:disabled {
 [data-theme='dark'] button:disabled,
 [data-theme='dark'] .button:disabled {
   background:
-    linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0)) ,
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
     linear-gradient(135deg, rgba(148, 163, 184, 0.35), rgba(148, 163, 184, 0.22));
   color: rgba(248, 250, 252, 0.72);
   box-shadow: 0 10px 24px rgba(2, 6, 23, 0.35);
@@ -280,7 +286,10 @@ button:disabled, .button:disabled {
 /* ============================
    INPUTS (Cleaner + better focus)
 ============================ */
-textarea, input[type="text"], input[type="password"], input[type="email"] {
+textarea,
+input[type="text"],
+input[type="password"],
+input[type="email"] {
   width: 100%;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
@@ -293,17 +302,19 @@ textarea, input[type="text"], input[type="password"], input[type="email"] {
   font-family: var(--font-family);
   box-sizing: border-box;
 
-  box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
   transition: border-color 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-textarea:focus, input:focus {
+textarea:focus,
+input:focus {
   border-color: rgba(15, 118, 110, 0.55);
   box-shadow: var(--focus-ring);
   background: var(--bg-secondary);
 }
 
-textarea::placeholder, input::placeholder {
+textarea::placeholder,
+input::placeholder {
   color: rgba(91, 100, 112, 0.75);
 }
 
@@ -328,8 +339,15 @@ a:hover {
    PAGE FADE
 ============================ */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(2px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .fade-in-page {
@@ -348,9 +366,7 @@ a:hover {
   }
 
   .App main {
-    padding: calc(var(--nav-h) + var(--layout-top-gap))
-      var(--layout-inline-padding)
-      var(--layout-block-padding);
+    padding: calc(var(--nav-h) + var(--layout-top-gap)) var(--layout-inline-padding) var(--layout-block-padding);
   }
 
   .App.login-view main {
@@ -415,12 +431,10 @@ a:hover {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.45),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.45),
+      transparent);
   transform: translateX(-100%);
   animation: skeleton-shimmer 1.3s ease-in-out infinite;
 }
@@ -480,9 +494,11 @@ a:hover {
   0% {
     transform: translateX(-100%);
   }
+
   60% {
     transform: translateX(100%);
   }
+
   100% {
     transform: translateX(100%);
   }
@@ -491,5 +507,41 @@ a:hover {
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after {
     animation: none;
+  }
+}
+
+/* ============================
+   OFFLINE BANNER
+============================ */
+.offline-banner {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  position: sticky;
+  top: var(--nav-h);
+  animation: slideDown 0.3s ease-out;
+}
+
+[data-theme='dark'] .offline-banner {
+  background: linear-gradient(135deg, #b45309, #92400e);
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }

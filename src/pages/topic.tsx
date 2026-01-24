@@ -14,10 +14,7 @@ import { emitAchievementToast } from "../utils/achievementToast";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import {
   SessionTimeTracker,
-  confirmTracking,
-  rejectTracking,
-  executeTracking,
-  TrackingPayload,
+  autoConfirmTracking,
 } from "../utils/enhancedStudentTracking";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
@@ -46,10 +43,7 @@ export default function Topic() {
   const [isVisibilityLoading, setIsVisibilityLoading] = useState(true);
   const [isActivityLoading, setIsActivityLoading] = useState(true);
   const [isCollaborativeLoading, setIsCollaborativeLoading] = useState(true);
-  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [timeTracker, setTimeTracker] = useState<SessionTimeTracker | null>(null);
-  const [pendingConfirmationId, setPendingConfirmationId] = useState<number | null>(null);
-  const [confirmationDetails, setConfirmationDetails] = useState<string[]>([]);
   const [isConfirming, setIsConfirming] = useState(false);
 
   const isPageLoading =
@@ -148,7 +142,6 @@ export default function Topic() {
     const wasCompleted = progress[topic.id]?.lessonCompleted ?? false;
 
     if (wasCompleted) {
-      // Already completed, just navigate
       if (timeTracker) {
         await timeTracker.endSession(true);
       }
@@ -156,63 +149,21 @@ export default function Topic() {
       return;
     }
 
-    // Create tracking confirmation request
-    const payload: TrackingPayload = {
-      studentId: session.user.id,
-      topicId: topic.id,
-      trackingType: 'lesson',
-      metadata: {
-        topicTitle: topic.title,
-        timestamp: new Date().toISOString(),
-      },
-    };
-
-    const { data, error } = await supabase
-      .from('tracking_confirmations')
-      .insert({
-        student_id: payload.studentId,
-        tracking_type: payload.trackingType,
-        topic_id: payload.topicId,
-        is_confirmed: false,
-        data_quality_score: 100,
-        validation_status: 'valid',
-        confirmation_data: payload.metadata || {},
-      })
-      .select('id')
-      .single();
-
-    if (error || !data) {
-      console.error('Failed to create tracking confirmation:', error);
-      return;
-    }
-
-    setPendingConfirmationId(data.id);
-    setConfirmationDetails([
-      `الدرس: ${topic.title}`,
-      `النقاط: 20`,
-    ]);
-    setIsConfirmationOpen(true);
-  };
-
-  const handleConfirmLesson = async () => {
-    if (!topic || !session || !pendingConfirmationId) return;
-
     setIsConfirming(true);
 
     try {
       // Mark lesson as completed locally
       markLessonCompleted(topicIds, topic.id);
 
-      // Execute tracking
-      await executeTracking({
+      // Auto-confirm tracking and award points
+      await autoConfirmTracking({
         studentId: session.user.id,
         topicId: topic.id,
         trackingType: 'lesson',
-      });
-
-      // Confirm in database
-      await confirmTracking(pendingConfirmationId, async () => {
-        // Additional confirmation logic if needed
+        metadata: {
+          topicTitle: topic.title,
+          timestamp: new Date().toISOString(),
+        }
       });
 
       // Log notification and achievement
@@ -236,21 +187,12 @@ export default function Topic() {
         await timeTracker.endSession(true);
       }
 
-      setIsConfirmationOpen(false);
       navigate(`/lesson-review/${topic.id}`);
     } catch (error) {
-      console.error('Error confirming lesson:', error);
+      console.error('Error completing lesson:', error);
     } finally {
       setIsConfirming(false);
     }
-  };
-
-  const handleCancelConfirmation = async () => {
-    if (pendingConfirmationId) {
-      await rejectTracking(pendingConfirmationId);
-    }
-    setIsConfirmationOpen(false);
-    setPendingConfirmationId(null);
   };
 
   if (!topic) {
@@ -356,15 +298,16 @@ export default function Topic() {
 
   return (
     <div className="topic-page" dir="rtl">
-      <ConfirmationDialog
-        isOpen={isConfirmationOpen}
-        title="تأكيد إكمال الدرس"
-        message="هل أنت متأكد من أنك تريد إنهاء الدرس والانتقال إلى المراجعة؟"
-        details={confirmationDetails}
-        onConfirm={handleConfirmLesson}
-        onCancel={handleCancelConfirmation}
-        loading={isConfirming}
-      />
+      {/* Confirmation dialog for transitions that might still need it in the future, currently hidden */}
+      {false && (
+        <ConfirmationDialog
+          isOpen={false}
+          title=""
+          message=""
+          onConfirm={() => { }}
+          onCancel={() => { }}
+        />
+      )}
       <header className="topic-main-header page-header">
         <h1 className="page-title">{topic.lesson.header}</h1>
         <p className="page-subtitle">{topic.description}</p>
@@ -478,11 +421,11 @@ export default function Topic() {
           <button
             className="button button-primary cta-button"
             onClick={handleCompleteLesson}
-            disabled={!isReviewActive}
-            aria-disabled={!isReviewActive}
+            disabled={!isReviewActive || isConfirming}
+            aria-disabled={!isReviewActive || isConfirming}
           >
             <i className="fas fa-arrow-left"></i>
-            الانتقال إلى مراجعة الدرس
+            {isConfirming ? "جاري الحفظ..." : "الانتقال إلى مراجعة الدرس"}
           </button>
 
           {!isReviewActive && <p className="muted-note">قسم المراجعة غير متاح حاليًا.</p>}

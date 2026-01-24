@@ -1,5 +1,6 @@
 import type { WritingSection } from "../data/topics";
 import type { Rubric, RubricCriterion, RubricLevel } from "../data/rubrics";
+import { supabase } from "../supabaseClient";
 
 // This defines the shape of the JSON response we expect from the AI.
 export type AIResponseType = {
@@ -145,31 +146,29 @@ export const getAIAnalysis = async (
   const userContent = combineWritingValues(writingValues, context?.writingSections);
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
+    // Use Supabase function as proxy to avoid CORS issues
+    const { data, error: proxyError } = await supabase.functions.invoke('openai-proxy', {
+      body: {
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent },
         ],
+        model: 'gpt-3.5-turbo',
         response_format: { type: 'json_object' },
         temperature: 0.4,
-      }),
+      }
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('AI API Error:', response.status, errorBody);
-      throw new Error(`AI API request failed with status ${response.status}`);
+    if (proxyError) {
+      console.error('Proxy function error:', proxyError);
+      throw new Error('Failed to connect to AI service');
     }
 
-    const result = await response.json();
-    const messageContent = result.choices[0].message.content;
+    if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response from AI service');
+    }
+
+    const messageContent = data.choices[0].message.content;
 
     // Robustly handle the AI response, which might be a string or an object
     let content: AIResponseType;

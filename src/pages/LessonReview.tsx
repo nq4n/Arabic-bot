@@ -94,7 +94,7 @@ export default function LessonReview() {
     };
 
     loadLessonVisibilitySettings();
-  }, [topic, topicIds, lessonVisibility]);
+  }, [topic, topicIds]);
 
   useEffect(() => {
     if (!topic) return;

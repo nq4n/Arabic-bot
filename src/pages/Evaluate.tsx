@@ -12,10 +12,7 @@ import { emitAchievementToast } from "../utils/achievementToast";
 import { SkeletonHeader, SkeletonSection } from "../components/SkeletonBlocks";
 import {
   SessionTimeTracker,
-  confirmTracking,
-  rejectTracking,
-  executeTracking,
-  TrackingPayload,
+  autoConfirmTracking,
 } from "../utils/enhancedStudentTracking";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 
@@ -51,11 +48,7 @@ export default function Evaluate() {
   const [userProfile, setUserProfile] = useState<{ full_name: string; grade: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeTracker, setTimeTracker] = useState<SessionTimeTracker | null>(null);
-  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
-  const [pendingConfirmationId, setPendingConfirmationId] = useState<number | null>(null);
-  const [confirmationDetails, setConfirmationDetails] = useState<string[]>([]);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [pendingEvaluationData, setPendingEvaluationData] = useState<any>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -156,8 +149,6 @@ export default function Evaluate() {
       return;
     }
 
-    setIsEvaluating(true);
-
     try {
       const aiResult = await getAIAnalysis(writingValues, rubric, {
         topicTitle: topic.title,
@@ -168,77 +159,18 @@ export default function Evaluate() {
         studentGrade: userProfile?.grade,
       });
 
-      // Store evaluation data for confirmation
-      setPendingEvaluationData({
-        writingValues,
-        aiResult,
-        topicTitle: topic.title,
-        topicId: topic.id,
-      });
+      // Award points and save submission
+      setIsConfirming(true);
 
-      // Create tracking confirmation
-      const payload: TrackingPayload = {
-        studentId: session.user.id,
-        topicId: topic.id,
-        trackingType: 'evaluation',
-        score: aiResult.score,
-        metadata: {
-          topicTitle: topic.title,
-          timestamp: new Date().toISOString(),
-        },
-      };
-
-      const { data, error } = await supabase
-        .from('tracking_confirmations')
-        .insert({
-          student_id: payload.studentId,
-          tracking_type: payload.trackingType,
-          topic_id: payload.topicId,
-          is_confirmed: false,
-          data_quality_score: 100,
-          validation_status: 'valid',
-          confirmation_data: payload.metadata || {},
-        })
-        .select('id')
-        .single();
-
-      if (error || !data) {
-        console.error('Failed to create tracking confirmation:', error);
-        setIsEvaluating(false);
-        return;
-      }
-
-      setPendingConfirmationId(data.id);
-      setConfirmationDetails([
-        `الموضوع: ${topic.title}`,
-        `الدرجة: ${aiResult.score}`,
-        `النقاط: 10`,
-      ]);
-      setIsConfirmationOpen(true);
-      setIsEvaluating(false);
-
-    } catch (error: any) {
-      console.error("Evaluation process failed:", error);
-      alert(`فشلت عملية التقييم. يرجى المحاولة مرة أخرى. الخطأ: ${error.message}`);
-      setIsEvaluating(false);
-    }
-  };
-
-  const handleConfirmEvaluation = async () => {
-    if (!session || !topic || !pendingConfirmationId || !pendingEvaluationData) return;
-
-    setIsConfirming(true);
-
-    try {
-      // Save submission
+      // 1. Save submission to submissions table
       const { data: newSubmission, error: submissionError } = await supabase
         .from("submissions")
         .insert({
           student_id: session.user.id,
-          topic_title: pendingEvaluationData.topicTitle,
-          submission_data: pendingEvaluationData.writingValues,
-          ai_response: pendingEvaluationData.aiResult,
-          ai_grade: pendingEvaluationData.aiResult.score
+          topic_title: topic.title,
+          submission_data: writingValues,
+          ai_response: aiResult,
+          ai_grade: aiResult.score
         })
         .select("id")
         .single();
@@ -247,17 +179,17 @@ export default function Evaluate() {
         throw submissionError;
       }
 
-      // Execute tracking
-      await executeTracking({
+      // 2. Auto-confirm tracking and award 10 points
+      await autoConfirmTracking({
         studentId: session.user.id,
         topicId: topic.id,
         trackingType: 'evaluation',
-        score: pendingEvaluationData.aiResult.score,
-      });
-
-      // Confirm in database
-      await confirmTracking(pendingConfirmationId, async () => {
-        // Additional confirmation logic if needed
+        score: aiResult.score,
+        metadata: {
+          topicTitle: topic.title,
+          timestamp: new Date().toISOString(),
+          score: aiResult.score,
+        },
       });
 
       // Log notification
@@ -265,7 +197,7 @@ export default function Evaluate() {
         recipientId: session.user.id,
         actorId: session.user.id,
         actorRole: "student",
-        message: "تم تسليم الكتابة وحصلت على 10 نقاط.",
+        message: `تم تسليم كتابة لدرس "${topic.title}" وحصلت على 10 نقاط.`,
         category: "points",
       });
 
@@ -276,10 +208,10 @@ export default function Evaluate() {
         tone: "success",
       });
 
-      if (typeof pendingEvaluationData.aiResult.score === "number" && pendingEvaluationData.aiResult.score >= 85) {
+      if (typeof aiResult.score === "number" && aiResult.score >= 85) {
         emitAchievementToast({
           title: "نتيجة مميزة",
-          message: `درجة ممتازة! حصلت على ${pendingEvaluationData.aiResult.score} في التقييم.`,
+          message: `درجة ممتازة! حصلت على ${aiResult.score} في التقييم.`,
           tone: "info",
         });
       }
@@ -289,25 +221,19 @@ export default function Evaluate() {
         await timeTracker.endSession(true);
       }
 
-      setIsConfirmationOpen(false);
+      setIsEvaluating(false);
+      setIsConfirming(false);
+
       if (newSubmission) {
         navigate(`/submission/${newSubmission.id}`);
       }
+
     } catch (error: any) {
-      console.error("Confirmation failed:", error);
-      alert(`فشلت عملية التأكيد. يرجى المحاولة مرة أخرى. الخطأ: ${error.message}`);
-    } finally {
+      console.error("Evaluation/Confirmation process failed:", error);
+      alert(`فشلت العملية. يرجى المحاولة مرة أخرى. الخطأ: ${error.message}`);
+      setIsEvaluating(false);
       setIsConfirming(false);
     }
-  };
-
-  const handleCancelConfirmation = async () => {
-    if (pendingConfirmationId) {
-      await rejectTracking(pendingConfirmationId);
-    }
-    setIsConfirmationOpen(false);
-    setPendingConfirmationId(null);
-    setPendingEvaluationData(null);
   };
 
   if (!topic) {
@@ -362,15 +288,16 @@ export default function Evaluate() {
 
   return (
     <div className="evaluate-page" dir="rtl">
-      <ConfirmationDialog
-        isOpen={isConfirmationOpen}
-        title="تأكيد تسليم التقييم"
-        message="هل أنت متأكد من أنك تريد تسليم التقييم؟"
-        details={confirmationDetails}
-        onConfirm={handleConfirmEvaluation}
-        onCancel={handleCancelConfirmation}
-        loading={isConfirming}
-      />
+      {/* Confirmation dialog hidden, auto-confirming now */}
+      {false && (
+        <ConfirmationDialog
+          isOpen={false}
+          title=""
+          message=""
+          onConfirm={async () => { }}
+          onCancel={async () => { }}
+        />
+      )}
 
       <header className="evaluate-header page-header">
         <h1 className="page-title">{evaluationTitle}: {topic.title}</h1>
@@ -411,8 +338,8 @@ export default function Evaluate() {
                 ></textarea>
               </div>
             ))}
-            <button onClick={handleEvaluate} disabled={isEvaluating} className="button button-primary cta-button">
-              {isEvaluating ? "...جاري التقييم" : "قيّم النص الآن"}
+            <button onClick={handleEvaluate} disabled={isEvaluating || isConfirming} className="button button-primary cta-button">
+              {isEvaluating ? "...جاري التقييم" : isConfirming ? "...جاري الحفظ" : "قيّم النص الآن"}
             </button>
           </div>
         </div>

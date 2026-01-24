@@ -9,6 +9,7 @@ import {
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabaseClient";
 import { ThemeProvider } from "./hooks/ThemeContext";
+import { SessionProvider } from "./hooks/SessionContext";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -46,11 +47,18 @@ const AppContent = () => {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [isRoleLoading, setIsRoleLoading] = useState(true);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [isOnline, setIsOnline] = useState(window.navigator.onLine);
 
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
 
   useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsSessionLoading(false);
@@ -60,7 +68,11 @@ const AppContent = () => {
       setSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   useEffect(() => {
@@ -74,22 +86,40 @@ const AppContent = () => {
         return;
       }
 
-      setIsRoleLoading(true);
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("role, must_change_password")
-        .eq("id", session.user.id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching user profile:", error);
-        setUserRole(null);
-        setShowChangePassword(false);
-      } else if (data) {
-        setUserRole(data.role as UserRole);
-        setShowChangePassword(data.must_change_password);
+      // Skip fetch if offline to avoid ERR_INTERNET_DISCONNECTED logs
+      if (!window.navigator.onLine) {
+        setIsRoleLoading(false);
+        return;
       }
-      setIsRoleLoading(false);
+
+      setIsRoleLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("role, must_change_password")
+          .eq("id", session.user.id)
+          .single();
+
+        if (error) {
+          // Suppress "Failed to fetch" noise when offline
+          if (error.message === 'TypeError: Failed to fetch' || !window.navigator.onLine) {
+            // Quietly fail
+          } else {
+            console.error("Error fetching user profile:", error);
+          }
+          setUserRole(null);
+          setShowChangePassword(false);
+        } else if (data) {
+          setUserRole(data.role as UserRole);
+          setShowChangePassword(data.must_change_password);
+        }
+      } catch (err: any) {
+        if (err.message !== 'TypeError: Failed to fetch') {
+          console.error("Unexpected error in fetchUserProfile:", err);
+        }
+      } finally {
+        setIsRoleLoading(false);
+      }
     };
 
     fetchUserProfile();
@@ -121,6 +151,12 @@ const AppContent = () => {
       className={`App fade-in-page ${isLoginPage ? "login-view" : ""}`}
     >
       {!isLoginPage && <Navbar session={session} userRole={userRole} />}
+      {!isOnline && (
+        <div className="offline-banner">
+          <i className="fas fa-wifi-slash"></i>
+          <span>أنت الآن غير متصل بالإنترنت. قد لا تعمل بعض الميزات بشكل صحيح.</span>
+        </div>
+      )}
       <AchievementToast />
 
       <main>
@@ -332,9 +368,11 @@ const AppContent = () => {
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <SessionProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </SessionProvider>
     </ThemeProvider>
   );
 }

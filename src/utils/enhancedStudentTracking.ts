@@ -279,3 +279,40 @@ export const executeTracking = async (payload: TrackingPayload): Promise<void> =
       console.error('Unknown tracking type:', trackingType);
   }
 };
+
+// -------------------------
+// New Helper: Auto Confirm Tracking
+// -------------------------
+
+export const autoConfirmTracking = async (payload: TrackingPayload): Promise<void> => {
+  const validation = validateTrackingPayload(payload);
+  const qualityScore = calculateDataQualityScore(payload);
+
+  try {
+    // 1. Execute the actual tracking (updates student_tracking table and points)
+    await executeTracking(payload);
+
+    // 2. Create an already confirmed entry in tracking_confirmations for audit/history
+    const { error } = await supabase
+      .from('tracking_confirmations')
+      .insert({
+        student_id: payload.studentId,
+        tracking_type: payload.trackingType,
+        topic_id: payload.topicId,
+        activity_id: payload.activityId,
+        is_confirmed: true,
+        confirmation_timestamp: new Date().toISOString(),
+        data_quality_score: qualityScore,
+        validation_status: validation.isValid ? 'valid' : 'invalid',
+        validation_message: validation.reason,
+        confirmation_data: payload.metadata || {},
+      });
+
+    if (error) {
+      console.error('Failed to save auto-confirmation:', error);
+    }
+  } catch (error) {
+    console.error('Error in autoConfirmTracking:', error);
+    throw error;
+  }
+};
