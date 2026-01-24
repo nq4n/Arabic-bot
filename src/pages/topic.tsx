@@ -80,7 +80,7 @@ export default function Topic() {
         .from("profiles")
         .select("role, added_by_teacher_id")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         setIsVisibilityLoading(false);

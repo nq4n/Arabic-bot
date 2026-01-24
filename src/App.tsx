@@ -98,7 +98,7 @@ const AppContent = () => {
           .from("profiles")
           .select("role, must_change_password")
           .eq("id", session.user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           // Suppress "Failed to fetch" noise when offline

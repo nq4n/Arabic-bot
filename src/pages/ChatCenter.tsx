@@ -116,7 +116,7 @@ export default function ChatCenter() {
         .from("profiles")
         .select("id, username, full_name, email, role, added_by_teacher_id")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         setError("تعذر تحميل الملف الشخصي.");

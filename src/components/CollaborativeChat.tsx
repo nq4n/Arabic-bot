@@ -66,7 +66,7 @@ export default function CollaborativeChat({
         .from("profiles")
         .select("id, username, email, role")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         setError("تعذر تحميل الملف الشخصي.");

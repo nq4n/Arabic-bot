@@ -46,7 +46,7 @@ export default function LessonReview() {
         .from("profiles")
         .select("role, added_by_teacher_id")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         setIsLoading(false);

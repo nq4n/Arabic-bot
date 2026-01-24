@@ -144,7 +144,7 @@ export default function ReportAssemblyActivity() {
         .from("profiles")
         .select("role, added_by_teacher_id")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         setIsVisibilityLoading(false);
@@ -520,7 +520,7 @@ export default function ReportAssemblyActivity() {
           confirmation_data: payload.metadata || {},
         })
         .select('id')
-        .single();
+        .maybeSingle();
 
       if (confirmError || !confirmData) {
         console.error('Failed to create tracking confirmation:', confirmError);
@@ -540,7 +540,7 @@ export default function ReportAssemblyActivity() {
           { onConflict: "student_id,topic_id,activity_id" }
         )
         .select("id, response_text, status")
-        .single();
+        .maybeSingle();
 
       if (error) {
         setError(`تعذر حفظ ${submissionLabel}. حاول مرة أخرى.`);

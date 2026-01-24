@@ -53,7 +53,7 @@ export class SessionTimeTracker {
         start_time: this.startTime.toISOString(),
       })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error starting session:', error);
@@ -159,7 +159,7 @@ export const requestTrackingConfirmation = async (
       confirmation_data: payload.metadata || {},
     })
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Failed to request tracking confirmation:', error);

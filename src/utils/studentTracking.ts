@@ -294,7 +294,7 @@ export const getStudentTracking = async (
     .from("student_tracking")
     .select("tracking_data")
     .eq("student_id", studentId)
-    .single();
+    .maybeSingle();
 
   if (error && error.code !== "PGRST116") { // PGRST116 means no rows found
     console.error("Error fetching student tracking data:", error);
@@ -313,7 +313,7 @@ export const trackActivitySubmission = async (
     .from("student_tracking")
     .select("tracking_data")
     .eq("student_id", studentId)
-    .single();
+    .maybeSingle();
 
   if (fetchError && fetchError.code !== "PGRST116") { // PGRST116 means no rows found
     console.error("Error fetching current tracking data:", fetchError);
@@ -366,7 +366,7 @@ export const trackLessonCompletion = async (
     .from("student_tracking")
     .select("tracking_data")
     .eq("student_id", studentId)
-    .single();
+    .maybeSingle();
 
   if (fetchError && fetchError.code !== "PGRST116") { // PGRST116 means no rows found
     console.error("Error fetching current tracking data:", fetchError);
@@ -414,7 +414,7 @@ export const trackEvaluationSubmission = async (
     .from("student_tracking")
     .select("tracking_data")
     .eq("student_id", studentId)
-    .single();
+    .maybeSingle();
 
   if (fetchError && fetchError.code !== "PGRST116") { // PGRST116 means no rows found
     console.error("Error fetching current tracking data:", fetchError);
@@ -463,7 +463,7 @@ export const trackCollaborativeCompletion = async (
     .from("student_tracking")
     .select("tracking_data")
     .eq("student_id", studentId)
-    .single();
+    .maybeSingle();
 
   if (fetchError && fetchError.code !== "PGRST116") { // PGRST116 means no rows found
     console.error("Error fetching current tracking data:", fetchError);

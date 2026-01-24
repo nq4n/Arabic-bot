@@ -46,7 +46,7 @@ serve(async (req) => {
       .from("profiles")
       .select("role")
       .eq("id", initiatingUserId)
-      .single();
+      .maybeSingle();
 
     if (initiatingProfileError || !initiatingProfile) {
       console.error("Error fetching initiating user profile:", initiatingProfileError);
@@ -63,7 +63,7 @@ serve(async (req) => {
       .from("profiles")
       .select("role, added_by_teacher_id")
       .eq("id", userIdToDelete)
-      .single();
+      .maybeSingle();
 
     if (userToDeleteProfileError || !userToDeleteProfile) {
       console.error("Error fetching user to delete profile:", userToDeleteProfileError);

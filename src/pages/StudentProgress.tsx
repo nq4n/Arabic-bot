@@ -39,7 +39,7 @@ export default function StudentProgress() {
                     .from('student_tracking')
                     .select('tracking_data')
                     .eq('student_id', session.user.id)
-                    .single();
+                    .maybeSingle();
 
                 if (!trackError && trackData?.tracking_data) {
                     const data = trackData.tracking_data as any;

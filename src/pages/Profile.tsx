@@ -34,7 +34,7 @@ export default function Profile() {
                     .from("profiles")
                     .select("id, username, full_name, role, email, grade")
                     .eq("id", session.user.id)
-                    .single();
+                    .maybeSingle();
 
                 if (!error && data) {
                     setProfile(data as UserProfile);
@@ -143,7 +143,7 @@ function LatestFeedbackSection({ userId }: { userId: string }) {
                 .eq("student_id", userId)
                 .order("created_at", { ascending: false })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (data && data.ai_response) {
                 // Safely cast or parse

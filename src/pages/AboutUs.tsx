@@ -92,7 +92,7 @@ export default function AboutUs() {
     // Attempt to get user name if logged in
     let userName = "زائر";
     if (session) {
-      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', session.user.id).single();
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', session.user.id).maybeSingle();
       if (profile?.full_name) userName = profile.full_name;
     }
 

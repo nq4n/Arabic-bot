@@ -111,7 +111,7 @@ export default function FreeExpressionActivity() {
         .from("profiles")
         .select("role, added_by_teacher_id")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         setIsVisibilityLoading(false);
@@ -292,7 +292,7 @@ export default function FreeExpressionActivity() {
           { onConflict: "student_id,topic_id,activity_id" }
         )
         .select("id, response_text, status")
-        .single();
+        .maybeSingle();
 
       if (submitError) {
         throw submitError;

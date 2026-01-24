@@ -80,7 +80,7 @@ export default function Evaluate() {
         .from("profiles")
         .select("role, added_by_teacher_id, full_name, grade")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         setIsLoading(false);
@@ -173,7 +173,7 @@ export default function Evaluate() {
           ai_grade: aiResult.score
         })
         .select("id")
-        .single();
+        .maybeSingle();
 
       if (submissionError) {
         throw submissionError;

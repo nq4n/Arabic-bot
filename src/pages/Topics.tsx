@@ -72,7 +72,7 @@ export default function Topics() {
         .from("profiles")
         .select("role, added_by_teacher_id, full_name")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error("Error fetching profile:", profileError);
