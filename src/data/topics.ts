@@ -173,7 +173,7 @@ export const topics: Topic[] = [
             "يعود الواصف لوصفه للمراجعة والتهذيب وإجراء التعديلات اللازمة.",
         },
       ],
-      videoUrl: "",
+      videoUrl: "https://dcevcijesbzbysvgviks.supabase.co/storage/v1/object/sign/videos/WhatsApp%20Video%202026-01-24%20at%2012.02.58%20AM%20(1).mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xYTBmODdlZC0wNDIwLTQ1MWQtYmNiMC04MDI0YmNhN2I2YmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlb3MvV2hhdHNBcHAgVmlkZW8gMjAyNi0wMS0yNCBhdCAxMi4wMi41OCBBTSAoMSkubXA0IiwiaWF0IjoxNzY5Mjc3NTU2LCJleHAiOjI3MTUzNTc1NTZ9.k45BhZpWFjxBjVN3zLn-Vyu2pPO7SLlXRyfUyXVini0",
     },
     writingModel: {
       header: "نموذج كتابي: وصف غروب الشمس",
