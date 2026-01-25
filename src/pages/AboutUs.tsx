@@ -2,76 +2,39 @@ import { useState } from "react";
 import { supabase } from "../supabaseClient";
 import "../styles/AboutUs.css";
 
-const teamMembers = [
+// Define the shape of each team member.
+type TeamMember = {
+  name?: string;
+  role: string;
+  details: string;
+  badge?: string;
+  imageUrl?: string;
+};
+
+// Team members data.
+const teamMembers: TeamMember[] = [
   {
-    name: "مؤيد",
-    role: "مطور الصفحة ومزود المحتوى",
-    details: "تصميم البرمجيات وتوفير المحتوى التعليمي للمنصة.",
+    name: "م. مؤيد",
+    role: "فريق التطوير والبرمجة",
+    badge: "Development",
+    imageUrl: "/profile.png",
+    details: "المسؤول عن تصميم واجهة المستخدم، بناء منطق الدروس التفاعلية، وتطوير البنية التحتية للنظام وربطه بالذكاء الاصطناعي.",
   },
   {
-    name: "فريق التطوير",
-    role: "البرمجة وتجربة المستخدم",
-    details: "تصميم الواجهة، بناء المكونات التعليمية، وتكامل النظام مع قاعدة البيانات.",
+    name: "مدير المحتوى",
+    role: "مدير المحتوى والتعليم",
+    badge: "Content",
+    imageUrl: "/profile.png",
+    details: "الإشراف على إعداد المادة العلمية، صياغة الأنشطة والتمارين، والتأكد من جودة وتنوع المحتوى التعليمي في المنصة.",
   },
   {
     name: "المشرف الأكاديمي",
-    role: "الإشراف التربوي",
-    details: "مراجعة المحتوى وضمان مواءمته للأهداف التعليمية واللغة العربية السليمة.",
+    role: "المشرف والأكاديمي",
+    badge: "Supervision",
+    imageUrl: "/profile.png",
+    details: "مراجعة المخرجات التعليمية، التأكد من سلامة اللغة العربية، وضمان توافق المنصة مع المعايير التربوية الحديثة.",
   },
 ];
-
-const bookLinks = [
-  {
-    title: "فن الكتابة والتعبير",
-    url: "https://www.noor-book.com/كتاب-فن-الكتابة-والتعبير-عن-الذات-pdf",
-    description: "كتاب عربي يساعد على تطوير مهارات التعبير والكتابة الإبداعية.",
-  },
-  {
-    title: "البلاغة الواضحة",
-    url: "https://www.waqfeya.net/book.php?bid=742",
-    description: "مرجع كلاسيكي في البلاغة وأساليب الكتابة العربية.",
-  },
-];
-
-const externalLinks = [
-  {
-    title: "موسوعة ويكيبيديا العربية",
-    url: "https://ar.wikipedia.org",
-    description: "مصدر معرفي موثوق للبحث عن المعلومات العامة.",
-  },
-  {
-    title: "موسوعة الملك عبدالله العربية للمحتوى الصحي",
-    url: "https://kaimrc.med.sa",
-    description: "محتوى عربي موثوق للمواضيع العلمية والصحية.",
-  },
-];
-
-const programmingResources = [
-  {
-    title: "MDN Web Docs",
-    url: "https://developer.mozilla.org",
-    description: "مرجع شامل لتقنيات الويب الحديثة بالإنجليزية.",
-  },
-  {
-    title: "freeCodeCamp بالعربية",
-    url: "https://www.youtube.com/c/FreeCodeCampArabic",
-    description: "قناة تعليمية تقدم شروحات برمجية باللغة العربية.",
-  },
-];
-
-const renderLinks = (links: typeof bookLinks) => (
-  <div className="about-links-grid">
-    {links.map((link) => (
-      <article key={link.title} className="card about-link-card">
-        <h3>{link.title}</h3>
-        <p>{link.description}</p>
-        <a href={link.url} target="_blank" rel="noreferrer">
-          زيارة الرابط
-        </a>
-      </article>
-    ))}
-  </div>
-);
 
 export default function AboutUs() {
   const [feedback, setFeedback] = useState("");
@@ -89,7 +52,6 @@ export default function AboutUs() {
 
     const { data: { session } } = await supabase.auth.getSession();
 
-    // Attempt to get user name if logged in
     let userName = "زائر";
     if (session) {
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', session.user.id).maybeSingle();
@@ -99,7 +61,7 @@ export default function AboutUs() {
     const { error } = await supabase.from("user_feedback").insert({
       user_id: session?.user?.id || null,
       user_name: userName,
-      email: email || session?.user?.email, // Use input email or session email
+      email: email || session?.user?.email,
       message: feedback,
       message_type: messageType
     });
@@ -116,29 +78,107 @@ export default function AboutUs() {
   };
 
   return (
-    <div className="about-page" dir="rtl">
-      <header className="about-header">
-        <h1>من نحن</h1>
-        <p>تعرف على فريق المنصّة والمصادر التي نرشحها لدعم التعلم.</p>
+    <div className="about-page page" dir="rtl">
+      <header className="about-header page-header">
+        <h1 className="page-title">منصة مداد لتعليم التعبير</h1>
+        <p className="page-subtitle">
+          حلول تقنية ذكية تهدف إلى تمكين الطلاب من مهارات الكتابة والإبداع اللغوي بأسلوب تفاعلي حديث.
+        </p>
       </header>
 
+      <div className="info-highlights">
+        <div className="info-highlight card">
+          <span className="info-highlight-title">رؤيتنا</span>
+          <span className="info-highlight-text">
+            أن تكون "مداد" المنصة الرائدة في تحويل عملية تعلّم الكتابة إلى رحلة ممتعة وشخصية لكل طالب.
+          </span>
+        </div>
+        <div className="info-highlight card">
+          <span className="info-highlight-title">رسالتنا</span>
+          <span className="info-highlight-text">
+            استثمار الذكاء الاصطناعي والتقنيات الحديثة لتقديم ملاحظات فورية ودقيقة تساعد الطالب على تطوير أسلوبه.
+          </span>
+        </div>
+        <div className="info-highlight card">
+          <span className="info-highlight-title">قيمنا</span>
+          <span className="info-highlight-text">
+            الدقة اللغوية، الابتكار التقني، والتركيز على رحلة المتعلم كأولوية في كل ميزة نطورها.
+          </span>
+        </div>
+      </div>
+
       <section className="about-section">
-        <h2>فريق العمل</h2>
-        <div className="about-team-grid">
-          {teamMembers.map((member) => (
-            <article key={member.role} className="card about-team-card">
-              <h3>{member.name}</h3>
-              <h4>{member.role}</h4>
-              <p>{member.details}</p>
+        <h2 className="section-title">فريق العمل والإشراف</h2>
+        <div className="members-grid">
+          {teamMembers.map((member, idx) => (
+            <article key={`${member.role}-${idx}`} className="member-profile-card card">
+              <div className="member-avatar-wrapper">
+                <img
+                  src={member.imageUrl || "/profile.png"}
+                  alt={member.name || member.role}
+                  className="member-avatar-img"
+                />
+              </div>
+              <div className="member-info">
+                <div className="member-name">{member.name || "اسم العضو"}</div>
+                <div className="member-role">
+                  {member.role}
+                  {member.badge && (
+                    <span className="member-badge">{member.badge}</span>
+                  )}
+                </div>
+                <p className="member-details">{member.details}</p>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
       <section className="about-section">
-        <h2>أرسل لنا ملاحظاتك</h2>
+        <h2 className="section-title">المصادر والمراجع</h2>
+        <div className="resources-grid">
+          <article className="resource-card card">
+            <div className="resource-icon">
+              <i className="fas fa-book"></i>
+            </div>
+            <div className="resource-info">
+              <h3 className="resource-title">كتاب المادة التعليمية</h3>
+              <p className="resource-desc">المرجع الأساسي المعتمد للمحتوى التعليمي من وزارة التربية والتعليم.</p>
+              <a
+                href="https://lib.moe.gov.om/home/items/content/49361/56965#book/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="resource-link"
+              >
+                تصفح الكتاب <i className="fas fa-external-link-alt"></i>
+              </a>
+            </div>
+          </article>
+
+          <article className="resource-card card">
+            <div className="resource-icon">
+              <i className="fab fa-wikimedia-commons"></i>
+            </div>
+            <div className="resource-info">
+              <h3 className="resource-title">ويكيميديا كومنز</h3>
+              <p className="resource-desc">تم الاستعانة بمصادر وسائط من ويكيميديا لتعزيز المحتوى البصري في المنصة.</p>
+              <a
+                href="https://commons.wikimedia.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="resource-link"
+              >
+                الموقع الرسمي <i className="fas fa-external-link-alt"></i>
+              </a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="about-section">
+        <h2 className="section-title">تواصل معنا</h2>
         <div className="card feedback-form-card">
-          <p>هل لديك اقتراح، مشكلة تقنية، أو ترغب في المساهمة بمحتوى؟ راسلنا هنا.</p>
+          <p className="contact-text">هل لديك اقتراح، مشكلة تقنية، أو ترغب في المساهمة بمحتوى؟ راسلنا هنا.</p>
           <form onSubmit={handleFeedbackSubmit} className="feedback-form">
             <div className="form-group">
               <label>نوع الرسالة</label>
@@ -182,21 +222,6 @@ export default function AboutUs() {
             </button>
           </form>
         </div>
-      </section>
-
-      <section className="about-section">
-        <h2>روابط الكتب</h2>
-        {renderLinks(bookLinks)}
-      </section>
-
-      <section className="about-section">
-        <h2>روابط خارجية</h2>
-        {renderLinks(externalLinks)}
-      </section>
-
-      <section className="about-section">
-        <h2>موارد برمجية</h2>
-        {renderLinks(programmingResources)}
       </section>
     </div>
   );

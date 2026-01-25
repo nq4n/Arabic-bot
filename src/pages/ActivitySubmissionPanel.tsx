@@ -61,6 +61,7 @@ type Props = {
   leaderboard: LeaderboardEntry[];
   studentTrackingData: StudentTrackingEntry[]; // New prop
   onDeleteCompletion: (completionId: number) => void;
+  onViewCollaborativeDetails: (topicId: string, studentId: string, kind: string) => Promise<any[] | null>;
   getDisplayName: (
     profile:
       | { full_name?: string | null; username?: string | null; email?: string | null }
@@ -78,9 +79,22 @@ export default function TeacherActivityReports({
   leaderboard,
   studentTrackingData = [], // Provide a default empty array
   onDeleteCompletion,
+  onViewCollaborativeDetails,
   getDisplayName,
 }: Props) {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<ActivitySubmission | null>(null);
+  const [selectedCollab, setSelectedCollab] = useState<CollaborativeCompletion | null>(null);
+  const [collabDetails, setCollabDetails] = useState<any[] | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const handleViewCollab = async (completion: CollaborativeCompletion) => {
+    setSelectedCollab(completion);
+    setLoadingDetails(true);
+    const log = await onViewCollaborativeDetails(completion.topic_id, completion.student_id, completion.activity_kind);
+    setCollabDetails(log);
+    setLoadingDetails(false);
+  };
 
   return (
     <div className="teacher-cards-container">
@@ -172,7 +186,7 @@ export default function TeacherActivityReports({
                   <button
                     type="button"
                     className="button button-compact"
-                    onClick={() => console.log("View submission details:", submission.id)}
+                    onClick={() => setSelectedSubmission(submission)}
                   >
                     عرض التفاصيل
                   </button>
@@ -213,6 +227,14 @@ export default function TeacherActivityReports({
                   </p>
                 </div>
                 <div style={{ marginTop: 'auto', textAlign: 'right' }}>
+                  <button
+                    type="button"
+                    className="button button-compact button-secondary"
+                    onClick={() => handleViewCollab(completion)}
+                    style={{ marginLeft: '0.5rem' }}
+                  >
+                    عرض التفاصيل
+                  </button>
                   <button
                     type="button"
                     className="button button-compact button-destructive"
@@ -332,6 +354,70 @@ export default function TeacherActivityReports({
           </div>
         )}
       </section>
+
+      {/* Modal for Activity Submissions */}
+      {selectedSubmission && (
+        <div className="modal-backdrop" onClick={() => setSelectedSubmission(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ textAlign: 'right', direction: 'rtl', maxWidth: '700px' }}>
+            <h3 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>تفاصيل التسليم</h3>
+            <div style={{ margin: '1.5rem 0', maxHeight: '60vh', overflowY: 'auto' }}>
+              <p><strong>الطالب:</strong> {getDisplayName(users.find(u => u.id === selectedSubmission.student_id))}</p>
+              <p><strong>الدرس:</strong> {topics.find(t => t.id === selectedSubmission.topic_id)?.title || selectedSubmission.topic_id}</p>
+              <p><strong>رقم النشاط:</strong> {selectedSubmission.activity_id}</p>
+              <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--border-radius)', border: '1px solid var(--border-color)' }}>
+                <strong>التسليم:</strong>
+                <p style={{ marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}>{selectedSubmission.response_text || "لا يوجد نص."}</p>
+              </div>
+            </div>
+            <button className="button button-secondary" onClick={() => setSelectedSubmission(null)}>إغلاق</button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Collaborative Activities */}
+      {selectedCollab && (
+        <div className="modal-backdrop" onClick={() => { setSelectedCollab(null); setCollabDetails(null); }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ textAlign: 'right', direction: 'rtl', maxWidth: '800px', width: '90%' }}>
+            <h3 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>تفاصيل النشاط التعاوني</h3>
+            <div style={{ margin: '1.5rem 0', maxHeight: '60vh', overflowY: 'auto' }}>
+              <p><strong>الطالب:</strong> {getDisplayName(users.find(u => u.id === selectedCollab.student_id))}</p>
+              <p><strong>الدرس:</strong> {topics.find(t => t.id === selectedCollab.topic_id)?.title || selectedCollab.topic_id}</p>
+              <p><strong>النوع:</strong> {selectedCollab.activity_kind === 'discussion' ? 'مناقشة جماعية' : 'حوار ثنائي'}</p>
+
+              <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--border-radius)', border: '1px solid var(--border-color)' }}>
+                <strong>سجل المحادثة:</strong>
+                {loadingDetails ? (
+                  <p>جاري تحميل السجل...</p>
+                ) : collabDetails && collabDetails.length > 0 ? (
+                  <div style={{ marginTop: '1rem' }}>
+                    {collabDetails.map((msg, idx) => (
+                      <div key={idx} style={{
+                        marginBottom: '0.75rem',
+                        padding: '0.5rem',
+                        borderRadius: '0.5rem',
+                        backgroundColor: msg.userId === selectedCollab.student_id ? 'rgba(var(--primary-rgb), 0.1)' : 'var(--bg-card)',
+                        border: '1px solid var(--border-color-light)',
+                        textAlign: 'right'
+                      }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginBottom: '0.25rem', fontWeight: 'bold' }}>
+                          {getDisplayName(users.find(u => u.id === msg.userId)) || msg.role || "مستخدم"}
+                        </div>
+                        <div style={{ fontSize: '0.95rem' }}>{msg.text}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                          {new Date(msg.timestamp).toLocaleString("ar")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>لا يوجد سجل محادثة متاح لهذا النشاط.</p>
+                )}
+              </div>
+            </div>
+            <button className="button button-secondary" onClick={() => { setSelectedCollab(null); setCollabDetails(null); }}>إغلاق</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

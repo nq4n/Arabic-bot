@@ -1,111 +1,299 @@
+/* AboutUs.css */
+
 .about-page {
   max-width: 1100px;
   margin: 0 auto;
+  padding: 0 1rem 4rem;
+}
+
+/* Section Styling */
+.about-section {
+  margin-top: 3rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--text-main);
+  position: relative;
+  display: inline-block;
+  padding-bottom: 8px;
+}
+
+.section-title::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 40px;
+  height: 3px;
+  background-color: var(--primary);
+  border-radius: 999px;
+}
+
+/* Info Highlights (Vision, Mission, Values) */
+.info-highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.info-highlight {
   padding: 2rem;
-  color: var(--text-primary);
-}
-
-.about-header {
   text-align: center;
-  margin-bottom: 2.5rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color-light);
+  box-shadow: var(--shadow-small);
+  transition: transform 0.3s ease;
 }
 
-.about-header h1 {
-  font-size: 2.4rem;
-  color: var(--primary-color);
+.info-highlight:hover {
+  transform: translateY(-5px);
+}
+
+.info-highlight-title {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 0.75rem;
+}
+
+.info-highlight-text {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-main);
+  opacity: 0.9;
+}
+
+/* Members Grid */
+.members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.member-profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-color-light);
+  background: var(--bg-card);
+}
+
+.member-profile-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--primary);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.member-avatar-wrapper {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 3px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.member-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.member-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
   margin-bottom: 0.5rem;
 }
 
-.about-header p {
-  color: var(--text-secondary);
-  font-size: 1.05rem;
-}
-
-.about-section {
-  margin-bottom: 2.5rem;
-}
-
-.about-section h2 {
-  color: var(--primary-color);
+.member-role {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-weight: 500;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.about-team-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
-}
-
-.about-team-card h3 {
-  margin: 0 0 0.5rem;
-  color: var(--primary-color);
-}
-
-.about-team-card h4 {
-  margin: 0 0 0.75rem;
-  color: var(--text-secondary);
+.member-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
   font-weight: 600;
 }
 
-.about-team-card p {
-  margin: 0;
+.member-details {
+  font-size: 0.9rem;
   line-height: 1.7;
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
-.about-links-grid {
+/* Resources Grid */
+.resources-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1.5rem;
 }
 
-.about-link-card {
+.resource-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color-light);
+  box-shadow: var(--shadow-small);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.resource-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+}
+
+.resource-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.resource-info {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.4rem;
 }
 
-.about-link-card h3 {
+.resource-title {
   margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
-.about-link-card p {
+.resource-desc {
   margin: 0;
-  color: var(--text-secondary);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
-.about-link-card a {
-  align-self: flex-start;
+.resource-link {
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--primary-color);
+  color: var(--primary);
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
-.about-link-card a:hover {
+.resource-link:hover {
   text-decoration: underline;
 }
 
-.about-note {
+/* Feedback Form Card */
+.feedback-form-card {
+  padding: 2.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color-light);
+}
+
+.contact-text {
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  color: var(--text-main);
   text-align: center;
 }
 
-.about-note h2 {
-  margin-top: 0;
-  color: var(--primary-color);
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-.about-note p {
-  margin: 0.5rem 0 1rem;
-  color: var(--text-secondary);
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
-.about-email {
-  font-weight: 700;
-  color: var(--primary-color);
+.form-group label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
 }
 
-@media (max-width: 700px) {
-  .about-page {
-    padding: 1.5rem;
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.8rem 1rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+.status-message {
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.status-message.success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-message.error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .members-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -29,6 +29,7 @@ export default function Topic() {
     topicIds.forEach((id) => {
       defaults[id] = {
         lesson: true,
+        video: true,
         review: true,
         evaluation: false,
         activity: true,
@@ -116,6 +117,7 @@ export default function Topic() {
         const settings = typeof row.settings === 'string' ? JSON.parse(row.settings) : row.settings;
         updatedVisibility[row.topic_id] = {
           lesson: settings?.lesson ?? true,
+          video: settings?.video ?? true,
           review: settings?.review ?? true,
           evaluation: settings?.evaluation ?? false,
           activity: settings?.activity ?? true,
@@ -242,6 +244,7 @@ export default function Topic() {
   }
 
   const isLessonActive = lessonVisibility[topic.id]?.lesson ?? false;
+  const isVideoActive = lessonVisibility[topic.id]?.video ?? true;
   const isReviewActive = lessonVisibility[topic.id]?.review ?? false;
   const isActivityActive = lessonVisibility[topic.id]?.activity ?? false;
 
@@ -342,31 +345,33 @@ export default function Topic() {
               <p className="intro-paragraph">{topic.lesson.introduction.importance}</p>
             </section>
 
-            <section className="topic-section card video-section sequential-section">
-              <h2 className="section-title">
-                <i className="fas fa-video icon"></i> فيديو توضيحي
-              </h2>
-              {/* Video section: display embedded video if URL is provided, otherwise show placeholder */}
-              {topic.lesson.videoUrl ? (
-                <div className="video-wrapper" style={{ width: '100%', marginBottom: '1rem' }}>
-                  {/* Use iframe to support external video URLs (e.g., YouTube). Adjust attributes as needed. */}
-                  <iframe
-                    src={topic.lesson.videoUrl}
-                    title="فيديو الدرس"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;"
-                    allowFullScreen
-                    style={{ width: '100%', aspectRatio: '16/9', borderRadius: '8px', border: 0 }}
-                  ></iframe>
-                </div>
-              ) : (
-                <>
-                  <div className="video-placeholder">
-                    <i className="fas fa-play-circle"></i>
+            {isVideoActive && (
+              <section className="topic-section card video-section sequential-section">
+                <h2 className="section-title">
+                  <i className="fas fa-video icon"></i> فيديو توضيحي
+                </h2>
+                {/* Video section: display embedded video if URL is provided, otherwise show placeholder */}
+                {topic.lesson.videoUrl ? (
+                  <div className="video-wrapper" style={{ width: '100%', marginBottom: '1rem' }}>
+                    {/* Use iframe to support external video URLs (e.g., YouTube). Adjust attributes as needed. */}
+                    <iframe
+                      src={topic.lesson.videoUrl}
+                      title="فيديو الدرس"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;"
+                      allowFullScreen
+                      style={{ width: '100%', aspectRatio: '16/9', borderRadius: '8px', border: 0 }}
+                    ></iframe>
                   </div>
-                  <p>لا يوجد فيديو مضاف بعد.</p>
-                </>
-              )}
-            </section>
+                ) : (
+                  <>
+                    <div className="video-placeholder">
+                      <i className="fas fa-play-circle"></i>
+                    </div>
+                    <p>لا يوجد فيديو مضاف بعد.</p>
+                  </>
+                )}
+              </section>
+            )}
           </div>
 
           <div className="vertical-stack">

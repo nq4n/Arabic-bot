@@ -278,6 +278,71 @@ export default function ActivitySubmissionsPage() {
     }
   };
 
+  const handleViewCollaborativeDetails = async (topicId: string, studentId: string, kind: string) => {
+    try {
+      if (kind === 'discussion') {
+        // Query collaborative_chat joined with participants
+        const { data, error } = await supabase
+          .from('collaborative_chat')
+          .select('conversation_log')
+          .eq('topic_id', topicId)
+          .contains('conversation_log', [{ userId: studentId }]) // Simple heuristic, better would be join but Supabase JS join is tricky with participants
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          // If the contains filter failed or returned nothing, try finding via the participants table
+          const { data: participation } = await supabase
+            .from('collaborative_chat_participants')
+            .select('chat_id')
+            .eq('student_id', studentId)
+            .limit(5); // Get recent chats
+
+          if (participation && participation.length > 0) {
+            const chatIds = participation.map(p => p.chat_id);
+            const { data: chats } = await supabase
+              .from('collaborative_chat')
+              .select('conversation_log')
+              .in('id', chatIds)
+              .eq('topic_id', topicId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            return chats?.conversation_log || null;
+          }
+          return null;
+        }
+        return data?.conversation_log || null;
+      } else if (kind === 'dialogue') {
+        // Query dialogue_peer_sessions joined with participants
+        const { data: participation } = await supabase
+          .from('dialogue_peer_participants')
+          .select('session_id')
+          .eq('user_id', studentId)
+          .limit(5);
+
+        if (participation && participation.length > 0) {
+          const sessionIds = participation.map(p => p.session_id);
+          const { data: sessions } = await supabase
+            .from('dialogue_peer_sessions')
+            .select('conversation_log')
+            .in('id', sessionIds)
+            .eq('topic_id', topicId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          return sessions?.conversation_log || null;
+        }
+        return null;
+      }
+      return null;
+    } catch (err) {
+      console.error("Error fetching collab details:", err);
+      return null;
+    }
+  };
+
   if (loading) {
     return <SkeletonPage />;
   }
@@ -298,6 +363,7 @@ export default function ActivitySubmissionsPage() {
         leaderboard={leaderboard}
         studentTrackingData={studentTrackingData}
         onDeleteCompletion={handleDeleteCompletion}
+        onViewCollaborativeDetails={handleViewCollaborativeDetails}
         getDisplayName={getDisplayName}
       />
     </div>

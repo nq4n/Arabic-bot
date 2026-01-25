@@ -537,12 +537,13 @@ export default function TeacherPanel() {
               <div key={topic.id} className="topic-grid-item">
                 <h3 className="topic-title">{topic.title}</h3>
                 <div className="topic-sections">
-                  {(["lesson", "review", "evaluation", "activity"] as LessonSection[]).map(
+                  {(["lesson", "video", "review", "evaluation", "activity"] as LessonSection[]).map(
                     (section) => (
                       <div key={`${topic.id}-${section}`} className="topic-section-item">
                         <label className="topic-section-label">
                           {section === "activity" && "الأنشطة"}
                           {section === "lesson" && "الدرس"}
+                          {section === "video" && "الفيديو"}
                           {section === "review" && "المراجعة"}
                           {section === "evaluation" && "الكتابة والتقييم"}
                         </label>

@@ -13,7 +13,7 @@ export default function LessonReview() {
   const navigate = useNavigate();
   const topic = topics.find((t) => t.id === topicId);
   const topicIds = useMemo(() => topics.map((t) => t.id), []);
-  
+
   // Initialize with sensible defaults - review and evaluation visible by default
   const [lessonVisibility, setLessonVisibility] = useState<LessonVisibility>(() => {
     const defaults: LessonVisibility = {};
@@ -23,6 +23,7 @@ export default function LessonReview() {
         review: true, // Review is visible by default
         evaluation: true, // Evaluation is visible by default
         activity: false,
+        video: true,
       };
     });
     return defaults;
@@ -79,7 +80,7 @@ export default function LessonReview() {
         // Keep existing defaults
         ...lessonVisibility,
       };
-      
+
       // Override with database values for topics that exist in DB
       (data || []).forEach((row) => {
         updatedVisibility[row.topic_id] = {
@@ -87,9 +88,10 @@ export default function LessonReview() {
           review: row.settings?.review ?? false,
           evaluation: row.settings?.evaluation ?? false,
           activity: row.settings?.activity ?? false,
+          video: row.settings?.video ?? true,
         };
       });
-      
+
       setLessonVisibility(updatedVisibility);
       setIsLoading(false);
     };
@@ -135,7 +137,7 @@ export default function LessonReview() {
           <p className="page-subtitle">تم إيقاف هذا القسم من قبل المعلم. يرجى الرجوع لاحقًا.</p>
         </header>
         <div className="page-actions">
-          <button className="button button-secondary" onClick={() => navigate("/")}> 
+          <button className="button button-secondary" onClick={() => navigate("/")}>
             <i className="fas fa-arrow-right"></i>
             العودة إلى قائمة المواضيع
           </button>
@@ -216,35 +218,35 @@ export default function LessonReview() {
         {/* Right Column: AI Assistant */}
         <div className="review-column">
           <section className="review-section card sticky-card">
-             <h2 className="section-title"><i className="fas fa-comments icon"></i> المساعد الذكي</h2>
-             <p>لديك سؤال؟ أو تحتاج لمناقشة فكرة؟ تحدث مع المساعد الذكي الآن.</p>
-             {/* 2. Pass the assembled content to the Chat component */}
-             <Chat topicContent={topicContent} />
+            <h2 className="section-title"><i className="fas fa-comments icon"></i> المساعد الذكي</h2>
+            <p>لديك سؤال؟ أو تحتاج لمناقشة فكرة؟ تحدث مع المساعد الذكي الآن.</p>
+            {/* 2. Pass the assembled content to the Chat component */}
+            <Chat topicContent={topicContent} />
           </section>
         </div>
       </div>
 
-       {/* Final Action Button */}
+      {/* Final Action Button */}
       <div className="page-actions">
-         <button
-            className="button button-secondary"
-            onClick={() => navigate(-1)}
-          >
-            <i className="fas fa-arrow-right"></i>
-            رجوع
-          </button>
-         <button
-            className="button button-primary cta-button"
-            onClick={handleProceedToEvaluation}
-            disabled={!isEvaluationActive}
-            aria-disabled={!isEvaluationActive}
-          >
-            <i className="fas fa-feather-alt"></i>
-            أنا مستعد، لنبدأ الكتابة!
-          </button>
-          {!isEvaluationActive && (
-            <p className="muted-note">قسم الكتابة والتقييم غير متاح حاليًا لهذا الدرس.</p>
-          )}
+        <button
+          className="button button-secondary"
+          onClick={() => navigate(-1)}
+        >
+          <i className="fas fa-arrow-right"></i>
+          رجوع
+        </button>
+        <button
+          className="button button-primary cta-button"
+          onClick={handleProceedToEvaluation}
+          disabled={!isEvaluationActive}
+          aria-disabled={!isEvaluationActive}
+        >
+          <i className="fas fa-feather-alt"></i>
+          أنا مستعد، لنبدأ الكتابة!
+        </button>
+        {!isEvaluationActive && (
+          <p className="muted-note">قسم الكتابة والتقييم غير متاح حاليًا لهذا الدرس.</p>
+        )}
       </div>
     </div>
   );

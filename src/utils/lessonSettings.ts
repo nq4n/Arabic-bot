@@ -3,7 +3,8 @@ export type LessonSection =
   | "lesson"
   | "review"
   | "evaluation"
-  | "activity";
+  | "activity"
+  | "video";
 
 export type LessonVisibility = Record<
   string,
@@ -12,6 +13,7 @@ export type LessonVisibility = Record<
     review: boolean;
     evaluation: boolean;
     activity: boolean;
+    video: boolean;
   }
 >;
 
@@ -61,8 +63,7 @@ const normalizeVisibility = (
       review: normalized[topicId]?.review ?? false,
       evaluation: normalized[topicId]?.evaluation ?? false,
       activity: normalized[topicId]?.activity ?? false,
-      
-      
+      video: normalized[topicId]?.video ?? true,
     };
   });
   return normalized;
@@ -75,6 +76,7 @@ const normalizeSectionSettings = (
   review: settings?.review ?? false,
   evaluation: settings?.evaluation ?? false,
   activity: settings?.activity ?? false,
+  video: settings?.video ?? true,
 });
 
 export const applyLessonVisibility = (

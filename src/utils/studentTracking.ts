@@ -7,7 +7,8 @@ export type LessonSection =
   | "review"
   | "evaluation"
   | "activity"
-  | "collaborative";
+  | "collaborative"
+  | "video";
 
 export type LessonVisibility = Record<
   string,
@@ -17,6 +18,7 @@ export type LessonVisibility = Record<
     evaluation: boolean;
     activity: boolean;
     collaborative: boolean;
+    video: boolean;
   }
 >;
 
@@ -80,6 +82,7 @@ const normalizeVisibility = (
       evaluation: normalized[topicId]?.evaluation ?? false,
       activity: normalized[topicId]?.activity ?? false,
       collaborative: normalized[topicId]?.collaborative ?? false,
+      video: normalized[topicId]?.video ?? true,
     };
   });
   return normalized;
@@ -93,6 +96,7 @@ const normalizeSectionSettings = (
   evaluation: settings?.evaluation ?? false,
   activity: settings?.activity ?? false,
   collaborative: settings?.collaborative ?? false,
+  video: settings?.video ?? true,
 });
 
 export const applyLessonVisibility = (
@@ -353,7 +357,7 @@ export const trackActivitySubmission = async (
       },
     },
   };
-  
+
   // Always recalculate total points from tracking data to ensure accuracy
   const updatedPoints = calculatePointsFromTracking(updatedTrackingData);
   updatedTrackingData.points = { total: updatedPoints };
@@ -402,7 +406,7 @@ export const trackLessonCompletion = async (studentId: string, topicId: string) 
       },
     },
   };
-  
+
   // Always recalculate total points from tracking data to ensure accuracy
   const updatedPoints = calculatePointsFromTracking(updatedTrackingData);
   updatedTrackingData.points = { total: updatedPoints };
@@ -456,7 +460,7 @@ export const trackEvaluationSubmission = async (
       },
     },
   };
-  
+
   // Always recalculate total points from tracking data to ensure accuracy
   const updatedPoints = calculatePointsFromTracking(updatedTrackingData);
   updatedTrackingData.points = { total: updatedPoints };
@@ -513,7 +517,7 @@ export const trackCollaborativeCompletion = async (
     ...trackingData,
     collaborative: updatedCollaborative,
   };
-  
+
   // Always recalculate total points from tracking data to ensure accuracy
   const updatedPoints = calculatePointsFromTracking(updatedTrackingData);
   updatedTrackingData.points = { total: updatedPoints };

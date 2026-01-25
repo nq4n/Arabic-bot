@@ -33,6 +33,7 @@ export default function Evaluate() {
         review: false,
         evaluation: true,
         activity: false,
+        video: false,
       };
     });
     return defaults;
@@ -40,9 +41,9 @@ export default function Evaluate() {
 
   const initialWritingValues = topic?.writingSections
     ? topic.writingSections.reduce(
-        (acc: WritingValues, section: WritingSection) => ({ ...acc, [section.id]: "" }),
-        {}
-      )
+      (acc: WritingValues, section: WritingSection) => ({ ...acc, [section.id]: "" }),
+      {}
+    )
     : { main: "" };
 
   const [writingValues, setWritingValues] = useState<WritingValues>(initialWritingValues);
@@ -131,6 +132,7 @@ export default function Evaluate() {
           review: row.settings?.review ?? false,
           evaluation: row.settings?.evaluation ?? true,
           activity: row.settings?.activity ?? false,
+          video: row.settings?.video ?? false,
         };
       });
 
@@ -288,10 +290,10 @@ export default function Evaluate() {
     topic.evaluationTask.mode === "discussion"
       ? "تقييم المناقشة"
       : topic.evaluationTask.mode === "dialogue"
-      ? "تقييم الحوار"
-      : topic.evaluationTask.mode === "report"
-      ? "تقييم التقرير"
-      : "تقييم الكتابة";
+        ? "تقييم الحوار"
+        : topic.evaluationTask.mode === "report"
+          ? "تقييم التقرير"
+          : "تقييم الكتابة";
 
   const sectionsToRender =
     topic.writingSections || [
@@ -305,8 +307,8 @@ export default function Evaluate() {
           isOpen={false}
           title=""
           message=""
-          onConfirm={async () => {}}
-          onCancel={async () => {}}
+          onConfirm={async () => { }}
+          onCancel={async () => { }}
         />
       )}
 
