@@ -173,7 +173,7 @@ export const topics: Topic[] = [
             "يعود الواصف لوصفه للمراجعة والتهذيب وإجراء التعديلات اللازمة.",
         },
       ],
-      videoUrl: "https://dcevcijesbzbysvgviks.supabase.co/storage/v1/object/sign/videos/WhatsApp%20Video%202026-01-24%20at%2012.02.58%20AM%20(1).mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xYTBmODdlZC0wNDIwLTQ1MWQtYmNiMC04MDI0YmNhN2I2YmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlb3MvV2hhdHNBcHAgVmlkZW8gMjAyNi0wMS0yNCBhdCAxMi4wMi41OCBBTSAoMSkubXA0IiwiaWF0IjoxNzY5MzUxMjYxLCJleHAiOjI3Njg5MzUxMjYxfQ.lwtGN8gmufdmNbzZi6x1V9qC1H3TsPdRRb7C-0tYey0",
+      videoUrl: "https://dcevcijesbzbysvgviks.supabase.co/storage/v1/object/sign/videos/discription.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xYTBmODdlZC0wNDIwLTQ1MWQtYmNiMC04MDI0YmNhN2I2YmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlb3MvZGlzY3JpcHRpb24ubXA0IiwiaWF0IjoxNzY5NDA5NzcyLCJleHAiOjQzNjE0MDk3NzJ9.L3k3JBGHlHqrq9Ptfqc7lyNw-e0qvCkXFLpZ0mDa-so",
     },
     writingModel: {
       header: "نموذج كتابي: وصف غروب الشمس",
@@ -572,7 +572,7 @@ export const topics: Topic[] = [
             "يُراجع الكاتب تقريره للتأكد من شمول المعلومات، وسلامة اللغة، وترتيب الفقرات، وتحقيق الهدف الذي كُتب من أجله.",
         },
       ],
-      videoUrl: "",
+      videoUrl: "https://dcevcijesbzbysvgviks.supabase.co/storage/v1/object/sign/videos/report.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xYTBmODdlZC0wNDIwLTQ1MWQtYmNiMC04MDI0YmNhN2I2YmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlb3MvcmVwb3J0Lm1wNCIsImlhdCI6MTc2OTQwOTg0OSwiZXhwIjo0MzYxNDA5ODQ5fQ.7mFq-x_tC_LPYdFNPNVOHp6x96MowNW4Ip2XbBbn2jk",
     },
     writingModel: {
       header: "نموذج كتابي: تقرير عن قلعة نزوى وحصنها",
@@ -869,7 +869,7 @@ export const topics: Topic[] = [
             "يُنهي الكاتب الحوار بعلامة واضحة على انتهائه؛ مثل اتخاذ قرار، أو انتهاء اللقاء، أو وصول المتحاورين إلى نتيجة معيّنة.",
         },
       ],
-      videoUrl: "https://dcevcijesbzbysvgviks.supabase.co/storage/v1/object/sign/videos/WhatsApp%20Video%202026-01-25%20at%209.52.30%20AM.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xYTBmODdlZC0wNDIwLTQ1MWQtYmNiMC04MDI0YmNhN2I2YmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlb3MvV2hhdHNBcHAgVmlkZW8gMjAyNi0wMS0yNSBhdCA5LjUyLjMwIEFNLm1wNCIsImlhdCI6MTc2OTM0NDYyOSwiZXhwIjo0MzYxNzc2NjI5fQ.pRPu3hgxRmATAyI5MX19AjBDxOAJ20nkSOgEdkoTWhg",
+      videoUrl: "https://dcevcijesbzbysvgviks.supabase.co/storage/v1/object/sign/videos/disscus%20(1).mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xYTBmODdlZC0wNDIwLTQ1MWQtYmNiMC04MDI0YmNhN2I2YmYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlb3MvZGlzc2N1cyAoMSkubXA0IiwiaWF0IjoxNzY5NDEwMDAxLCJleHAiOjIwMjg2MTAwMDF9.j0EUtnndTKURDK5wkVcSzcfD1S7sSGzreVtuYPIoDIg",
     },
     writingModel: {
       header: "نموذج كتابي: حوار حول أهمية القراءة",
