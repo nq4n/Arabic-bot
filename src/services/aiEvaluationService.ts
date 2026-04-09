@@ -1,6 +1,5 @@
 import type { WritingSection } from "../data/topics";
 import type { Rubric, RubricCriterion, RubricLevel } from "../data/rubrics";
-import { supabase } from "../supabaseClient";
 
 // This defines the shape of the JSON response we expect from the AI.
 export type AIResponseType = {
@@ -123,6 +122,35 @@ const combineWritingValues = (
  * @param rubric The rubric to evaluate against.
  * @returns A promise that resolves to the AI\'s structured feedback.
  */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries: number = 5
+): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(url, options);
+    
+    if (response.ok) {
+      return response;
+    }
+    
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('retry-after');
+      const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.min(Math.pow(2, attempt) * 2000, 30000);
+      console.log(`Rate limited. Retry after ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      lastError = new Error('Rate limit exceeded');
+      continue;
+    }
+    
+    return response;
+  }
+  
+  throw lastError || new Error('Max retries exceeded');
+}
+
 export const getAIAnalysis = async (
   writingValues: { [key: string]: string },
   rubric: Rubric,
@@ -136,6 +164,7 @@ export const getAIAnalysis = async (
   }
 ): Promise<AIResponseType> => {
   const apiKey = import.meta.env.VITE_REVIEW_API_KEY;
+  const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
   if (!apiKey) {
     console.error('Review API key is missing.');
@@ -146,25 +175,33 @@ export const getAIAnalysis = async (
   const userContent = combineWritingValues(writingValues, context?.writingSections);
 
   try {
-    // Use Supabase function as proxy to avoid CORS issues
-    const { data, error: proxyError } = await supabase.functions.invoke('openai-proxy', {
-      body: {
+    const response = await fetchWithRetry(API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost:5173',
+        'X-Title': 'Arabic Writing Platform',
+      },
+      body: JSON.stringify({
+        model: 'nvidia/nemotron-nano-12b-v2-vl:free',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userContent },
         ],
-        model: 'gpt-3.5-turbo',
-        response_format: { type: 'json_object' },
         temperature: 0.4,
-      }
+      })
     });
 
-    if (proxyError) {
-      console.error('Proxy function error:', proxyError);
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('API Error:', errorData);
       throw new Error('Failed to connect to AI service');
     }
 
-    if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
+    const data = await response.json();
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       throw new Error('Invalid response from AI service');
     }
 

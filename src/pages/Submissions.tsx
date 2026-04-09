@@ -12,7 +12,7 @@ type Submission = {
   created_at: string;
   ai_grade: number | null;
   teacher_response: { rubric_breakdown: { [key: string]: { score: number } }, total_score: number } | null;
-  profiles: { username: string }; // Corrected to be a single object
+  profiles: { full_name: string | null; username: string };
 };
 
 
@@ -23,6 +23,12 @@ export default function Submissions() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<string>('');
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+
+  const getDisplayName = (profile: { full_name: string | null; username: string }) => {
+    return profile?.full_name || profile?.username || 'غير معروف';
+  };
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -35,7 +41,7 @@ export default function Submissions() {
             created_at, 
             ai_grade, 
             teacher_response,
-            profiles ( username ) 
+            profiles ( full_name, username ) 
           `)
           .order('created_at', { ascending: false });
 
@@ -44,7 +50,6 @@ export default function Submissions() {
           throw fetchError;
         }
 
-        // The data from Supabase needs to be transformed to match the Submission type
         const formattedData = data.map(item => ({
           ...item,
           profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles,
@@ -61,6 +66,19 @@ export default function Submissions() {
     fetchSubmissions();
   }, []);
 
+  const uniqueStudents = Array.from(
+    new Map(
+      submissions
+        .filter(s => s.profiles?.username)
+        .map(s => [s.profiles?.username, { id: s.profiles?.username, name: getDisplayName(s.profiles) }])
+    ).values()
+  ).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+  const filteredSubmissions = submissions.filter(sub => {
+    const matchLesson = selectedLesson === '' || sub.topic_title === selectedLesson;
+    return matchLesson;
+  });
+
   const isPageLoading = loading;
 
   const calculateTeacherScore = (response: Submission['teacher_response']) => {
@@ -75,16 +93,35 @@ export default function Submissions() {
             <h1>كل التسليمات</h1>
             <p>عرض وتقييم تسليمات الطلاب.</p>
           </div>
+
+          {/* فلتر الدرس والطالب */}
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <label htmlFor="lessonFilter">الدرس:</label>
+              <select
+                id="lessonFilter"
+                value={selectedLesson}
+                onChange={(e) => setSelectedLesson(e.target.value)}
+                style={{ padding: '0.5rem', borderRadius: 'var(--border-radius)', border: '1px solid var(--border-color)' }}
+              >
+                <option value="">كل الدروس</option>
+                {topics.map(topic => (
+                  <option key={topic.id} value={topic.title}>{topic.title}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {loading ? (
             <SkeletonSection lines={6} showTitle={false} />
           ) : error ? (
               <p className='error-message'>{error}</p>
           ) : (
             <div className="data-cards-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-              {submissions.length === 0 ? (
+              {filteredSubmissions.length === 0 ? (
                   <p className='muted-note full-width' style={{ gridColumn: '1 / -1' }}>لا توجد تسليمات لعرضها.</p>
               ) : (
-                  submissions.map((sub) => {
+                  filteredSubmissions.map((sub) => {
                       const teacherScore = calculateTeacherScore(sub.teacher_response);
                       const topic = topics.find(t => t.title === sub.topic_title);
                       const rubricForTopic = topic ? rubrics.find(r => r.topicId === topic.id) : undefined;
@@ -95,7 +132,7 @@ export default function Submissions() {
                       return (
                         <div key={sub.id} className="card submission-item" style={{ display: 'flex', flexDirection: 'column', padding: '1rem' }}>
                             <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--primary)' }}>
-                                {sub.profiles?.username || 'غير معروف'} - {sub.topic_title}
+                                {getDisplayName(sub.profiles)} - {sub.topic_title}
                             </h3>
                             <div style={{ flexGrow: 1, marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                                 <p style={{ margin: '0 0 0.25rem' }}>تاريخ التسليم: {new Date(sub.created_at).toLocaleDateString('ar')}</p>

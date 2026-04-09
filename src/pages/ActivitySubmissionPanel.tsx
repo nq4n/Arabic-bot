@@ -83,10 +83,27 @@ export default function TeacherActivityReports({
   getDisplayName,
 }: Props) {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'all' | 'single'>('all');
   const [selectedSubmission, setSelectedSubmission] = useState<ActivitySubmission | null>(null);
   const [selectedCollab, setSelectedCollab] = useState<CollaborativeCompletion | null>(null);
   const [collabDetails, setCollabDetails] = useState<any[] | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const filteredActivitySubmissions = viewMode === 'single' && selectedStudentId
+    ? activitySubmissions.filter(s => s.student_id === selectedStudentId)
+    : activitySubmissions;
+
+  const filteredCollaborativeCompletions = viewMode === 'single' && selectedStudentId
+    ? collaborativeCompletions.filter(c => c.student_id === selectedStudentId)
+    : collaborativeCompletions;
+
+  const filteredLeaderboard = viewMode === 'single' && selectedStudentId
+    ? leaderboard.filter(e => e.studentId === selectedStudentId)
+    : leaderboard;
+
+  const filteredTrackingData = viewMode === 'single' && selectedStudentId
+    ? studentTrackingData.filter(t => t.student_id === selectedStudentId)
+    : studentTrackingData;
 
   const handleViewCollab = async (completion: CollaborativeCompletion) => {
     setSelectedCollab(completion);
@@ -98,11 +115,11 @@ export default function TeacherActivityReports({
 
   return (
     <div className="teacher-cards-container">
-      {/* تحديد طالب */}
+      {/* تحديد طالب وطريقة العرض */}
       <section className="card lesson-visibility-card full-width-card">
         <div className="lesson-visibility-header">
           <h2>تحديد طالب</h2>
-          <p>حدد طالباً لعرض بيانات تتبع الأنشطة الخاصة به.</p>
+          <p>حدد طالباً لعرض بياناتActivities الخاصة به، أو اعرض الكل.</p>
         </div>
 
         {loading ? (
@@ -111,28 +128,50 @@ export default function TeacherActivityReports({
           <p className="muted-note">لا يوجد طلاب متاحون.</p>
         ) : (
           <div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-              {users.map((user) => (
-                <button
-                  key={user.id}
-                  className={`button button-compact ${selectedStudentId === user.id ? 'button-primary' : 'button-secondary'}`}
-                  onClick={() => setSelectedStudentId(user.id)}
-                  style={{
-                    borderColor: selectedStudentId === user.id ? 'var(--primary)' : 'var(--border-color)',
-                    backgroundColor: selectedStudentId === user.id ? 'var(--primary)' : 'var(--bg-secondary)',
-                    color: selectedStudentId === user.id ? 'var(--primary-icon)' : 'var(--text-main)',
-                  }}
-                >
-                  {getDisplayName(user)}
-                </button>
-              ))}
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="viewMode"
+                  checked={viewMode === 'all'}
+                  onChange={() => { setViewMode('all'); setSelectedStudentId(null); }}
+                />
+                <span>عرض الكل</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="viewMode"
+                  checked={viewMode === 'single'}
+                  onChange={() => setViewMode('single')}
+                />
+                <span>عرض طالب واحد</span>
+              </label>
             </div>
+            {viewMode === 'single' && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+                {users.map((user) => (
+                  <button
+                    key={user.id}
+                    className={`button button-compact ${selectedStudentId === user.id ? 'button-primary' : 'button-secondary'}`}
+                    onClick={() => setSelectedStudentId(user.id)}
+                    style={{
+                      borderColor: selectedStudentId === user.id ? 'var(--primary)' : 'var(--border-color)',
+                      backgroundColor: selectedStudentId === user.id ? 'var(--primary)' : 'var(--bg-secondary)',
+                      color: selectedStudentId === user.id ? 'var(--primary-icon)' : 'var(--text-main)',
+                    }}
+                  >
+                    {getDisplayName(user)}
+                  </button>
+                ))}
+              </div>
+            )}
             {selectedStudentId && (
-              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
                 <button
                   type="button"
-                  className="button button-compact button-destructive"
-                  onClick={() => setSelectedStudentId(null)}
+                  className="button button-compact button-secondary"
+                  onClick={() => { setSelectedStudentId(null); setViewMode('all'); }}
                 >
                   إلغاء تحديد الطالب
                 </button>
@@ -151,11 +190,11 @@ export default function TeacherActivityReports({
 
         {loading ? (
           <SkeletonSection lines={4} showTitle={false} />
-        ) : activitySubmissions.length === 0 ? (
-          <p className="muted-note">لا توجد تسليمات أنشطة بعد.</p>
+        ) : filteredActivitySubmissions.length === 0 ? (
+          <p className="muted-note">لا توجد تسليمات أنشطة {(viewMode === 'single' && selectedStudentId) ? 'لهذا الطالب' : ''} بعد.</p>
         ) : (
           <div className="data-cards-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-            {activitySubmissions.map((submission) => (
+            {filteredActivitySubmissions.map((submission) => (
               <div key={submission.id} className="card submission-item" style={{ display: 'flex', flexDirection: 'column', padding: '1rem' }}>
                 <div style={{ marginBottom: '0.5rem' }}>
                   <h3
@@ -206,11 +245,11 @@ export default function TeacherActivityReports({
 
         {loading ? (
           <SkeletonSection lines={4} showTitle={false} />
-        ) : collaborativeCompletions.length === 0 ? (
-          <p className="muted-note">لا يوجد سجلات للأنشطة التعاونية.</p>
+        ) : filteredCollaborativeCompletions.length === 0 ? (
+          <p className="muted-note">لا يوجد سجلات للأنشطة التعاونية {(viewMode === 'single' && selectedStudentId) ? 'لهذا الطالب' : ''}.</p>
         ) : (
           <div className="data-cards-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-            {collaborativeCompletions.map((completion) => (
+            {filteredCollaborativeCompletions.map((completion) => (
               <div key={completion.id} className="card completion-item" style={{ display: 'flex', flexDirection: 'column', padding: '1rem' }}>
                 <div style={{ marginBottom: '0.5rem' }}>
                   <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem', color: 'var(--primary)' }}>
@@ -258,11 +297,11 @@ export default function TeacherActivityReports({
 
         {loading ? (
           <SkeletonSection lines={5} showTitle={false} />
-        ) : leaderboard.length === 0 ? (
-          <p className="muted-note">لا توجد بيانات كافية لعرض اللوحة.</p>
+        ) : filteredLeaderboard.length === 0 ? (
+          <p className="muted-note">لا توجد بيانات كافية لعرض اللوحة {(viewMode === 'single' && selectedStudentId) ? 'لهذا الطالب' : ''}.</p>
         ) : (
           <div className="data-cards-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-            {leaderboard.map((entry) => (
+            {filteredLeaderboard.map((entry) => (
               <div
                 key={entry.studentId}
                 className="card leaderboard-item"
@@ -304,13 +343,16 @@ export default function TeacherActivityReports({
           <SkeletonSection lines={4} showTitle={false} />
         ) : (
           <div className="data-cards-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-            {!selectedStudentId ? (
+            {viewMode === 'all' ? (
+              <p className="muted-note full-width" style={{ gridColumn: '1 / -1' }}>
+                الرجاء تحديد طالب واحد لعرض بيانات التتبع الخاصة به.
+              </p>
+            ) : !selectedStudentId ? (
               <p className="muted-note full-width" style={{ gridColumn: '1 / -1' }}>
                 الرجاء تحديد طالب لعرض بيانات التتبع الخاصة به.
               </p>
             ) : (
-              studentTrackingData
-                .filter((tracking) => tracking.student_id === selectedStudentId)
+              filteredTrackingData
                 .map((tracking) => (
                   <div key={tracking.id} className="card tracking-item" style={{ display: 'flex', flexDirection: 'column', padding: '1rem' }}>
                     <div style={{ marginBottom: '0.5rem' }}>
