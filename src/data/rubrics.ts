@@ -1,1010 +1,398 @@
-
-// نوع عام (اختياري لو تحب تستخدمه في التايبسكريبت)
 export type RubricLevel = {
-    id: string;           // "excellent" | "good" | "fair" | "weak"
-    label: string;        // "ممتاز" ...
-    score: number;        // 4 / 3 / 2 / 1
-    description: string;
-  };
-  
-  export type RubricCriterion = {
-    id: string;
-    name: string;         // اسم المعيار
-    description: string;  // شرح بسيط للمعيار
-    levels: RubricLevel[];
-  };
-  
-  export type Rubric = {
-    topicId: string;      // يطابق id في topics
-    topicTitle: string;
-    criteria: RubricCriterion[];
-  };
-  
-  // مصفوفة الـ Rubrics لكل موضوع كتابة
-  export const rubrics: Rubric[] = [
-    // =========================================
-    // 1) وصف منظر طبيعي - landscape-description
-    // =========================================
-    {
-      topicId: "landscape-description",
-      topicTitle: "وصف منظر طبيعي",
-      criteria: [
-        {
-          id: "elements",
-          name: "تحديد عناصر المنظر",
-          description: "قدرة الطالب على ملاحظة عناصر المنظر الطبيعي المهمة وإدخالها في الوصف.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "يذكر معظم عناصر المنظر المهمة بتفاصيل واضحة (السماء، الجبال، الأشجار، الماء، الناس...).",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "يذكر عددًا جيدًا من العناصر لكن بعض التفاصيل غير واضحة أو منقوصة.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "يذكر عناصر قليلة أو عامة دون تحديد كافٍ.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "لا يذكر عناصر واضحة، أو الوصف غير مرتبط بمنظر طبيعي محدد.",
-            },
-            {
-              id: 'not-mentioned',
-              score: 0,
-              label: 'غير مذكور',
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "imagery",
-          name: "الألفاظ والصور التعبيرية",
-          description: "اختيار كلمات وصور جميلة تناسب طبيعة المنظر.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "يستخدم ألفاظًا ثرية وصورًا تعبيرية قوية (تشبيه، استعارة...) تضيف جمالًا للوصف.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "يستخدم ألفاظًا مناسبة مع بعض التعابير الجميلة.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "الألفاظ بسيطة ومباشرة، مع قلة أو غياب للصور التعبيرية.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "ألفاظ ضعيفة أو مكررة، ولا توجد صور تعبيرية تقريبًا.",
-            },
-            {
-              id: 'not-mentioned',
-              score: 0,
-              label: 'غير مذكور',
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "organization",
-          name: "ترتيب الوصف وتسلسله",
-          description: "تنظيم الوصف بطريقة منطقية (قريب → بعيد، أو عام → تفاصيل...).",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "تسلسل واضح ومتدرج، يبدأ بنقطة انطلاق محددة وينتقل بسلاسة بين عناصر المنظر.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "تسلسل مقبول مع بعض القفزات البسيطة في العرض.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "الأفكار غير مرتبة جيدًا، والانتقال بين أجزاء المنظر غير واضح.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "أفكار عشوائية بلا تسلسل، يصعب متابعة الوصف.",
-            },
-            {
-              id: 'not-mentioned',
-              score: 0,
-              label: 'غير مذكور',
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "language",
-          name: "سلامة اللغة والأسلوب",
-          description: "سلامة التراكيب اللغوية والإملائية وقدرته على صياغة جمل مفهومة.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "جمل سليمة في الغالب، أخطاء قليلة جدًا لا تؤثر في الفهم.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "بعض الأخطاء اللغوية والإملائية مع بقاء المعنى واضحًا.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "أخطاء ملحوظة تؤثر جزئيًا في وضوح المعنى.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "كثير من الأخطاء تجعل فهم النص صعبًا.",
-            },
-            {
-              id: 'not-mentioned',
-              score: 0,
-              label: 'غير مذكور',
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "impact",
-          name: "التأثير والإيحاء",
-          description: "مدى قدرة الوصف على نقل شعور أو حالة للقارئ.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "ينقل جو المنظر بوضوح ويجعل القارئ يتخيل المشهد ويشعر به.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "يعطي صورة جيدة عن المنظر مع تأثير عاطفي مقبول.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "الوصف مفهوم لكن تأثيره ضعيف.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "لا يحدث النص أي تأثير أو انطباع واضح لدى القارئ.",
-            },
-            {
-              id: 'not-mentioned',
-              score: 0,
-              label: 'غير مذكور',
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-      ],
-    },
-  
-    // =========================================
-    // 2) مناقشة قضية - discussing-issue
-    // =========================================
-    {
-      topicId: "discussing-issue",
-      topicTitle: "مناقشة قضية",
-      criteria: [
-        {
-          id: "clarity",
-          name: "وضوح عرض القضية",
-          description: "بيان المشكلة أو القضية المطروحة للنقاش بشكل مفهوم.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "يعرض القضية بوضوح تام مع تحديد أبعادها الأساسية.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "يعرض القضية بوضوح مقبول مع بعض النقص في التفاصيل.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "عرض جزئي للقضية، يغيب عنه بعض الجوانب المهمة.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "القضية غير واضحة للقارئ أو غير محددة.",
-            },
-            {
-              id: 'not-mentioned',
-              score: 0,
-              label: 'غير مذكور',
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "reasons_effects",
-          name: "عرض الأسباب والآثار",
-          description: "ذكر أسباب القضية وآثارها المنطقية على الفرد والمجتمع.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "يذكر أسبابًا متعددة ومنطقية، ويربطها بآثار واضحة ومقنعة.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "يذكر عدة أسباب وآثار لكن بعض الروابط غير كاملة.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "يذكر سببًا أو سببين وآثارًا عامة دون تفصيل كافٍ.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "لا يذكر أسبابًا واضحة أو آثارًا مرتبطة بالقضية.",
-            },
-            {
-              id: 'not-mentioned',
-              score: 0,
-              label: 'غير مذكور',
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "arguments",
-          name: "قوة الحجج والأدلة",
-          description: "استخدام حجج منطقية وأمثلة تدعم الرأي.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "يستخدم حججًا قوية مدعومة بأمثلة أو شواهد مناسبة.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "يستخدم حججًا مقبولة مع قلة في الأمثلة.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "حجج عامة وضعيفة، مع أمثلة بسيطة أو قليلة.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "لا توجد حجج واضحة، النص مجرد رأي غير مدعوم.",
-            },
-            {
-              id: 'not-mentioned',
-              score: 0,
-              label: 'غير مذكور',
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "objectivity",
-          name: "الموضوعية واحترام الرأي الآخر",
-          description: "طريقة عرض الرأي دون تجريح، مع قبول الرأي المقنع المخالف.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "أسلوب هادئ ومتوازن، يحترم الآراء الأخرى ويعرضها بعدل.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "أسلوب جيد في الغالب مع بعض الميل لرأي واحد.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "انحياز واضح مع احترام محدود للرأي الآخر.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "أسلوب هجومي أو متعصب، لا يظهر أي تقبل لآراء مختلفة.",
-            },
-            {
-              id: 'not-mentioned',
-              score: 0,
-              label: 'غير مذكور',
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "conclusion",
-          name: "الخاتمة والحلول",
-          description: "تلخيص ما سبق وطرح حلول أو توصيات مناسبة.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "خاتمة واضحة تلخص الفكرة وتقدم حلولًا عملية أو توصيات واضحة.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "خاتمة جيدة مع حلول عامة.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "خاتمة قصيرة أو غامضة مع حلول قليلة أو غير واضحة.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "لا توجد خاتمة حقيقية أو لا تُذكر أي حلول.",
-            },
-            {
-              id: 'not-mentioned',
-              score: 0,
-              label: 'غير مذكور',
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-      ],
-    },
-  
-    // =========================================
-    // 3) كيفية كتابة التقرير - report-writing
-    // =========================================
-    {
-      topicId: "report-writing",
-      topicTitle: "كيفية كتابة التقرير",
-      criteria: [
-        {
-          id: "purpose_audience",
-          name: "تحديد الهدف والجمهور",
-          description: "وضوح الهدف من التقرير ولمن يقدَّم.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "يوضّح هدف التقرير بدقة ويُشعر القارئ لمن كُتب التقرير.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "الهدف عام لكنه مفهوم، والجمهور ضمنيًا واضح.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "هدف التقرير غير محدد بشكل كافٍ.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "لا يظهر هدف التقرير أو سبب كتابته.",
-            },
-            {
-              id: 'not-mentioned',
-              
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "structure",
-          name: "بنية التقرير (مقدمة - عرض - خاتمة)",
-          description: "تنظيم التقرير وفق أجزاء واضحة.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "يتضمن مقدمة وعرضًا وخاتمة واضحة، مع عناوين أو فقرات منظمة.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "الأجزاء الرئيسة موجودة لكن بعض الحدود بينها غير واضحة.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "توجد أجزاء للتقرير لكن بدون تنظيم جيد أو توازن.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "لا يتضح تقسيم النص إلى مقدمة وعرض وخاتمة.",
-            },
-            {
-              id: 'not-mentioned',
-              
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "facts",
-          name: "دقة المعلومات والحقائق",
-          description: "ذكر معلومات صحيحة ومرتبطة بموضوع التقرير.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "معلومات دقيقة ومرتبطة تمامًا بالموضوع، بلا مبالغة أو تحريف.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "معلومات صحيحة في الغالب، مع بعض العموميات.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "بعض المعلومات غير دقيقة أو غير مكتملة.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "معلومات قليلة أو غير صحيحة، لا تُقدّم صورة واضحة عن الموضوع.",
-            },
-            {
-              id: 'not-mentioned',
-              
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "clarity_objectivity",
-          name: "الوضوح والموضوعية",
-          description: "الابتعاد عن الرأي الشخصي والاهتمام بنقل الوقائع بوضوح.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "لغة واضحة وجمل مباشرة، مع التزام واضح بالموضوعية.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "لغة جيدة في معظم النص مع بعض التعليقات الشخصية.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "يغلب على النص الرأي الشخصي مع قلة التركيز على الحقائق.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "النص أقرب إلى موضوع تعبيري عادي وليس تقريرًا موضوعيًا.",
-            },
-            {
-              id: 'not-mentioned',
-              
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "language",
-          name: "سلامة اللغة والتنظيم",
-          description: "سلامة الجمل وربط الفقرات وترتيب الأفكار داخل التقرير.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "جمل سليمة ومنظمة، والفقرات مترابطة، والنص سهل القراءة.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "بعض الأخطاء البسيطة مع بقاء الترابط العام جيدًا.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "أخطاء واضحة، وترابط ضعيف بين الفقرات.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "فوضى في تنظيم الجمل والفقرات، مما يصعّب متابعة التقرير.",
-            },
-            {
-              id: 'not-mentioned',
-              
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-      ],
-    },
-  
-    // =========================================
-    // 4) التعبير الحر - free-expression
-    // =========================================
-    {
-      topicId: "free-expression",
-      topicTitle: "التعبير الحر",
-      criteria: [
-        {
-          id: "idea_focus",
-          name: "وضوح الفكرة الرئيسة",
-          description: "وجود فكرة أو موقف واضح يدور حوله الموضوع.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "فكرة رئيسة واضحة ومحددة، والنص يدور حولها دون تشتت.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "فكرة عامة مفهومة مع بعض التفرعات الجانبية.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "فكرة غير محددة جيدًا، مع تشتت في بعض الفقرات.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "لا تظهر فكرة رئيسة واضحة، أو الموضوع متفكك.",
-            },
-            {
-              id: 'not-mentioned',
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "personal_voice",
-          name: "التعبير عن الذات (الصوت الشخصي)",
-          description: "إظهار رأي أو شعور أو تجربة خاصة بالطالب.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "يعبر عن نفسه بوضوح وصدق، ويظهر صوته الخاص في الكتابة.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "يعبر عن ذاته بشكل جيد لكنه قريب من الأسلوب العام الشائع.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "تركّز الكتابة على أفكار عامة مع حضور بسيط للشعور الشخصي.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "لا يظهر في النص أي بعد شخصي أو شعور واضح.",
-            },
-            {
-              id: 'not-mentioned',
-              
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "coherence",
-          name: "ترابط وتسلسل الأفكار",
-          description: "تنقل منطقي بين بداية الموضوع ووسطه ونهايته.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "بداية تمهّد، وسط يشرح، وخاتمة تلخص، مع ترابط واضح بين الأجزاء.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "ترابط عام جيد مع بعض القفزات في الأفكار.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "ضعف في الربط بين الفقرات أو غياب أحد الأجزاء (مقدمة/خاتمة).",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "أفكار مبعثرة، من الصعب تتبع تسلسل الموضوع.",
-            },
-            {
-              id: 'not-mentioned',
+  id: string;
+  label: string;
+  score: number;
+  description: string;
+};
 
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "expression",
-          name: "جمال الأسلوب والتعبير",
-          description: "اختيار تعبيرات مناسبة وحيّة قدر الإمكان.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "أسلوب جميل فيه تعبيرات موفقة وصور أو أمثلة معبّرة.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "أسلوب جيد ومفهوم مع بعض العبارات الجيدة.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "أسلوب بسيط جدًا، قليل الصور أو الأمثلة.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "أسلوب ضعيف يفتقد الدقة أو فيه تكرار مزعج.",
-            },
-            {
-              id: 'not-mentioned',
-              
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "language",
-          name: "سلامة اللغة والإملاء",
-          description: "صحة الجمل من الناحية اللغوية والإملائية.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "أخطاء قليلة جدًا لا تؤثر في الفهم.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "بعض الأخطاء البسيطة مع بقاء المعنى واضحًا.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "أخطاء عديدة تؤثر جزئيًا في وضوح النص.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "أخطاء كثيرة تجعل النص صعب الفهم.",
-            },
-            {
-              id: 'not-mentioned',
-              
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-      ],
-    },
-  
-    // =========================================
-    // 5) النص الحواري - dialogue-text
-    // =========================================
-    {
-      topicId: "dialogue-text",
-      topicTitle: "النص الحواري",
-      criteria: [
-        {
-          id: "characters",
-          name: "تحديد الشخصيات وملامحها",
-          description: "وضوح من هم المتحاورون وملامح كل شخصية.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "شخصيات محددة وواضحة، لكل منها طابع مميز يظهر في كلامه.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "الشخصيات واضحة عمومًا مع تمييز بسيط بينها.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "توجد شخصيات لكن الفروق بينها غير واضحة.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "الشخصيات غير محددة، أو لا يمكن تمييز من يتكلم.",
-            },
-            {
-              id: 'not-mentioned',
-              
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "topic_focus",
-          name: "تركيز الحوار على موضوع محدد",
-          description: "عدم الانتقال بين موضوعات كثيرة بلا هدف.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "الحوار يدور حول موضوع واحد واضح من البداية للنهاية.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "موضوع الحوار واضح مع بعض التفرعات الجانبية.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "انتقال ملحوظ بين موضوعات مختلفة يضعف تركيز الحوار.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "الحوار مشتت ولا يظهر فيه موضوع رئيس.",
-            },
-            {
-              id: 'not-mentioned',
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "natural_speech",
-          name: "طبيعية الجمل الحوارية",
-          description: "مدى قرب اللغة من الحوار الواقعي بين الناس.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "الجمل طبيعية وقريبة من كلام الناس، مع تنويع في الأسئلة والتعليقات والترددات.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "الجمل مناسبة عمومًا مع بعض الرسمية أو الجمود.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "الحوار يبدو أقرب إلى فقرة خبرية من كونه حوارًا حيًّا.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "الجمل غير منطقية أو لا تشبه أسلوب الحوار بين أشخاص حقيقيين.",
-            },
-            {
-              id: 'not-mentioned',
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "structure",
-          name: "بنية النص الحواري (مقدمة - عرض - خاتمة)",
-          description: "وجود بداية تمهّد للحوار وعرض وخاتمة تُنهي الموقف.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "بداية توضّح مكان/سبب الحوار، ثم تبادل منظم للجمل، وخاتمة واضحة.",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "مقدمة وعرض جيدان مع خاتمة بسيطة أو سريعة.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "غياب واضح لأحد الأجزاء أو ضعف في الربط بينها.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "الحوار يبدأ وينتهي فجأة دون تمهيد أو خاتمة.",
-            },
-            {
-              id: 'not-mentioned',
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-        {
-          id: "format_punctuation",
-          name: "تنسيق الحوار وعلامات الترقيم",
-          description: "تمييز كل متحدث واستخدام علامات ترقيم مناسبة.",
-          levels: [
-            {
-              id: "excellent",
-              label: "ممتاز",
-              score: 4,
-              description: "كل جملة منسوبة بوضوح للمتحدث، مع استخدام مناسب لعلامات الترقيم (؟ ! ، ...).",
-            },
-            {
-              id: "good",
-              label: "جيد",
-              score: 3,
-              description: "بعض الأخطاء البسيطة في النسبة أو الترقيم، لكن المتحدثين مفهومون.",
-            },
-            {
-              id: "fair",
-              label: "مقبول",
-              score: 2,
-              description: "ضعف في تمييز المتحدثين أو قلة في استخدام علامات الترقيم.",
-            },
-            {
-              id: "weak",
-              label: "ضعيف",
-              score: 1,
-              description: "اختلاط في المتحدثين وعدم استخدام علامات الترقيم تقريبًا.",
-            },
-            {
-              id: 'not-mentioned',
-              
-              label: 'غير مذكور',
-              score: 0,
-              description: 'المعيار غير مذكور في الكتابة'
-            },
-          ],
-        },
-      ],
-    },
-  ];
+export type RubricCriterion = {
+  id: string;
+  name: string;
+  description: string;
+  levels: RubricLevel[];
+};
+
+export type Rubric = {
+  topicId: string;
+  topicTitle: string;
+  criteria: RubricCriterion[];
+};
+
+const createLevels = (descriptions: {
+  excellent: string;
+  veryGood: string;
+  good: string;
+  weak: string;
+}): RubricLevel[] => [
+  {
+    id: 'excellent',
+    label: 'ممتاز',
+    score: 2,
+    description: descriptions.excellent,
+  },
+  {
+    id: 'very-good',
+    label: 'جيد جدا',
+    score: 1,
+    description: descriptions.veryGood,
+  },
+  {
+    id: 'good',
+    label: 'جيد',
+    score: 0.5,
+    description: descriptions.good,
+  },
+  {
+    id: 'weak',
+    label: 'ضعيف',
+    score: 0,
+    description: descriptions.weak,
+  },
+];
+
+const createLegacyLevels = (descriptions: {
+  excellent: string;
+  good: string;
+  fair: string;
+  weak: string;
+  notMentioned?: string;
+}): RubricLevel[] => [
+  {
+    id: 'excellent',
+    label: 'ممتاز',
+    score: 4,
+    description: descriptions.excellent,
+  },
+  {
+    id: 'good',
+    label: 'جيد',
+    score: 3,
+    description: descriptions.good,
+  },
+  {
+    id: 'fair',
+    label: 'مقبول',
+    score: 2,
+    description: descriptions.fair,
+  },
+  {
+    id: 'weak',
+    label: 'ضعيف',
+    score: 1,
+    description: descriptions.weak,
+  },
+  {
+    id: 'not-mentioned',
+    label: 'غير مذكور',
+    score: 0,
+    description: descriptions.notMentioned || 'المعيار غير مذكور في الكتابة',
+  },
+];
+
+export const rubrics: Rubric[] = [
+  {
+    topicId: 'landscape-description',
+    topicTitle: 'وصف منظر طبيعي',
+    criteria: [
+      {
+        id: 'description-elements',
+        name: 'تحديد عناصر الوصف ومكوناته',
+        description: 'مدى تحديد الطالب للعناصر التي سيصفها داخل المشهد.',
+        levels: createLevels({
+          excellent: 'حدد أكثر من عنصرين للوصف.',
+          veryGood: 'حدد عنصرين للوصف.',
+          good: 'حدد عنصرا واحدا للوصف.',
+          weak: 'لم يحدد أي عنصر للوصف.',
+        }),
+      },
+      {
+        id: 'description-organization',
+        name: 'تنظيم الوصف وترتيبه',
+        description: 'مدى ترتيب الوصف وفق نسق واضح من العام إلى الخاص أو من القريب إلى البعيد.',
+        levels: createLevels({
+          excellent: 'وصف منظم وفق نسق واضح (عام إلى خاص أو قريب إلى بعيد).',
+          veryGood: 'ترتيب مقبول.',
+          good: 'محاولة للتنظيم لكنها غير واضحة.',
+          weak: 'وصف عشوائي دون ترتيب.',
+        }),
+      },
+      {
+        id: 'figurative-images',
+        name: 'الصور الجمالية',
+        description: 'مدى توظيف الصور الجمالية لخدمة الوصف.',
+        levels: createLevels({
+          excellent: 'استخدام صورتين جماليتين على الأقل.',
+          veryGood: 'استخدام صورة جمالية واحدة بشكل صحيح.',
+          good: 'استخدام صورة جمالية واحدة غير دقيقة.',
+          weak: 'لا توجد صور جمالية.',
+        }),
+      },
+      {
+        id: 'description-accuracy',
+        name: 'دقة الوصف',
+        description: 'مدى دقة التفاصيل التي يقدمها الطالب في وصف عناصر المشهد.',
+        levels: createLevels({
+          excellent: 'ذكر تفاصيل عنصرين أو أكثر على الأقل.',
+          veryGood: 'ذكر تفاصيل شيء واحد على الأقل.',
+          good: 'محاولة واحدة في وصف شيء واحد بدقة ولكنها غير دقيقة.',
+          weak: 'وصف غير دقيق.',
+        }),
+      },
+      {
+        id: 'language-safety',
+        name: 'سلامة اللغة',
+        description: 'السلامة الإملائية والنحوية ومراعاة علامات الترقيم.',
+        levels: createLevels({
+          excellent: 'أقل من خطأين.',
+          veryGood: 'من 2 إلى 4 أخطاء.',
+          good: 'من 4 إلى 8 أخطاء.',
+          weak: 'أكثر من ثمانية أخطاء.',
+        }),
+      },
+    ],
+  },
+  {
+    topicId: 'discussing-issue',
+    topicTitle: 'مناقشة قضية',
+    criteria: [
+      {
+        id: 'clarity',
+        name: 'وضوح عرض القضية',
+        description: 'بيان المشكلة أو القضية المطروحة للنقاش بشكل مفهوم.',
+        levels: createLegacyLevels({
+          excellent: 'يعرض القضية بوضوح تام مع تحديد أبعادها الأساسية.',
+          good: 'يعرض القضية بوضوح مقبول مع بعض النقص في التفاصيل.',
+          fair: 'عرض جزئي للقضية، يغيب عنه بعض الجوانب المهمة.',
+          weak: 'القضية غير واضحة للقارئ أو غير محددة.',
+        }),
+      },
+      {
+        id: 'reasons_effects',
+        name: 'عرض الأسباب والآثار',
+        description: 'ذكر أسباب القضية وآثارها المنطقية على الفرد والمجتمع.',
+        levels: createLegacyLevels({
+          excellent: 'يذكر أسبابا متعددة ومنطقية، ويربطها بآثار واضحة ومقنعة.',
+          good: 'يذكر عدة أسباب وآثار لكن بعض الروابط غير كاملة.',
+          fair: 'يذكر سببا أو سببين وآثارا عامة دون تفصيل كاف.',
+          weak: 'لا يذكر أسبابا واضحة أو آثارا مرتبطة بالقضية.',
+        }),
+      },
+      {
+        id: 'arguments',
+        name: 'قوة الحجج والأدلة',
+        description: 'استخدام حجج منطقية وأمثلة تدعم الرأي.',
+        levels: createLegacyLevels({
+          excellent: 'يستخدم حججا قوية مدعومة بأمثلة أو شواهد مناسبة.',
+          good: 'يستخدم حججا مقبولة مع قلة في الأمثلة.',
+          fair: 'حجج عامة وضعيفة، مع أمثلة بسيطة أو قليلة.',
+          weak: 'لا توجد حجج واضحة، النص مجرد رأي غير مدعوم.',
+        }),
+      },
+      {
+        id: 'objectivity',
+        name: 'الموضوعية واحترام الرأي الآخر',
+        description: 'طريقة عرض الرأي دون تجريح، مع قبول الرأي المقنع المخالف.',
+        levels: createLegacyLevels({
+          excellent: 'أسلوب هادئ ومتوازن، يحترم الآراء الأخرى ويعرضها بعدل.',
+          good: 'أسلوب جيد في الغالب مع بعض الميل لرأي واحد.',
+          fair: 'انحياز واضح مع احترام محدود للرأي الآخر.',
+          weak: 'أسلوب هجومي أو متعصب، لا يظهر أي تقبل لآراء مختلفة.',
+        }),
+      },
+      {
+        id: 'language',
+        name: 'سلامة اللغة والأسلوب',
+        description: 'سلامة التراكيب اللغوية والإملائية، وقدرة الطالب على صياغة جمل واضحة ومفهومة.',
+        levels: createLegacyLevels({
+          excellent: 'جمل سليمة في الغالب، وأخطاء قليلة جدا لا تؤثر في الفهم.',
+          good: 'بعض الأخطاء اللغوية والإملائية مع بقاء المعنى واضحا.',
+          fair: 'أخطاء ملحوظة تؤثر جزئيا في وضوح المعنى.',
+          weak: 'كثرة الأخطاء تجعل فهم النص صعبا.',
+        }),
+      },
+    ],
+  },
+  {
+    topicId: 'report-writing',
+    topicTitle: 'كيفية كتابة التقرير',
+    criteria: [
+      {
+        id: 'report-elements',
+        name: 'عناصر التقرير',
+        description: 'مدى اكتمال عناصر التقرير الأساسية: العنوان والمقدمة والعرض والخاتمة.',
+        levels: createLevels({
+          excellent: 'جميع العناصر: عنوان ومقدمة وعرض وخاتمة.',
+          veryGood: 'ذكر 3 عناصر.',
+          good: 'ذكر عنصرين فقط.',
+          weak: 'غياب معظم عناصر التقرير.',
+        }),
+      },
+      {
+        id: 'report-purpose',
+        name: 'تحديد الهدف',
+        description: 'مدى وضوح هدف التقرير في المقدمة.',
+        levels: createLevels({
+          excellent: 'تحديد الهدف في جملة واضحة في المقدمة.',
+          veryGood: 'هدف محدد في جملة غير واضحة تماما.',
+          good: 'ذكر هدف عام.',
+          weak: 'الهدف غير محدد.',
+        }),
+      },
+      {
+        id: 'report-information',
+        name: 'عرض المعلومات',
+        description: 'مدى تنظيم المعلومات ووضوحها أثناء العرض.',
+        levels: createLevels({
+          excellent: 'جميع المعلومات منظمة وواضحة.',
+          veryGood: 'معظم المعلومات منظمة.',
+          good: 'معلومات قليلة التنظيم.',
+          weak: 'عرض عشوائي ومعلومات غير منظمة.',
+        }),
+      },
+      {
+        id: 'report-sequencing',
+        name: 'تسلسل الأفكار',
+        description: 'مدى ترابط أفكار التقرير وتسلسلها المنطقي.',
+        levels: createLevels({
+          excellent: 'معظم الأفكار مرتبة منطقيا.',
+          veryGood: 'توجد 3 أفكار مترابطة على الأقل.',
+          good: 'توجد فكرتان على الأقل مرتبتان منطقيا.',
+          weak: 'أفكار غير مرتبة.',
+        }),
+      },
+      {
+        id: 'report-language',
+        name: 'السلامة اللغوية',
+        description: 'السلامة الإملائية والنحوية ومراعاة علامات الترقيم.',
+        levels: createLevels({
+          excellent: 'أقل من خطأين.',
+          veryGood: 'من 2 إلى 4 أخطاء.',
+          good: 'من 4 إلى 8 أخطاء.',
+          weak: 'أكثر من ثمانية أخطاء.',
+        }),
+      },
+    ],
+  },
+  {
+    topicId: 'free-expression',
+    topicTitle: 'التعبير الحر',
+    criteria: [
+      {
+        id: 'expression-structure',
+        name: 'وضوح عناصر التعبير',
+        description: 'مدى ظهور المقدمة والعرض والخاتمة بوضوح في النص.',
+        levels: createLevels({
+          excellent: 'وضوح جميع العناصر: المقدمة والعرض والخاتمة.',
+          veryGood: 'كتابة جمل مناسبة في عنصرين على الأقل.',
+          good: 'كتابة جمل قليلة وقصيرة جدا في عنصرين على الأقل.',
+          weak: 'غياب عنصرين من عناصر التعبير.',
+        }),
+      },
+      {
+        id: 'expression-imagery',
+        name: 'الصور الجمالية',
+        description: 'مدى استخدام الصور الجمالية في التعبير الحر.',
+        levels: createLevels({
+          excellent: 'استخدام صورتين جماليتين صحيحتين على الأقل.',
+          veryGood: 'صورة جمالية واحدة صحيحة على الأقل.',
+          good: 'صورة جمالية واحدة غير دقيقة.',
+          weak: 'لا توجد صور جمالية.',
+        }),
+      },
+      {
+        id: 'expression-sequencing',
+        name: 'الأفكار وتسلسلها',
+        description: 'مدى ترابط الأفكار وتنظيمها داخل النص.',
+        levels: createLevels({
+          excellent: 'معظم الأفكار مرتبة منطقيا.',
+          veryGood: 'توجد 3 أفكار مترابطة على الأقل.',
+          good: 'توجد فكرتان على الأقل مرتبتان منطقيا.',
+          weak: 'معظم الأفكار غير مرتبة.',
+        }),
+      },
+      {
+        id: 'expression-linking-tools',
+        name: 'أدوات الربط',
+        description: 'مدى استخدام أدوات الربط لربط الجمل والأفكار داخل التعبير الحر.',
+        levels: createLevels({
+          excellent: 'وجود 3 أدوات على الأقل.',
+          veryGood: 'وجود أداتين على الأقل.',
+          good: 'وجود أداة على الأقل.',
+          weak: 'لا توجد أدوات ربط.',
+        }),
+      },
+      {
+        id: 'expression-language',
+        name: 'السلامة اللغوية',
+        description: 'السلامة الإملائية والنحوية ومراعاة علامات الترقيم.',
+        levels: createLevels({
+          excellent: 'أقل من خطأين.',
+          veryGood: 'من 2 إلى 4 أخطاء.',
+          good: 'من 4 إلى 8 أخطاء.',
+          weak: 'أكثر من ثمانية أخطاء.',
+        }),
+      },
+    ],
+  },
+  {
+    topicId: 'dialogue-text',
+    topicTitle: 'النص الحواري',
+    criteria: [
+      {
+        id: 'dialogue-form',
+        name: 'شكل الحوار',
+        description: 'مدى ظهور النص في صورة حوار واضح بين طرفين أو أكثر.',
+        levels: createLevels({
+          excellent: 'على شكل حوار واضح: سؤال وجواب أو نقاش ورد عليه.',
+          veryGood: 'على شكل حوار في معظمه لكن الإجابات أو الردود غير واضحة تماما.',
+          good: 'على شكل حوار في مواضع قليلة.',
+          weak: 'على شكل سرد لا حوار.',
+        }),
+      },
+      {
+        id: 'dialogue-clarity',
+        name: 'وضوح الأفكار',
+        description: 'مدى وضوح المعلومات والأفكار المطروحة في الحوار.',
+        levels: createLevels({
+          excellent: 'المعلومات كلها واضحة.',
+          veryGood: 'المعلومات واضحة في معظمها.',
+          good: 'أفكار معظمها غير واضحة.',
+          weak: 'عرض عشوائي للأفكار وبشكل غير واضح.',
+        }),
+      },
+      {
+        id: 'dialogue-sequencing',
+        name: 'التسلسل',
+        description: 'مدى ترتيب جمل الحوار بشكل منطقي ومتدرج.',
+        levels: createLevels({
+          excellent: 'وجود 3 جمل فأكثر متسلسلة في الحوار منطقيا.',
+          veryGood: 'وجود 3 جمل على الأقل مرتبة منطقيا في الحوار.',
+          good: 'وجود جملتين على الأقل مرتبتين منطقيا في الحوار.',
+          weak: 'حوار غير مرتب.',
+        }),
+      },
+      {
+        id: 'dialogue-persuasion',
+        name: 'إقناع القارئ',
+        description: 'مدى دعم الحوار بأمثلة أو شواهد مناسبة للإقناع.',
+        levels: createLevels({
+          excellent: 'الاستشهاد بأكثر من مثال للإقناع.',
+          veryGood: 'الاستشهاد بمثال واحد للإقناع.',
+          good: 'محاولة الإقناع بمثال ولكن ليس في موضعه.',
+          weak: 'حوار غير مدعم بالحجج.',
+        }),
+      },
+      {
+        id: 'dialogue-language',
+        name: 'سلامة اللغة',
+        description: 'السلامة الإملائية والنحوية ومراعاة علامات الترقيم.',
+        levels: createLevels({
+          excellent: 'أقل من خطأين.',
+          veryGood: 'من 2 إلى 4 أخطاء.',
+          good: 'من 4 إلى 8 أخطاء.',
+          weak: 'أكثر من ثمانية أخطاء.',
+        }),
+      },
+    ],
+  },
+];
