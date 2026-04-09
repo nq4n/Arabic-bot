@@ -24,7 +24,6 @@ export default function Submissions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<string>('');
-  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
 
   const getDisplayName = (profile: { full_name: string | null; username: string }) => {
     return profile?.full_name || profile?.username || 'غير معروف';
@@ -65,14 +64,6 @@ export default function Submissions() {
 
     fetchSubmissions();
   }, []);
-
-  const uniqueStudents = Array.from(
-    new Map(
-      submissions
-        .filter(s => s.profiles?.username)
-        .map(s => [s.profiles?.username, { id: s.profiles?.username, name: getDisplayName(s.profiles) }])
-    ).values()
-  ).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
 
   const filteredSubmissions = submissions.filter(sub => {
     const matchLesson = selectedLesson === '' || sub.topic_title === selectedLesson;

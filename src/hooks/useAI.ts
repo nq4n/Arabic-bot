@@ -125,13 +125,15 @@ export const useAI = (systemInstruction: string) => {
         throw lastError || new Error('فشل الاتصال بجميع النماذج المتاحة');
       }
          
+      const finalBotResponse = botResponse;
+
       setHistory(prev => [
         ...prev,
         { role: 'user', parts: [{ text: message }] },
-        { role: 'model', parts: [{ text: botResponse }] }
+        { role: 'model', parts: [{ text: finalBotResponse }] }
       ]);
 
-      return botResponse;
+      return finalBotResponse;
 
     } catch (e: any) {
       console.error(e);
