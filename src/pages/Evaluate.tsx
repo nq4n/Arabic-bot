@@ -167,6 +167,17 @@ export default function Evaluate() {
     try {
       setIsEvaluating(true);
 
+      const lessonContext = `
+عنوان الدرس: ${topic.title}
+${topic.lesson.goals?.length ? `أهداف الدرس:\n${topic.lesson.goals.map((goal) => `- ${goal}`).join("\n")}` : ""}
+خطوات الدرس:
+${topic.lesson.steps.map((step) => `- ${step.title}: ${step.description}`).join("\n")}
+نموذج الكتابة:
+${topic.writingModel.content}
+أسئلة المراجعة:
+${topic.reviewQuestions.map((question) => `- ${question.question} | الإجابة: ${question.answer}`).join("\n")}
+      `.trim();
+
       const aiResult = await getAIAnalysis(writingValues, rubric, {
         topicTitle: topic.title,
         evaluationTask: topic.evaluationTask.description,
@@ -174,6 +185,7 @@ export default function Evaluate() {
         writingSections: topic.writingSections,
         studentName: userProfile?.full_name,
         studentGrade: userProfile?.grade,
+        lessonContext,
       });
 
       setIsConfirming(true);

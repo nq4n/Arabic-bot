@@ -1,7 +1,6 @@
 import type { WritingSection } from "../data/topics";
 import type { Rubric, RubricCriterion, RubricLevel } from "../data/rubrics";
 
-// This defines the shape of the JSON response we expect from the AI.
 export type AIResponseType = {
   score: number;
   feedback: string;
@@ -14,11 +13,6 @@ export type AIResponseType = {
   };
 };
 
-/**
- * Builds the system prompt to guide the AI\'s evaluation.
- * @param rubric The rubric for the specific topic.
- * @returns A string containing the detailed system prompt.
- */
 const buildSystemPrompt = (
   rubric: Rubric,
   context?: {
@@ -27,52 +21,57 @@ const buildSystemPrompt = (
     evaluationMode?: "writing" | "discussion" | "report" | "dialogue";
     studentName?: string;
     studentGrade?: string;
+    lessonContext?: string;
   }
 ): string => {
-  // Simplified and safer score calculation
   const criteriaList = rubric.criteria
-    .map((c: RubricCriterion) => {
-      // Use a default max score if 'excellent' is not found
-      const maxScore = c.levels.find((l: RubricLevel) => l.id === 'excellent')?.score || 5;
-      return `- ${c.name} (ID: ${c.id}, Max Score: ${maxScore})`;
+    .map((criterion: RubricCriterion) => {
+      const maxScore =
+        criterion.levels.find((level: RubricLevel) => level.id === "excellent")?.score ?? 5;
+      return `- ${criterion.name} (ID: ${criterion.id}, Max Score: ${maxScore})`;
     })
-    .join('\\n');
+    .join("\n");
 
   const criteriaDetails = rubric.criteria
     .map((criterion) => {
       const levels = criterion.levels
         .map((level) => `  - ${level.label} (${level.score}): ${level.description}`)
-        .join('\\n');
-      return `- ${criterion.name} (ID: ${criterion.id}): ${criterion.description}\\n${levels}`;
+        .join("\n");
+      return `- ${criterion.name} (ID: ${criterion.id}): ${criterion.description}\n${levels}`;
     })
-    .join('\\n');
+    .join("\n");
 
-  const totalScore = rubric.criteria.reduce((sum: number, c: RubricCriterion) => {
-    const maxScore = c.levels.find((l: RubricLevel) => l.id === 'excellent')?.score || 5;
+  const totalScore = rubric.criteria.reduce((sum: number, criterion: RubricCriterion) => {
+    const maxScore =
+      criterion.levels.find((level: RubricLevel) => level.id === "excellent")?.score ?? 5;
     return sum + maxScore;
   }, 0);
 
-  const firstId = rubric.criteria[0]?.id ?? 'criterion_1';
-  const secondId = rubric.criteria[1]?.id ?? 'criterion_2';
+  const criterionIds = rubric.criteria.map((criterion) => criterion.id).join(", ");
   const modeGuidance = context?.evaluationMode
-    ? `**طبيعة المهمة:** ركّز في التقييم على خصائص "${context.evaluationMode}"، مثل ${context.evaluationMode === "discussion"
-      ? "قوة الحجة، احترام الرأي الآخر، وترتيب الأفكار المنطقية."
-      : context.evaluationMode === "dialogue"
-        ? "طبيعية الحوار، وضوح الأصوات، وتسلسل تبادل الكلام."
-        : context.evaluationMode === "report"
-          ? "الوضوح والموضوعية والتنظيم وفق هيكل التقرير."
-          : "سلامة التعبير والأسلوب وتسلسل الأفكار."
-    }`
+    ? `**طبيعة المهمة:** ركّز في التقييم على خصائص "${context.evaluationMode}"، مثل ${
+        context.evaluationMode === "discussion"
+          ? "قوة الحجة، احترام الرأي الآخر، وترتيب الأفكار المنطقي."
+          : context.evaluationMode === "dialogue"
+            ? "طبيعية الحوار، وضوح الأصوات، وتسلسل تبادل الكلام."
+            : context.evaluationMode === "report"
+              ? "الوضوح والموضوعية والتنظيم وفق هيكل التقرير."
+              : "سلامة التعبير، الأسلوب، وتسلسل الأفكار."
+      }`
     : "";
 
   return `
-أنت معلم لغة عربية خبير ومحترف في تقويم الكتابة. مهمتك هي تقييم النص الذي يقدمه المستخدم بناءً على المعايير المحددة وإرجاع النتيجة بتنسيق JSON حصريًا.
+أنت معلم لغة عربية خبير في تقويم الكتابة المدرسية.
+مهمتك هي تقييم نص الطالب تقييمًا موضوعيًا اعتمادًا على rubric التقييم المرفق فقط، ثم إرجاع النتيجة بصيغة JSON صالحة فقط.
+
+لا تستخدم أي معيار غير موجود في rubric، ولا تمنح درجات عامة أو انطباعية. كل درجة يجب أن ترتبط مباشرة بمعيار محدد ومستوى أداء مناسب من المستويات الواردة فيه.
 
 ${context?.topicTitle ? `**عنوان الدرس:** ${context.topicTitle}` : ""}
 ${context?.evaluationTask ? `**مهمة التقييم الخاصة بالدرس:** ${context.evaluationTask}` : ""}
 ${modeGuidance}
 ${context?.studentName ? `**اسم الطالب:** ${context.studentName}` : ""}
 ${context?.studentGrade ? `**الصف الدراسي:** ${context.studentGrade}` : ""}
+${context?.lessonContext ? `**مرجع الدرس المساند:**\n${context.lessonContext}` : ""}
 
 **معايير التقييم (المجموع الكلي المحتمل: ${totalScore} نقطة):**
 ${criteriaList}
@@ -80,29 +79,36 @@ ${criteriaList}
 **تفاصيل المعايير ومستوياتها:**
 ${criteriaDetails}
 
-**تنسيق الإخراج المطلوب (JSON فقط):**
-الرجاء إرجاع كائن JSON صالح يحتوي على الحقول التالية:
-- \`score\`: رقم يمثل مجموع النقاط التي حصل عليها الطالب (من ${totalScore}).
-- \`feedback\`: سلسلة نصية تحتوي على ملاحظات عامة وبناءة حول النص، بأسلوب إنساني ودود يذكر نقاط القوة ثم جوانب التحسين.
-- \`suggestions\`: مصفوفة من السلاسل النصية، كل سلسلة هي اقتراح لتحسين النص.
-- \`rubric_breakdown\`: كائن (object) حيث كل مفتاح هو \`id\` أحد المعايير (مثل '${firstId}', '${secondId}', إلخ). يجب أن تكون قيمة كل مفتاح كائنًا آخر يحتوي على:
-  - \`score\`: رقم يمثل النقاط الممنوحة لهذا المعيار.
-  - \`feedback\`: سلسلة نصية قصيرة تبرر النقاط الممنوحة لهذا المعيار المحدد مع الإشارة إلى مستوى الأداء الأقرب (مثل ممتاز/جيد/مقبول/ضعيف).
+**المفاتيح الإلزامية داخل rubric_breakdown:**
+${criterionIds}
 
-**قواعد مهمة جداً:**
-1.  **مخرج JSON فقط، بدون نص إضافي:** يجب أن تكون الاستجابة بأكملها عبارة عن كائن JSON صالح حصراً. لا تقم بإضافة أي نص تمهيدي، تفسيرات، أو أي محتوى آخر قبل أو بعد الـ JSON. لا تستخدم علامات markdown مثل \`\`\`json.
-2.  **دقة الحساب:** يجب أن يكون الحقل \`score\` الإجمالي هو المجموع الدقيق لجميع حقول \`score\` داخل \`rubric_breakdown\`.
-3.  **التقييم الموضوعي:** قم بتقييم النص بشكل عادل وموضوعي بناءً على المعايير المقدمة.
-4.  **الأسلوب التعليمي والواضح:** استخدم لغة بشرية واضحة، بناءة، ومشجعة. قدّم ملاحظات تفصيلية ومرتبطة مباشرة بالمعايير، مع ذكر جوانب القوة أولاً ثم اقتراح التحسينات بأسلوب المعلم الخبير.
-5.  **التقييم الواقعي للمحتوى:** إذا كان النص المقدم قصيراً جداً، أو غير مكتمل، أو لا يتصل بالمهمة المطلوبة، يجب أن ينعكس ذلك بوضوح في الدرجات الممنوحة وفي الملاحظات، حيث يجب أن تكون الدرجات منخفضة بشكل مناسب. تذكر أنك تقوم بالتقييم كما يفعل معلم بشري.
+**تعليمات التقييم:**
+1. اقرأ نص الطالب كاملًا قبل منح أي درجة.
+2. قيّم كل معيار على حدة وبالاعتماد على rubric فقط.
+3. اختر الدرجة الأقرب من الدرجات المعرفة داخل كل معيار، ولا تخترع درجة غير منطقية بالنسبة لمستويات ذلك المعيار.
+4. اجعل feedback الخاص بكل معيار قصيرًا ودقيقًا، ويذكر سبب الدرجة بلغة معلم واضحة.
+5. اجعل feedback العام متوازنًا: نقاط قوة أولًا، ثم جوانب التحسين.
+6. إذا كان النص قصيرًا جدًا أو ناقصًا أو بعيدًا عن المهمة، فيجب أن ينعكس ذلك بوضوح في الدرجات والملاحظات.
+7. لا تعتمد على معلومات غير موجودة في نص الطالب إلا بوصفها متطلبات واردة في rubric أو مرجع الدرس.
+
+**تنسيق الإخراج المطلوب (JSON فقط):**
+أرجع كائن JSON صالح يحتوي على الحقول التالية:
+- \`score\`: رقم يمثل مجموع النقاط النهائية من ${totalScore}.
+- \`feedback\`: ملاحظات عامة موجزة ومفيدة للطالب.
+- \`suggestions\`: مصفوفة من الاقتراحات العملية المحددة لتحسين النص.
+- \`rubric_breakdown\`: كائن يحتوي على جميع معرفات المعايير الإلزامية المذكورة أعلاه. قيمة كل معيار يجب أن تكون:
+  - \`score\`: درجة هذا المعيار.
+  - \`feedback\`: سبب موجز للدرجة مع الإشارة إلى مستوى الأداء الأقرب.
+
+**قواعد صارمة:**
+1. يجب أن تكون الاستجابة كلها JSON صالح فقط، دون أي نص قبلها أو بعدها.
+2. يجب أن يحتوي \`rubric_breakdown\` على جميع المعايير، دون حذف أي معيار.
+3. يجب أن يساوي الحقل \`score\` مجموع درجات جميع المعايير داخل \`rubric_breakdown\`.
+4. لا تستخدم Markdown داخل JSON.
+5. لا تضف حقولًا جديدة غير مطلوبة.
   `.trim();
 };
 
-/**
- * Combines multiple writing fields into a single string for the AI.
- * @param writingValues An object containing the text from different writing sections.
- * @returns A single formatted string.
- */
 const combineWritingValues = (
   writingValues: { [key: string]: string },
   sections?: WritingSection[]
@@ -111,44 +117,41 @@ const combineWritingValues = (
     .map(([key, value]) => {
       const sectionTitle = sections?.find((section) => section.id === key)?.title;
       const label = sectionTitle ? `${sectionTitle} (${key})` : key.toUpperCase();
-      return `--- ${label} ---\\n${value}`;
+      const normalizedValue = value.trim() ? value.trim() : "[Empty]";
+      return `--- ${label} ---\n${normalizedValue}`;
     })
-    .join('\\n\\n');
+    .join("\n\n");
 };
 
-/**
- * Calls the OpenAI API to get a rubric-based evaluation for the given text.
- * @param writingValues The student\'s written text.
- * @param rubric The rubric to evaluate against.
- * @returns A promise that resolves to the AI\'s structured feedback.
- */
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
   maxRetries: number = 5
 ): Promise<Response> {
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const response = await fetch(url, options);
-    
+
     if (response.ok) {
       return response;
     }
-    
+
     if (response.status === 429) {
-      const retryAfter = response.headers.get('retry-after');
-      const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.min(Math.pow(2, attempt) * 2000, 30000);
+      const retryAfter = response.headers.get("retry-after");
+      const delay = retryAfter
+        ? parseInt(retryAfter, 10) * 1000
+        : Math.min(Math.pow(2, attempt) * 2000, 30000);
       console.log(`Rate limited. Retry after ${delay}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      lastError = new Error('Rate limit exceeded');
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      lastError = new Error("Rate limit exceeded");
       continue;
     }
-    
+
     return response;
   }
-  
-  throw lastError || new Error('Max retries exceeded');
+
+  throw lastError || new Error("Max retries exceeded");
 }
 
 export const getAIAnalysis = async (
@@ -161,73 +164,79 @@ export const getAIAnalysis = async (
     writingSections?: WritingSection[];
     studentName?: string;
     studentGrade?: string;
+    lessonContext?: string;
   }
 ): Promise<AIResponseType> => {
   const apiKey = import.meta.env.VITE_REVIEW_API_KEY;
-  const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+  const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
   if (!apiKey) {
-    console.error('Review API key is missing.');
-    throw new Error('VITE_REVIEW_API_KEY is not configured in your .env file.');
+    console.error("Review API key is missing.");
+    throw new Error("VITE_REVIEW_API_KEY is not configured in your .env file.");
   }
 
   const systemPrompt = buildSystemPrompt(rubric, context);
-  const userContent = combineWritingValues(writingValues, context?.writingSections);
+  const studentSubmission = combineWritingValues(writingValues, context?.writingSections);
+  const userContent = `
+قيّم النص التالي وفق rubric فقط.
+
+نص الطالب:
+${studentSubmission}
+  `.trim();
 
   try {
     const response = await fetchWithRetry(API_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'http://localhost:5173',
-        'X-Title': 'Arabic Writing Platform',
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:5173",
+        "X-Title": "Arabic Writing Platform",
       },
       body: JSON.stringify({
-        model: 'nvidia/nemotron-nano-12b-v2-vl:free',
+        model: "openai/gpt-5.4-mini",
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent },
         ],
-        temperature: 0.4,
-      })
+        temperature: 0.2,
+      }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('API Error:', errorData);
-      throw new Error('Failed to connect to AI service');
+      console.error("API Error:", errorData);
+      throw new Error("Failed to connect to AI service");
     }
 
     const data = await response.json();
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error('Invalid response from AI service');
+      throw new Error("Invalid response from AI service");
     }
 
     const messageContent = data.choices[0].message.content;
 
-    // Robustly handle the AI response, which might be a string or an object
     let content: AIResponseType;
-    if (typeof messageContent === 'string') {
+    if (typeof messageContent === "string") {
       try {
         content = JSON.parse(messageContent);
       } catch (e) {
         console.error("Failed to parse AI response content:", e);
         throw new Error("The AI returned an invalid JSON response.");
       }
-    } else if (typeof messageContent === 'object' && messageContent !== null) {
-      content = messageContent; // It's already an object
+    } else if (typeof messageContent === "object" && messageContent !== null) {
+      content = messageContent;
     } else {
       console.error("Unexpected AI response format:", messageContent);
       throw new Error("The AI returned an unexpected response format.");
     }
 
     return content;
-
   } catch (error) {
-    console.error('Failed to get AI analysis:', error);
-    // Provide a more user-friendly error message
-    throw new Error('The AI evaluation process failed. Please check your connection or API key and try again.');
+    console.error("Failed to get AI analysis:", error);
+    throw new Error(
+      "The AI evaluation process failed. Please check your connection or API key and try again."
+    );
   }
 };
