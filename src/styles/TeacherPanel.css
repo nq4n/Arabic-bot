@@ -41,6 +41,38 @@
   margin-top: 1rem;
 }
 
+.lesson-visibility-semesters {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.lesson-visibility-semester {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.lesson-semester-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.6rem;
+}
+
+.lesson-semester-header span {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.lesson-semester-header h3 {
+  margin: 0;
+  color: var(--primary);
+  font-size: 1.15rem;
+}
+
 .topic-grid-item {
   background-color: var(--bg-card); /* Lighter background for each topic card */
   border-radius: 0.5rem;

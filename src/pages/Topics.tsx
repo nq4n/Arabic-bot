@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
-import { topics } from "../data/topics";
+import { topics, topicsBySemester } from "../data/topics";
 import { supabase } from "../supabaseClient";
 import { getStudentTracking } from "../utils/studentTracking";
 import { calculatePointsFromData } from "../utils/pointCalculation";
@@ -47,6 +47,18 @@ export default function Topics() {
       "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1200&q=80",
     "dialogue-text":
       "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1200&q=80",
+    "paragraph-writing":
+      "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80",
+    "topic-planning":
+      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
+    "summarization":
+      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80",
+    "biography-writing":
+      "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1200&q=80",
+    "book-presentation":
+      "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=1200&q=80",
+    "storytelling":
+      "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=1200&q=80",
   };
 
   const [profileName, setProfileName] = useState<string | null>(null);
@@ -240,6 +252,51 @@ export default function Topics() {
     return Math.min(100, Math.max(0, (progress / range) * 100));
   }, [currentLevel, nextLevel, totalPoints]);
 
+  const renderTopicCard = (topic: (typeof topics)[number]) => {
+    const lessonCompleted = progressMap[topic.id]?.lessonCompleted ?? false;
+    const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
+    const hasRating = submissionStatus[topic.id]?.hasRating ?? false;
+    const isLessonActive = lessonVisibility[topic.id]?.lesson ?? false;
+    const topicImage = topicImages[topic.id];
+
+    return (
+      <div
+        key={topic.id}
+        className="card topic-card"
+        style={
+          topicImage
+            ? ({ ["--topic-image" as string]: `url(${topicImage})` } as CSSProperties)
+            : undefined
+        }
+        role="img"
+        aria-label={`بطاقة موضوع ${topic.title}`}
+      >
+        <div className="card-content">
+          <h2>{topic.title}</h2>
+          <p>{topic.description}</p>
+          <div className="topic-status-summary">
+            <span className={lessonCompleted ? "done" : ""}>الدرس</span>
+            <span className={hasSubmission ? "done" : ""}>التسليم</span>
+            <span className={hasRating ? "done" : ""}>التقييم</span>
+          </div>
+        </div>
+        <div className="card-actions">
+          <button
+            className="button"
+            onClick={() => navigate(`/topic/${topic.id}`)}
+            disabled={!isLessonActive}
+            aria-disabled={!isLessonActive}
+          >
+            عرض الدرس
+          </button>
+          {!isLessonActive && (
+            <span className="topic-disabled-note">غير متاح حاليًا</span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="topics-page" dir="rtl">
       <header className="topics-header page-header">
@@ -342,68 +399,41 @@ export default function Topics() {
         )}
       </section>
 
-      <div className="topics-grid" aria-busy={isLoading}>
+      <div className="semester-topic-sections" aria-busy={isLoading}>
         {isLoading
-          ? Array.from({ length: Math.min(5, topics.length) }).map((_, index) => (
-              <div key={`topic-card-skeleton-${index}`} className="card topic-card skeleton-card">
-                <div className="card-content">
-                  <div className="skeleton skeleton-line skeleton-w-60" />
-                  <div className="skeleton skeleton-line skeleton-w-80" />
-                  <div className="topic-status-summary">
-                    <span className="skeleton skeleton-line skeleton-w-30" />
-                    <span className="skeleton skeleton-line skeleton-w-30" />
-                    <span className="skeleton skeleton-line skeleton-w-30" />
-                  </div>
-                </div>
-                <div className="card-actions">
-                  <div className="skeleton skeleton-line skeleton-w-30" />
-                </div>
-              </div>
-            ))
-          : topics.map((topic) => {
-              const lessonCompleted = progressMap[topic.id]?.lessonCompleted ?? false;
-              const hasSubmission = submissionStatus[topic.id]?.hasSubmission ?? false;
-              const hasRating = submissionStatus[topic.id]?.hasRating ?? false;
-              const isLessonActive = lessonVisibility[topic.id]?.lesson ?? false;
-              const topicImage = topicImages[topic.id];
-
-              return (
-                <div
-                  key={topic.id}
-                  className="card topic-card"
-                  style={
-                    topicImage
-                      ? ({ ["--topic-image" as string]: `url(${topicImage})` } as CSSProperties)
-                      : undefined
-                  }
-                  role="img"
-                  aria-label={`بطاقة موضوع ${topic.title}`}
-                >
-                  <div className="card-content">
-                    <h2>{topic.title}</h2>
-                    <p>{topic.description}</p>
-                    <div className="topic-status-summary">
-                      <span className={lessonCompleted ? "done" : ""}>الدرس</span>
-                      <span className={hasSubmission ? "done" : ""}>التسليم</span>
-                      <span className={hasRating ? "done" : ""}>التقييم</span>
+          ? (
+              <div className="topics-grid">
+                {Array.from({ length: Math.min(5, topics.length) }).map((_, index) => (
+                  <div key={`topic-card-skeleton-${index}`} className="card topic-card skeleton-card">
+                    <div className="card-content">
+                      <div className="skeleton skeleton-line skeleton-w-60" />
+                      <div className="skeleton skeleton-line skeleton-w-80" />
+                      <div className="topic-status-summary">
+                        <span className="skeleton skeleton-line skeleton-w-30" />
+                        <span className="skeleton skeleton-line skeleton-w-30" />
+                        <span className="skeleton skeleton-line skeleton-w-30" />
+                      </div>
+                    </div>
+                    <div className="card-actions">
+                      <div className="skeleton skeleton-line skeleton-w-30" />
                     </div>
                   </div>
-                  <div className="card-actions">
-                    <button
-                      className="button"
-                      onClick={() => navigate(`/topic/${topic.id}`)}
-                      disabled={!isLessonActive}
-                      aria-disabled={!isLessonActive}
-                    >
-                      عرض الدرس
-                    </button>
-                    {!isLessonActive && (
-                      <span className="topic-disabled-note">غير متاح حاليًا</span>
-                    )}
-                  </div>
+                ))}
+              </div>
+            )
+          : ([1, 2] as const).map((semester) => (
+              <section key={semester} className="semester-topic-section">
+                <div className="semester-topic-header">
+                  <span>الفصل الدراسي {semester}</span>
+                  <h2>
+                    {semester === 1 ? "موضوعات الفصل الأول" : "موضوعات الفصل الثاني"}
+                  </h2>
                 </div>
-              );
-            })}
+                <div className="topics-grid">
+                  {topicsBySemester[semester].map((topic) => renderTopicCard(topic))}
+                </div>
+              </section>
+            ))}
       </div>
     </div>
   );

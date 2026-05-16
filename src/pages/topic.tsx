@@ -253,24 +253,15 @@ export default function Topic() {
 
   const hasInteractiveActivity = Boolean(topic.interactiveActivity);
 
-  const tutorialTopicIds = new Set([
-    "landscape-description",
-    "report-writing",
-    "discussing-issue",
-    "dialogue-text",
-    "free-expression",
-  ]);
-  const hasTutorial = tutorialTopicIds.has(topic.id);
-  const interactiveStartPath = hasTutorial ? `/activity/${topic.id}/tutorial` : `/activity/${topic.id}`;
-
-  const activityStartPath =
-    isDiscussingIssue || isDialogueText ? `/activity/${topic.id}` : interactiveStartPath;
+  const activityStartPath = `/activity/${topic.id}`;
 
   const activityButtonLabel = isDiscussingIssue
-    ? "الانضمام إلى المناقشة"
+    ? "فتح صفحة المناقشة"
     : isDialogueText
-      ? "بدء الحوار الثنائي"
-      : topic.interactiveActivity?.title ?? "بدء النشاط";
+      ? "فتح صفحة الحوار"
+      : "فتح صفحة النشاط";
+  const activityItems = topic.activities?.list ?? [];
+  const hasActivityItems = activityItems.length > 0;
 
   if (!isLessonActive) {
     return (
@@ -400,7 +391,7 @@ export default function Topic() {
               </div>
             </section>
 
-            {(hasInteractiveActivity || isDiscussingIssue || isDialogueText) && (
+            {(hasActivityItems || hasInteractiveActivity || isDiscussingIssue || isDialogueText) && (
               <section className="topic-section card sequential-section">
                 <h2 className="section-title">
                   <i className="fas fa-play icon"></i> {topic.activities.header}
@@ -414,21 +405,44 @@ export default function Topic() {
                       : "ابدأ النشاط وأكمل جميع المراحل."}
                 </p>
 
+                {hasActivityItems && (
+                  <ul className="activities-list lesson-activities-list">
+                    {activityItems.map((activity) => (
+                      <li key={`${topic.id}-activity-${activity.activity}`}>
+                        <div className="activity-item lesson-activity-item">
+                          <div className="activity-item-header">
+                            <span className="activity-number">{activity.activity}</span>
+                            <i className={`${activity.icon} activity-icon`} aria-hidden="true"></i>
+                            <div>
+                              {activity.title && (
+                                <h3 className="activity-title">{activity.title}</h3>
+                              )}
+                              <p className="activity-text">{activity.description}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
                 {!isActivityActive && <p className="muted-note">قسم الأنشطة غير متاح حاليًا.</p>}
 
-                <div className="activity-cta">
-                  <button
-                    type="button"
-                    className="button button-primary"
-                    onClick={() => navigate(activityStartPath)}
-                    disabled={!isActivityActive}
-                    aria-disabled={!isActivityActive}
-                    title={!isActivityActive ? "النشاط غير متاح حاليًا" : undefined}
-                  >
-                    <i className="fas fa-play"></i>
-                    {activityButtonLabel}
-                  </button>
-                </div>
+                {(hasActivityItems || hasInteractiveActivity || isDiscussingIssue || isDialogueText) && (
+                  <div className="activity-cta">
+                    <button
+                      type="button"
+                      className="button button-primary"
+                      onClick={() => navigate(activityStartPath)}
+                      disabled={!isActivityActive}
+                      aria-disabled={!isActivityActive}
+                      title={!isActivityActive ? "النشاط غير متاح حاليًا" : undefined}
+                    >
+                      <i className="fas fa-play"></i>
+                      {activityButtonLabel}
+                    </button>
+                  </div>
+                )}
               </section>
             )}
           </div>

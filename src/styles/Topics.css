@@ -17,6 +17,39 @@
   align-items: stretch;
 }
 
+.semester-topic-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+}
+
+.semester-topic-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.semester-topic-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+}
+
+.semester-topic-header span {
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.semester-topic-header h2 {
+  margin: 0;
+  color: var(--primary-color);
+  font-size: 1.35rem;
+}
+
 .topics-overview {
   margin-bottom: 2rem;
   display: flex;
@@ -263,6 +296,11 @@
 
   .topics-grid {
     grid-template-columns: 1fr;
+  }
+
+  .semester-topic-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .topic-card {

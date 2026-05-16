@@ -26,6 +26,186 @@ type ActivitySubmissionRow = {
   status: string | null;
 };
 
+type ActivityQuickSteps = {
+  assemble: string[];
+  sceneChoice: string[];
+};
+
+type ActivityCopy = {
+  submissionLabel: string;
+  partsTitle: string;
+  finalTitle: string;
+  partLabel: string;
+  finalPlaceholder: string;
+  sceneHeading: string;
+  sceneCounterLabel: string;
+  assembleHint: string;
+  sceneHint: string;
+  sceneDropHint: string;
+  sceneOptionsTitle: string;
+  sceneOptionsHint: string;
+  selectionRequiredError: string;
+  quickIntro: string;
+  quickSteps: ActivityQuickSteps;
+};
+
+type ActivityCopyOverride = Partial<Omit<ActivityCopy, "quickSteps">> & {
+  quickSteps?: Partial<ActivityQuickSteps>;
+};
+
+const defaultActivityCopy: ActivityCopy = {
+  submissionLabel: "النشاط",
+  partsTitle: "أجزاء النشاط",
+  finalTitle: "النص النهائي",
+  partLabel: "جزء",
+  finalPlaceholder: "اكتب النص هنا...",
+  sceneHeading: "اختيار المشهد",
+  sceneCounterLabel: "المشهد",
+  assembleHint: "رتّب الأجزاء لتكوين تسلسل منطقي.",
+  sceneHint: "اختر الوصف الأنسب لكل مشهد ثم كوّن مسودة متكاملة.",
+  sceneDropHint: "اسحب الوصف وضعه هنا",
+  sceneOptionsTitle: "الخيارات",
+  sceneOptionsHint: "اسحب للاختيار",
+  selectionRequiredError: "يرجى اختيار وصف لكل مشهد قبل إنشاء المسودة.",
+  quickIntro: "اتبع هذه الخطوات القصيرة لإكمال النشاط.",
+  quickSteps: {
+    assemble: [
+      "رتّب الأجزاء بالترتيب الصحيح.",
+      "عدّل الصياغة لتحسين الترابط بين الفقرات.",
+      "أنشئ المسودة ثم أرسلها.",
+    ],
+    sceneChoice: [
+      "اختر وصفًا مناسبًا لكل مشهد.",
+      "جمّع اختياراتك لتكوين مسودة كاملة.",
+      "راجع الوصف ثم أرسله.",
+    ],
+  },
+};
+
+const activityCopyByTopic: Record<string, ActivityCopyOverride> = {
+  "paragraph-writing": {
+    submissionLabel: "الفقرة",
+    partsTitle: "بطاقات الفقرة",
+    finalTitle: "كتابة الفقرة النهائية",
+    partLabel: "بطاقة",
+    finalPlaceholder: "اكتب فقرتك النهائية هنا...",
+    assembleHint: "رتّب البطاقات من الفكرة الرئيسة إلى التفاصيل ثم الجملة الختامية.",
+    quickSteps: {
+      assemble: [
+        "ابدأ ببطاقة الفكرة الرئيسة.",
+        "ضع الجمل الداعمة بترتيب منطقي مع أدوات الربط.",
+        "أنشئ مسودة الفقرة ثم حسّن ترابطها قبل الإرسال.",
+      ],
+    },
+  },
+  "topic-planning": {
+    submissionLabel: "تصميم الموضوع",
+    partsTitle: "بطاقات التصميم",
+    finalTitle: "كتابة تصميم الموضوع",
+    partLabel: "بطاقة",
+    finalPlaceholder: "اكتب تصميم الموضوع هنا...",
+    assembleHint: "رتّب عناصر التصميم: مقدمة، أفكار رئيسة، شواهد، خاتمة.",
+    quickSteps: {
+      assemble: [
+        "ضع المقدمة أولًا لتحديد مدخل الموضوع.",
+        "رتّب الأفكار الرئيسة مع الشواهد المناسبة.",
+        "أغلق التصميم بخاتمة تلخص النتيجة أو الرأي.",
+      ],
+    },
+  },
+  summarization: {
+    submissionLabel: "التلخيص",
+    partsTitle: "اختيارات التلخيص",
+    finalTitle: "كتابة التلخيص النهائي",
+    partLabel: "اختيار",
+    finalPlaceholder: "اكتب التلخيص النهائي هنا...",
+    sceneHeading: "اختيار أفضل تلخيص",
+    sceneCounterLabel: "النص",
+    sceneHint: "اقرأ كل نص، ثم اختر التلخيص الذي يحافظ على الفكرة الأساسية ويحذف التفاصيل الزائدة.",
+    sceneDropHint: "اسحب أفضل تلخيص وضعه هنا",
+    sceneOptionsTitle: "التلخيصات المقترحة",
+    sceneOptionsHint: "اسحب أفضل تلخيص",
+    selectionRequiredError: "يرجى اختيار أفضل تلخيص لكل نص قبل إنشاء المسودة.",
+    quickSteps: {
+      sceneChoice: [
+        "اقرأ النص القصير وحدد فكرته الأساسية.",
+        "اختر التلخيص الذي يحافظ على المعنى ويحذف التفاصيل الزائدة.",
+        "اجمع اختياراتك ثم أعد صياغتها بتعبيرك.",
+      ],
+    },
+  },
+  "biography-writing": {
+    submissionLabel: "ترجمة العلم",
+    partsTitle: "بطاقات ترجمة الشخصية",
+    finalTitle: "كتابة ترجمة العلم",
+    partLabel: "بطاقة",
+    finalPlaceholder: "اكتب ترجمة الشخصية هنا...",
+    assembleHint: "رتّب البطاقة من التعريف بالشخصية إلى الإنجاز والأثر.",
+    quickSteps: {
+      assemble: [
+        "ابدأ بتعريف موجز بالشخصية.",
+        "رتّب الإنجازات والأحداث المهمة زمنيًا أو منطقيًا.",
+        "اختم ببيان أثر الشخصية في العلم أو المجتمع.",
+      ],
+    },
+  },
+  "book-presentation": {
+    submissionLabel: "عرض الكتاب",
+    partsTitle: "عناصر عرض الكتاب",
+    finalTitle: "كتابة عرض الكتاب",
+    partLabel: "عنصر",
+    finalPlaceholder: "اكتب عرض الكتاب هنا...",
+    sceneHeading: "منصة عرض الكتاب",
+    sceneCounterLabel: "محطة",
+    sceneHint: "اختر العنصر المناسب لكل محطة حتى تبني عرضًا مرتبًا عن الكتاب.",
+    sceneDropHint: "اسحب عنصر العرض المناسب",
+    sceneOptionsTitle: "عناصر العرض",
+    sceneOptionsHint: "اسحب العنصر",
+    selectionRequiredError: "يرجى اختيار عنصر مناسب لكل محطة في عرض الكتاب.",
+    quickSteps: {
+      sceneChoice: [
+        "ابدأ ببطاقة التعريف بالكتاب.",
+        "اختر العنصر الذي يلخص محتوى الكتاب دون إطالة.",
+        "أضف رأيك الشخصي في النهاية ليكتمل العرض.",
+      ],
+    },
+  },
+  storytelling: {
+    submissionLabel: "القصة",
+    partsTitle: "مسار القصة",
+    finalTitle: "كتابة القصة",
+    partLabel: "حدث",
+    finalPlaceholder: "اكتب قصتك هنا...",
+    sceneHeading: "اختيار مسار القصة",
+    sceneCounterLabel: "مرحلة",
+    sceneHint: "اختر الحدث الأنسب لكل مرحلة حتى يتكون مسار قصصي واضح ومشوق.",
+    sceneDropHint: "اسحب الحدث المناسب لمسار القصة",
+    sceneOptionsTitle: "اختيارات الحبكة",
+    sceneOptionsHint: "اسحب الحدث",
+    selectionRequiredError: "يرجى اختيار حدث مناسب لكل مرحلة قبل إنشاء القصة.",
+    quickSteps: {
+      sceneChoice: [
+        "اختر بداية تعرّف بالمكان والشخصية.",
+        "حدد حدثًا يخلق مشكلة أو توترًا في القصة.",
+        "اختر نهاية تحل المشكلة وتترك أثرًا واضحًا.",
+      ],
+    },
+  },
+};
+
+const getActivityCopy = (topicId: string): ActivityCopy => {
+  const override = activityCopyByTopic[topicId];
+
+  return {
+    ...defaultActivityCopy,
+    ...override,
+    quickSteps: {
+      ...defaultActivityCopy.quickSteps,
+      ...override?.quickSteps,
+    },
+  };
+};
+
 export default function ReportAssemblyActivity() {
   const { topicId } = useParams<{ topicId: string }>();
   const navigate = useNavigate();
@@ -289,6 +469,7 @@ export default function ReportAssemblyActivity() {
   const isReportTopic = topic.id === "report-writing";
   const isLandscapeTopic = topic.id === "landscape-description";
   const isFreeExpressionTopic = topic.id === "free-expression";
+  const activityCopy = getActivityCopy(topic.id);
   const hasTutorial = isLandscapeTopic || isReportTopic;
   const topicPrompts =
     isFreeExpressionTopic ? [] : topic.writingPrompts?.list ?? [];
@@ -299,33 +480,37 @@ export default function ReportAssemblyActivity() {
       ? "الوصف"
       : isFreeExpressionTopic
         ? "التعبير"
-        : "النشاط";
+        : activityCopy.submissionLabel;
   const partsTitle = isReportTopic
     ? "أجزاء التقرير"
     : isLandscapeTopic
       ? "جمل الوصف"
       : isFreeExpressionTopic
         ? "أفكار التعبير"
-        : "أجزاء النشاط";
+        : activityCopy.partsTitle;
   const finalTitle = isReportTopic
     ? "كتابة التقرير"
     : isLandscapeTopic
       ? "كتابة الوصف"
       : isFreeExpressionTopic
         ? "كتابة التعبير"
-        : "النص النهائي";
+        : activityCopy.finalTitle;
   const finalPrompt = isFreeExpressionTopic
     ? "اكتب تعبيرك الحر بالاعتماد على أحد المحفزات."
     : interactiveActivity.prompt;
-  const partLabel = isReportTopic ? "فقرة" : "جزء";
+  const partLabel = isReportTopic ? "فقرة" : activityCopy.partLabel;
   const finalPlaceholder = isReportTopic
     ? "اكتب التقرير النهائي هنا..."
     : isLandscapeTopic
       ? "اكتب وصفك هنا..."
       : isFreeExpressionTopic
         ? "اكتب تعبيرك هنا..."
-        : "اكتب النص هنا...";
-  const sceneHeading = isLandscapeTopic ? "اختيار الوصف" : "اختيار المشهد";
+        : activityCopy.finalPlaceholder;
+  const sceneHeading = isLandscapeTopic ? "اختيار الوصف" : activityCopy.sceneHeading;
+  const quickSteps =
+    interactiveActivity.type === "assemble"
+      ? activityCopy.quickSteps.assemble
+      : activityCopy.quickSteps.sceneChoice;
 
   const formatTime = (value: number | null) => {
     if (value === null) return null;
@@ -472,7 +657,7 @@ export default function ReportAssemblyActivity() {
   const handleGenerateFromSelections = () => {
     if (!isSceneChoice || scenes.length === 0) return;
     if (!hasAllSelections) {
-      setError("يرجى اختيار وصف لكل مشهد قبل إنشاء المسودة.");
+      setError(activityCopy.selectionRequiredError);
       return;
     }
     setError(null);
@@ -620,7 +805,7 @@ export default function ReportAssemblyActivity() {
       <ConfirmationDialog
         isOpen={isConfirmationOpen}
         title={`تأكيد إرسال ${submissionLabel}`}
-        message="هل أنت متأكد من أنك تريد إرسال هذا النشاط؟"
+        message={`هل أنت متأكد من أنك تريد إرسال ${submissionLabel}؟`}
         onConfirm={() => {
           setIsConfirmationOpen(false);
           handleConfirmSubmit();
@@ -653,21 +838,13 @@ export default function ReportAssemblyActivity() {
         <section className="activity-instructions card">
           <div className="activity-instructions-header">
             <h3>خطوات سريعة</h3>
-            <p>اتبع هذه الخطوات القصيرة لإكمال النشاط.</p>
+            <p>{activityCopy.quickIntro}</p>
           </div>
-          {interactiveActivity.type === "assemble" ? (
-            <ol className="activity-instructions-list">
-              <li>رتّب الأجزاء بالترتيب الصحيح.</li>
-              <li>عدّل الصياغة لتحسين الترابط بين الفقرات.</li>
-              <li>أنشئ المسودة ثم أرسلها.</li>
-            </ol>
-          ) : (
-            <ol className="activity-instructions-list">
-              <li>اختر وصفًا مناسبًا لكل مشهد.</li>
-              <li>جمّع اختياراتك لتكوين مسودة كاملة.</li>
-              <li>راجع الوصف ثم أرسله.</li>
-            </ol>
-          )}
+          <ol className="activity-instructions-list">
+            {quickSteps.map((step, index) => (
+              <li key={`${topic.id}-quick-step-${index}`}>{step}</li>
+            ))}
+          </ol>
         </section>
       )}
 
@@ -676,7 +853,7 @@ export default function ReportAssemblyActivity() {
           <section className="card report-assembly-card">
             <div className="report-assembly-card-header">
               <h2>{partsTitle}</h2>
-              <p>رتّب الأجزاء لتكوين تسلسل منطقي.</p>
+              <p>{activityCopy.assembleHint}</p>
             </div>
 
             <div className="report-parts-list">
@@ -732,10 +909,11 @@ export default function ReportAssemblyActivity() {
           <section className="card report-assembly-card">
             <div className="report-assembly-card-header">
               <h2>{sceneHeading}</h2>
+              <p>{activityCopy.sceneHint}</p>
             </div>
 
             {scenes.length > 1 && (
-              <div className="scene-nav" aria-label="التنقل بين المشاهد">
+              <div className="scene-nav" aria-label={`التنقل بين ${sceneHeading}`}>
                 {scenes.map((scene, index) => {
                   const isSelected = sceneSelections[index] !== undefined && sceneSelections[index] >= 0;
                   return (
@@ -763,7 +941,7 @@ export default function ReportAssemblyActivity() {
                   <div className="scene-title">
                     <span>{activeScene.title}</span>
                     <span className="scene-progress">
-                      المشهد {sceneIndex + 1}/{scenes.length}
+                      {activityCopy.sceneCounterLabel} {sceneIndex + 1}/{scenes.length}
                     </span>
                   </div>
                   <div className="scene-badges">
@@ -808,14 +986,14 @@ export default function ReportAssemblyActivity() {
                       <div className="scene-drop-selected">{selectedOptionText}</div>
                     ) : (
                       <div className="scene-drop-hint">
-                        اسحب الوصف وضعه هنا
+                        {activityCopy.sceneDropHint}
                       </div>
                     )}
                   </div>
                   <div className="scene-options">
                     <div className="scene-options-header">
-                      <span className="scene-options-title">الخيارات</span>
-                      <span className="scene-options-hint">اسحب للاختيار</span>
+                      <span className="scene-options-title">{activityCopy.sceneOptionsTitle}</span>
+                      <span className="scene-options-hint">{activityCopy.sceneOptionsHint}</span>
                     </div>
                     <div className="scene-bubbles">
                       {activeScene.options.map((option, optionIndex) => (

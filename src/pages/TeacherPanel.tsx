@@ -2,7 +2,7 @@
 import { supabase } from "../supabaseClient";
 import Papa from "papaparse";
 import type { ParseResult } from "papaparse";
-import { topics } from "../data/topics";
+import { topics, topicsBySemester } from "../data/topics";
 import { SkeletonSection } from "../components/SkeletonBlocks";
 import {
   LessonSection,
@@ -532,45 +532,57 @@ export default function TeacherPanel() {
               أو التقييم.
             </p>
           </div>
-          <div className="topics-grid">
-            {topics.map((topic) => (
-              <div key={topic.id} className="topic-grid-item">
-                <h3 className="topic-title">{topic.title}</h3>
-                <div className="topic-sections">
-                  {(["lesson", "video", "review", "evaluation", "activity"] as LessonSection[]).map(
-                    (section) => (
-                      <div key={`${topic.id}-${section}`} className="topic-section-item">
-                        <label className="topic-section-label">
-                          {section === "activity" && "الأنشطة"}
-                          {section === "lesson" && "الدرس"}
-                          {section === "video" && "الفيديو"}
-                          {section === "review" && "المراجعة"}
-                          {section === "evaluation" && "الكتابة والتقييم"}
-                        </label>
-                        <label className="toggle-switch">
-                          <input
-                            type="checkbox"
-                            checked={lessonVisibility[topic.id]?.[section] ?? false}
-                            onChange={(e) =>
-                              handleVisibilityChange(
-                                topic.id,
-                                section,
-                                e.target.checked
-                              )
-                            }
-                          />
-                          <span className="toggle-slider" aria-hidden="true"></span>
-                          <span className="toggle-label">
-                            {lessonVisibility[topic.id]?.[section]
-                              ? ""
-                              : ""}
-                          </span>
-                        </label>
-                      </div>
-                    )
-                  )}
+          <div className="lesson-visibility-semesters">
+            {([1, 2] as const).map((semester) => (
+              <section key={semester} className="lesson-visibility-semester">
+                <div className="lesson-semester-header">
+                  <span>الفصل الدراسي {semester}</span>
+                  <h3>
+                    {semester === 1 ? "موضوعات الفصل الأول" : "موضوعات الفصل الثاني"}
+                  </h3>
                 </div>
-              </div>
+                <div className="topics-grid">
+                  {topicsBySemester[semester].map((topic) => (
+                    <div key={topic.id} className="topic-grid-item">
+                      <h3 className="topic-title">{topic.title}</h3>
+                      <div className="topic-sections">
+                        {(["lesson", "video", "review", "evaluation", "activity"] as LessonSection[]).map(
+                          (section) => (
+                            <div key={`${topic.id}-${section}`} className="topic-section-item">
+                              <label className="topic-section-label">
+                                {section === "activity" && "الأنشطة"}
+                                {section === "lesson" && "الدرس"}
+                                {section === "video" && "الفيديو"}
+                                {section === "review" && "المراجعة"}
+                                {section === "evaluation" && "الكتابة والتقييم"}
+                              </label>
+                              <label className="toggle-switch">
+                                <input
+                                  type="checkbox"
+                                  checked={lessonVisibility[topic.id]?.[section] ?? false}
+                                  onChange={(e) =>
+                                    handleVisibilityChange(
+                                      topic.id,
+                                      section,
+                                      e.target.checked
+                                    )
+                                  }
+                                />
+                                <span className="toggle-slider" aria-hidden="true"></span>
+                                <span className="toggle-label">
+                                  {lessonVisibility[topic.id]?.[section]
+                                    ? ""
+                                    : ""}
+                                </span>
+                              </label>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         </section>

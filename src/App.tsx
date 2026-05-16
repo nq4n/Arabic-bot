@@ -38,6 +38,7 @@ import PeerDialogueActivity from "./pages/PeerDialogueActivity";
 import ReportAssemblyActivity from "./pages/ReportAssemblyActivity";
 import LandscapeDescriptionTutorial from "./pages/LandscapeDescriptionTutorial";
 import Activity from "./pages/Activity";
+import LessonActivityPage from "./pages/LessonActivityPage";
 
 export type UserRole = "student" | "teacher" | "admin" | null;
 
@@ -233,6 +234,14 @@ const AppContent = () => {
           />
           <Route
             path="/activity/:topicId"
+            element={
+              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+                <LessonActivityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activity/:topicId/task"
             element={
               <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <Activity />

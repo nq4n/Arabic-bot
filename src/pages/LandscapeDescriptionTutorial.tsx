@@ -600,7 +600,7 @@ export default function LandscapeDescriptionTutorial() {
   }
 
   if (!tutorialConfig) {
-    return <Navigate to={`/activity/${topicId}`} replace />;
+    return <Navigate to={`/activity/${topicId}/task`} replace />;
   }
 
   const goPrev = () =>
@@ -628,7 +628,7 @@ export default function LandscapeDescriptionTutorial() {
                 if (topic) {
                   window.localStorage.setItem(`tutorial:${topic.id}`, "1");
                 }
-                navigate(`/activity/${topicId}`);
+                navigate(`/activity/${topicId}/task`);
               }}
             >
               ابدأ النشاط
