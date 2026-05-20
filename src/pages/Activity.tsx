@@ -4,6 +4,12 @@ import CollaborativeActivity from "./CollaborativeActivity";
 import PeerDialogueActivity from "./PeerDialogueActivity";
 import FreeExpressionActivity from "./FreeExpressionActivity";
 import ReportAssemblyActivity from "./ReportAssemblyActivity";
+import ParagraphWritingActivity from "./semester2/ParagraphWritingActivity";
+import TopicPlanningActivity from "./semester2/TopicPlanningActivity";
+import SummarizationActivity from "./semester2/SummarizationActivity";
+import BiographyWritingActivity from "./semester2/BiographyWritingActivity";
+import BookPresentationActivity from "./semester2/BookPresentationActivity";
+import StorytellingActivity from "./semester2/StorytellingActivity";
 
 /**
  * Unified activity entry point: routes each topic to the correct activity experience.
@@ -58,6 +64,30 @@ export default function Activity() {
 
   if (topic.id === "free-expression") {
     return <FreeExpressionActivity />;
+  }
+
+  if (topic.id === "paragraph-writing") {
+    return <ParagraphWritingActivity />;
+  }
+
+  if (topic.id === "topic-planning") {
+    return <TopicPlanningActivity />;
+  }
+
+  if (topic.id === "summarization") {
+    return <SummarizationActivity />;
+  }
+
+  if (topic.id === "biography-writing") {
+    return <BiographyWritingActivity />;
+  }
+
+  if (topic.id === "book-presentation") {
+    return <BookPresentationActivity />;
+  }
+
+  if (topic.id === "storytelling") {
+    return <StorytellingActivity />;
   }
 
   // Default: interactive assemble / scene-choice activity
