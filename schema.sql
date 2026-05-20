@@ -11,6 +11,7 @@ CREATE TABLE public.activity_submissions (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT activity_submissions_pkey PRIMARY KEY (id),
+  CONSTRAINT activity_submissions_student_topic_activity_key UNIQUE (student_id, topic_id, activity_id),
   CONSTRAINT activity_submissions_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.admin_notifications (
@@ -32,6 +33,7 @@ CREATE TABLE public.collaborative_activity_completions (
   activity_kind text NOT NULL,
   completed_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT collaborative_activity_completions_pkey PRIMARY KEY (id),
+  CONSTRAINT collaborative_activity_completions_student_topic_kind_key UNIQUE (student_id, topic_id, activity_kind),
   CONSTRAINT collaborative_activity_completions_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.profiles(id)
 );
 CREATE TABLE public.collaborative_chat (
@@ -150,7 +152,7 @@ CREATE TABLE public.session_durations (
 );
 CREATE TABLE public.student_tracking (
   id bigint NOT NULL DEFAULT nextval('student_tracking_id_seq'::regclass),
-  student_id uuid NOT NULL,
+  student_id uuid NOT NULL UNIQUE,
   student_name text NOT NULL,
   tracking_data jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamp with time zone NOT NULL DEFAULT now(),

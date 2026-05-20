@@ -13,6 +13,146 @@ export type AIResponseType = {
   };
 };
 
+const MIN_MEANINGFUL_WORDS_FOR_GRADE = 5;
+const SHORT_SUBMISSION_WORD_LIMIT = 15;
+const SHORT_SUBMISSION_MAX_RATIO = 0.25;
+
+const getMeaningfulWords = (writingValues: { [key: string]: string }): string[] => {
+  const text = Object.values(writingValues).join(" ").trim();
+  return text.match(/[\p{L}\p{N}]+/gu) ?? [];
+};
+
+const hasLetterContent = (writingValues: { [key: string]: string }): boolean => {
+  return /\p{L}/u.test(Object.values(writingValues).join(" "));
+};
+
+const getCriterionMaxScore = (criterion: RubricCriterion): number => {
+  return criterion.levels.find((level) => level.id === "excellent")?.score ?? 0;
+};
+
+const getRubricTotalScore = (rubric: Rubric): number => {
+  return rubric.criteria.reduce((sum, criterion) => sum + getCriterionMaxScore(criterion), 0);
+};
+
+const buildZeroEvaluation = (rubric: Rubric, reason: string): AIResponseType => ({
+  score: 0,
+  feedback: reason,
+  suggestions: [
+    "اكتب نصًا كاملًا مرتبطًا بالمهمة قبل طلب التقييم.",
+    "راجع عناصر الدرس والمعايير ثم عالج كل جزء مطلوب بوضوح.",
+  ],
+  rubric_breakdown: rubric.criteria.reduce<AIResponseType["rubric_breakdown"]>(
+    (breakdown, criterion) => ({
+      ...breakdown,
+      [criterion.id]: {
+        score: 0,
+        feedback: reason,
+      },
+    }),
+    {}
+  ),
+});
+
+const getNearestAllowedScore = (score: unknown, criterion: RubricCriterion): number => {
+  const numericScore = typeof score === "number" && Number.isFinite(score) ? score : 0;
+  const allowedScores = Array.from(new Set(criterion.levels.map((level) => level.score))).sort(
+    (a, b) => a - b
+  );
+
+  if (allowedScores.length === 0) return 0;
+
+  return allowedScores.reduce((nearest, current) => {
+    const currentDistance = Math.abs(current - numericScore);
+    const nearestDistance = Math.abs(nearest - numericScore);
+    if (currentDistance === nearestDistance) {
+      return Math.min(current, nearest);
+    }
+    return currentDistance < nearestDistance ? current : nearest;
+  }, allowedScores[0]);
+};
+
+const normalizeAIResponse = (response: AIResponseType, rubric: Rubric): AIResponseType => {
+  const rubricBreakdown = rubric.criteria.reduce<AIResponseType["rubric_breakdown"]>(
+    (breakdown, criterion) => {
+      const item = response.rubric_breakdown?.[criterion.id];
+      const score = getNearestAllowedScore(item?.score, criterion);
+
+      return {
+        ...breakdown,
+        [criterion.id]: {
+          score,
+          feedback:
+            typeof item?.feedback === "string" && item.feedback.trim()
+              ? item.feedback.trim()
+              : "لم يظهر هذا المعيار بوضوح في النص.",
+        },
+      };
+    },
+    {}
+  );
+
+  const score = Object.values(rubricBreakdown).reduce((sum, item) => sum + item.score, 0);
+  const suggestions = Array.isArray(response.suggestions)
+    ? response.suggestions.filter((suggestion): suggestion is string => typeof suggestion === "string")
+    : [];
+
+  return {
+    score,
+    feedback:
+      typeof response.feedback === "string" && response.feedback.trim()
+        ? response.feedback.trim()
+        : "تم تقييم النص وفق المعايير المعلنة.",
+    suggestions,
+    rubric_breakdown: rubricBreakdown,
+  };
+};
+
+const reduceScoreToCap = (
+  response: AIResponseType,
+  rubric: Rubric,
+  maxAllowedScore: number
+): AIResponseType => {
+  if (response.score <= maxAllowedScore) {
+    return response;
+  }
+
+  const rubricBreakdown = { ...response.rubric_breakdown };
+  let currentTotal = response.score;
+  let changed = true;
+
+  while (currentTotal > maxAllowedScore && changed) {
+    changed = false;
+
+    for (const criterion of rubric.criteria) {
+      if (currentTotal <= maxAllowedScore) break;
+
+      const item = rubricBreakdown[criterion.id];
+      if (!item || item.score <= 0) continue;
+
+      const lowerScore = Array.from(new Set(criterion.levels.map((level) => level.score)))
+        .filter((score) => score < item.score)
+        .sort((a, b) => b - a)[0];
+
+      if (lowerScore === undefined) continue;
+
+      currentTotal -= item.score - lowerScore;
+      rubricBreakdown[criterion.id] = {
+        ...item,
+        score: lowerScore,
+        feedback: `${item.feedback} النص قصير جدًا؛ لذلك لا يستحق درجة مرتفعة في هذا المعيار.`,
+      };
+      changed = true;
+    }
+  }
+
+  return {
+    ...response,
+    score: currentTotal,
+    feedback: `${response.feedback} النص قصير جدًا، لذلك حُدّدت الدرجة بما يناسب حجم الإجابة.`,
+    rubric_breakdown: rubricBreakdown,
+  };
+};
+
 const buildSystemPrompt = (
   rubric: Rubric,
   context?: {
@@ -59,6 +199,16 @@ const buildSystemPrompt = (
               : "سلامة التعبير، الأسلوب، وتسلسل الأفكار."
       }`
     : "";
+  const realisticTeacherGuidance = `
+**سياسة التقييم الواقعي:**
+- قيّم كمعلم لغة عربية خبير وصارم وعادل، لا كأداة تشجيع عامة.
+- امنح الدرجة بناءً على الدليل الموجود في نص الطالب فقط؛ لا تكافئ النية أو الجهد غير الظاهر في النص.
+- لا ترفع الدرجة مجاملةً. إذا كان الأداء ضعيفًا أو ناقصًا فاختر المستوى الضعيف أو درجة الصفر حسب rubric.
+- إذا كان النص فارغًا، أو شبه فارغ، أو غير عربي، أو عبارات عشوائية، أو منسوخًا من التعليمات، أو بعيدًا عن مهمة الدرس، فيجب أن تكون الدرجة النهائية 0 وأن تكون درجة كل معيار 0.
+- إذا كان النص قصيرًا جدًا ولا يقدّم أفكارًا كافية، فلا يجوز منحه درجة مرتفعة حتى لو كانت لغته سليمة.
+- إذا أجاب الطالب عن موضوع مختلف عن المطلوب، قيّم ارتباطه بالمهمة بصفر، ولا تمنحه درجات في المعايير التي لا تظهر في النص.
+- أخطاء الحقائق، غياب العناصر المطلوبة، ضعف التنظيم، وكثرة الأخطاء اللغوية يجب أن تخفض الدرجة بوضوح.
+  `.trim();
 
   return `
 أنت معلم لغة عربية خبير في تقويم الكتابة المدرسية.
@@ -69,6 +219,7 @@ const buildSystemPrompt = (
 ${context?.topicTitle ? `**عنوان الدرس:** ${context.topicTitle}` : ""}
 ${context?.evaluationTask ? `**مهمة التقييم الخاصة بالدرس:** ${context.evaluationTask}` : ""}
 ${modeGuidance}
+${realisticTeacherGuidance}
 ${context?.studentName ? `**اسم الطالب:** ${context.studentName}` : ""}
 ${context?.studentGrade ? `**الصف الدراسي:** ${context.studentGrade}` : ""}
 ${context?.lessonContext ? `**مرجع الدرس المساند:**\n${context.lessonContext}` : ""}
@@ -167,6 +318,15 @@ export const getAIAnalysis = async (
     lessonContext?: string;
   }
 ): Promise<AIResponseType> => {
+  const meaningfulWords = getMeaningfulWords(writingValues);
+
+  if (!hasLetterContent(writingValues) || meaningfulWords.length < MIN_MEANINGFUL_WORDS_FOR_GRADE) {
+    return buildZeroEvaluation(
+      rubric,
+      "النص غير كافٍ للتقييم الواقعي؛ لذلك يستحق صفرًا في جميع المعايير."
+    );
+  }
+
   const apiKey = import.meta.env.VITE_REVIEW_API_KEY;
   const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -179,6 +339,8 @@ export const getAIAnalysis = async (
   const studentSubmission = combineWritingValues(writingValues, context?.writingSections);
   const userContent = `
 قيّم النص التالي وفق rubric فقط.
+عدد الكلمات ذات المعنى في النص: ${meaningfulWords.length}.
+إذا كان النص غير كافٍ أو خارج المهمة، امنحه صفرًا عند الحاجة دون مجاملة.
 
 نص الطالب:
 ${studentSubmission}
@@ -232,7 +394,17 @@ ${studentSubmission}
       throw new Error("The AI returned an unexpected response format.");
     }
 
-    return content;
+    const normalizedContent = normalizeAIResponse(content, rubric);
+
+    if (meaningfulWords.length < SHORT_SUBMISSION_WORD_LIMIT) {
+      return reduceScoreToCap(
+        normalizedContent,
+        rubric,
+        getRubricTotalScore(rubric) * SHORT_SUBMISSION_MAX_RATIO
+      );
+    }
+
+    return normalizedContent;
   } catch (error) {
     console.error("Failed to get AI analysis:", error);
     throw new Error(
