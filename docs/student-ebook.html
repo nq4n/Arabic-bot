@@ -1,0 +1,2026 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الكتاب التفاعلي للطالب | Arabic Bot</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");
+
+    @font-face {
+      font-family: "title";
+      src: url("../public/fonts/title.otf") format("opentype");
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    :root {
+      --nav-h: 72px;
+      --primary: #0f766e;
+      --primary-dark: #0b4f4a;
+      --primary-hover: #15958a;
+      --primary-icon: #ffffff;
+      --accent: #d4a23b;
+      --accent-2: #f2d38a;
+      --accent-soft: rgba(212, 162, 59, 0.16);
+      --text-main: #121418;
+      --text-muted: #5b6470;
+      --bg-card: rgba(255, 255, 255, 0.78);
+      --bg-secondary: rgba(255, 255, 255, 0.92);
+      --bg-main: linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)), url('../public/bdg.png');
+      --border-color: rgba(15, 23, 42, 0.12);
+      --border-strong: rgba(15, 23, 42, 0.18);
+      --border-radius: 18px;
+      --radius-sm: 12px;
+      --shadow-sm: 0 8px 18px rgba(15, 23, 42, 0.08);
+      --shadow-md: 0 18px 40px rgba(15, 23, 42, 0.14);
+      --shadow-lg: 0 28px 65px rgba(15, 23, 42, 0.16);
+      --ink: var(--text-main);
+      --muted: var(--text-muted);
+      --line: var(--border-color);
+      --paper: var(--bg-secondary);
+      --cover: var(--primary-dark);
+      --cover-2: var(--primary);
+      --shadow: var(--shadow-md);
+      --page-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: "Cairo", "Tajawal", "Noto Naskh Arabic", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top, rgba(212, 162, 59, 0.10), transparent 24rem),
+        radial-gradient(circle at bottom left, rgba(15, 118, 110, 0.10), transparent 28rem),
+        var(--bg-main) center/cover fixed;
+      overflow: auto;
+    }
+
+    button { font: inherit; cursor: pointer; }
+
+    .reader {
+      width: min(1420px, calc(100vw - 28px));
+      height: min(96vh, 1040px);
+      margin: 2vh auto;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+    }
+
+    .reader-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 18px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.55);
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.10);
+    }
+
+    .reader-bar-title strong {
+      display: block;
+      font-size: 1.05rem;
+    }
+
+    .reader-bar-title span {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .reader-bar-title {
+      min-width: 220px;
+    }
+
+    .reader-progress {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      flex: 1;
+      padding: 0 18px;
+    }
+
+    .reader-progress span {
+      width: 74px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.12);
+    }
+
+    .reader-progress span.active {
+      background: linear-gradient(90deg, #274f9f, #3b82f6);
+    }
+
+    .reader-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .control-btn {
+      border: 1px solid var(--border-color);
+      background: rgba(255,255,255,0.78);
+      color: var(--text-main);
+      border-radius: 999px;
+      padding: 9px 15px;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .control-btn.primary {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: var(--primary-icon);
+      border-color: transparent;
+    }
+
+    .page-indicator {
+      min-width: 110px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .book-shell {
+      position: relative;
+      padding: 14px;
+      border-radius: 30px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.74), rgba(255,255,255,0.66));
+      border: 1px solid rgba(255,255,255,0.58);
+      box-shadow: 0 28px 70px rgba(15, 23, 42, 0.16);
+      overflow: hidden;
+      backdrop-filter: blur(22px);
+    }
+
+    .book-shell::before,
+    .book-shell::after { display: none; }
+
+    .reader-stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px 66px;
+      gap: 14px;
+      min-height: 0;
+      height: calc(100% - 0px);
+    }
+
+    .reader-main {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+    }
+
+    .reader-subbar,
+    .reader-footer,
+    .reader-sidebar,
+    .reader-tools {
+      background: rgba(255,255,255,0.76);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
+      backdrop-filter: blur(16px);
+    }
+
+    .reader-subbar {
+      padding: 12px 14px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .subbar-left,
+    .subbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .surface-chip,
+    .surface-btn {
+      height: 42px;
+      border-radius: 14px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: rgba(255,255,255,0.82);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 14px;
+      color: var(--text-muted);
+      font-weight: 700;
+      min-width: 56px;
+    }
+
+    .surface-search {
+      min-width: 220px;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+
+    .book {
+      height: 100%;
+      min-height: 0;
+    }
+
+    .reader-footer {
+      padding: 12px 14px;
+      border-radius: 18px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .footer-meter {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .footer-track {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+      min-width: 140px;
+    }
+
+    .footer-fill {
+      width: 16%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--primary-dark), #3166c7);
+    }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .reader-sidebar {
+      border-radius: 24px;
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .sidebar-title {
+      font-weight: 900;
+      color: var(--text-main);
+    }
+
+    .sidebar-subtitle {
+      color: var(--text-muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .sidebar-scroller {
+      min-height: 0;
+      overflow: auto;
+      display: grid;
+      gap: 12px;
+    }
+
+    .chapter-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .chapter-item {
+      width: 100%;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: rgba(255,255,255,0.78);
+      text-align: right;
+      color: var(--text-main);
+    }
+
+    .chapter-item.active {
+      border-color: rgba(39, 79, 159, 0.26);
+      box-shadow: 0 0 0 1px rgba(39, 79, 159, 0.14);
+      background: rgba(241, 246, 255, 0.9);
+    }
+
+    .chapter-item strong {
+      display: block;
+      font-size: 0.94rem;
+      margin-bottom: 4px;
+    }
+
+    .chapter-item span {
+      color: var(--text-muted);
+      font-size: 0.84rem;
+    }
+
+    .sidebar-card {
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .sidebar-card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .reader-tools {
+      border-radius: 24px;
+      padding: 16px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .tool-rail-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: rgba(255,255,255,0.84);
+      display: grid;
+      place-items: center;
+      color: var(--text-muted);
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .tool-rail-btn.active {
+      background: rgba(241, 246, 255, 0.95);
+      color: #274f9f;
+      border-color: rgba(39, 79, 159, 0.24);
+    }
+
+    .window-chrome {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 6px 6px 0;
+    }
+
+    .chrome-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .traffic {
+      display: flex;
+      gap: 8px;
+      padding: 0 6px;
+    }
+
+    .traffic span {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    .traffic span:nth-child(1) { background: #ff5f57; }
+    .traffic span:nth-child(2) { background: #febc2e; }
+    .traffic span:nth-child(3) { background: #28c840; }
+
+    .chrome-tab {
+      min-width: 240px;
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 16px 16px 0 0;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.75);
+      border-bottom: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-main);
+      font-weight: 700;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .chrome-toolbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.74);
+      border: 1px solid rgba(255,255,255,0.78);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .chrome-actions,
+    .chrome-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 1.02rem;
+      font-weight: 700;
+    }
+
+    .chrome-address {
+      height: 40px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: rgba(255,255,255,0.84);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      color: var(--text-muted);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+
+    .chrome-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.18);
+    }
+
+    .book {
+      position: relative;
+      height: calc(100% - 108px);
+      border-radius: 24px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.96));
+      border: 1px solid rgba(255,255,255,0.82);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
+    }
+
+    .book::before { display: none; }
+
+    .spread {
+      position: absolute;
+      inset: 0;
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .spread.active { display: grid; }
+
+    .page {
+      position: relative;
+      padding: 30px 32px 26px;
+      overflow: auto;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      scrollbar-width: thin;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 24px;
+    }
+
+    .page::before { display: none; }
+
+    .page::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
+      pointer-events: none;
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: 14px;
+      left: 28px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .chapter-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.92rem;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { font-size: clamp(2.2rem, 4vw, 3.6rem); line-height: 1.15; }
+    h2 { font-size: 1.9rem; margin-bottom: 10px; }
+    h3 { font-size: 1.1rem; margin-bottom: 8px; }
+    p { margin-bottom: 12px; }
+
+    h2 {
+      position: relative;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+
+    h2::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 88px;
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--primary) 75%, white));
+    }
+
+    .muted { color: var(--muted); }
+
+    .cover-page {
+      background:
+        radial-gradient(circle at top right, rgba(212, 162, 59, 0.16), transparent 18rem),
+        linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 96%, white), var(--bg-secondary));
+      color: var(--text-main);
+    }
+
+    .cover-page .muted { color: var(--text-muted); }
+
+    .cover-boxes,
+    .card-grid,
+    .steps-grid,
+    .stats-grid,
+    .type-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .cover-stat,
+    .note-card,
+    .step-card,
+    .mini-card,
+    .metric,
+    .table-row,
+    .chat-bubble,
+    .type-card {
+      border-radius: 16px;
+      padding: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cover-page .cover-stat {
+      background: var(--bg-card);
+      border-color: var(--border-color);
+    }
+
+    .cover-stat strong,
+    .metric strong {
+      display: block;
+      font-size: 1.35rem;
+      margin-bottom: 4px;
+    }
+
+    .quote-box {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--primary) 8%, white);
+      border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--border-color));
+      margin-top: 18px;
+      font-size: 1rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+    }
+
+    .flow-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .flow-node {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .flow-arrow {
+      color: var(--primary);
+      font-weight: 900;
+      align-self: center;
+    }
+
+    .tight-list {
+      margin: 0;
+      padding-right: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .book-screen {
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      background: color-mix(in srgb, var(--bg-secondary) 96%, white);
+      box-shadow: var(--shadow-sm);
+      margin-top: 12px;
+    }
+
+    .screen-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      background: color-mix(in srgb, var(--bg-secondary) 96%, white);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .screen-navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--bg-secondary) 92%, transparent),
+        color-mix(in srgb, var(--bg-secondary) 72%, transparent)
+      );
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .screen-navbar-logo {
+      font-family: "title", "Cairo", sans-serif;
+      font-size: 1.55rem;
+      color: var(--text-main);
+      line-height: 1;
+    }
+
+    .screen-navbar-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .screen-nav-link {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      background: rgba(255,255,255,0.55);
+      color: var(--text-main);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .screen-nav-link.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
+      background: color-mix(in srgb, var(--primary) 8%, white);
+      color: var(--primary-dark);
+    }
+
+    .screen-navbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .screen-nav-badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      background: rgba(255,255,255,0.55);
+      color: var(--text-main);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .dots { display: flex; gap: 6px; }
+    .dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--text-muted) 22%, transparent);
+    }
+
+    .screen-title {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .screen-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--border-color);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .pill.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding: 12px;
+    }
+
+    .metric strong { color: var(--accent); }
+
+    .topic-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .topic-card {
+      border-radius: 16px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .topic-strip {
+      height: 82px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(23,125,129,0.18), rgba(23,125,129,0.05));
+      margin-bottom: 10px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .scene-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .scene-nav span {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid #dde6e6;
+      font-size: 0.9rem;
+    }
+
+    .scene-nav span.active {
+      background: rgba(23,125,129,0.1);
+      border-color: rgba(23,125,129,0.35);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .progress {
+      height: 12px;
+      border-radius: 999px;
+      background: #deeaeb;
+      overflow: hidden;
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 68%;
+      background: linear-gradient(90deg, var(--accent), #31a2a7);
+    }
+
+    .editor {
+      min-height: 150px;
+      border-radius: 16px;
+      border: 1px solid #dbe6e6;
+      background: #fff;
+      padding: 14px;
+      color: var(--muted);
+    }
+
+    .callout {
+      margin-top: 14px;
+      border-right: 4px solid var(--accent);
+      background: rgba(23, 125, 129, 0.06);
+      padding: 14px 16px;
+      border-radius: 16px;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .tab-btn {
+      border: 1px solid rgba(27, 52, 54, 0.12);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 14px;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .ui-shell {
+      border-radius: 20px;
+      border: 1px solid #dbe6e6;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(31, 33, 20, 0.08);
+    }
+
+    .ui-header-band {
+      padding: 16px 18px;
+      background: linear-gradient(180deg, rgba(23, 125, 129, 0.12), rgba(23, 125, 129, 0.03));
+      border-bottom: 1px solid #e2eded;
+    }
+
+    .ui-header-band strong {
+      display: block;
+      color: var(--accent);
+      font-size: 1.05rem;
+      margin-bottom: 4px;
+    }
+
+    .ui-subline {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .ui-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .ui-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .ui-card {
+      border-radius: 16px;
+      border: 1px solid #dde6e6;
+      background: #fdfefe;
+      padding: 12px;
+    }
+
+    .ui-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+
+    .table {
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+    }
+
+    .table-head,
+    .table-row {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr 0.8fr 0.9fr;
+      gap: 8px;
+      align-items: center;
+      padding: 12px;
+    }
+
+    .table-head {
+      background: color-mix(in srgb, var(--primary) 8%, white);
+      color: var(--accent);
+      font-weight: 700;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .table-row {
+      border-bottom: 1px solid color-mix(in srgb, var(--border-color) 75%, white);
+      border-radius: 0;
+      padding: 10px 12px;
+    }
+
+    .table-row:last-child { border-bottom: 0; }
+
+    .stats-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .type-grid,
+    .spread-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .type-card h3,
+    .note-card h3 { margin-bottom: 6px; }
+
+    .spread-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--ink);
+    }
+
+    .spread-link strong {
+      display: block;
+      text-align: right;
+    }
+
+    .spread-link span {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .toc-dialog {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(19, 26, 27, 0.46);
+      backdrop-filter: blur(6px);
+      z-index: 40;
+    }
+
+    .toc-dialog.open { display: flex; }
+
+    .toc-card {
+      width: min(680px, 100%);
+      max-height: 80vh;
+      overflow: auto;
+      border-radius: 24px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    @media (max-width: 1100px) {
+      body { overflow: auto; }
+      .reader {
+        height: auto;
+        margin-top: 16px;
+      }
+      .reader-progress {
+        order: 3;
+        width: 100%;
+      }
+      .chrome-toolbar {
+        grid-template-columns: 1fr;
+      }
+      .reader-stage {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .reader-tools {
+        flex-direction: row;
+        justify-content: center;
+      }
+      .reader-footer {
+        grid-template-columns: 1fr;
+      }
+      .book-shell { min-height: 1200px; }
+      .spread { grid-template-columns: 1fr; }
+      .book::before { display: none; }
+      .cover-boxes,
+      .card-grid,
+      .steps-grid,
+      .stats-grid,
+      .type-grid,
+      .metrics,
+      .topic-grid,
+      .split,
+      .ui-grid {
+        grid-template-columns: 1fr;
+      }
+      .table-head,
+      .table-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="reader">
+    <div class="reader-bar">
+      <div class="reader-bar-title">
+        <strong>الكتاب التفاعلي للطالب</strong>
+        <span>رحلة الطالب داخل المنصة في هيئة كتاب HTML لا صفحة ويب طويلة</span>
+      </div>
+      <div class="reader-progress" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span class="active"></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="reader-controls">
+        <button class="control-btn" id="tocButton">الفهرس</button>
+        <button class="control-btn" id="prevButton">الصفحة السابقة</button>
+        <div class="page-indicator" id="pageIndicator">1 / 9</div>
+        <button class="control-btn primary" id="nextButton">الصفحة التالية</button>
+      </div>
+    </div>
+
+    <div class="book-shell">
+      <div class="window-chrome" aria-hidden="true">
+        <div class="chrome-row">
+          <div class="traffic"><span></span><span></span><span></span></div>
+          <div class="chrome-tab">📘 الكتاب التفاعلي للطالب</div>
+        </div>
+        <div class="chrome-toolbar">
+          <div class="chrome-actions">
+            <span>←</span>
+            <span>→</span>
+            <span>↻</span>
+          </div>
+          <div class="chrome-address">
+            <span>ebook://student-guide</span>
+            <div class="chrome-right">
+              <span class="chrome-dot"></span>
+              <span class="chrome-dot"></span>
+              <span class="chrome-dot"></span>
+            </div>
+          </div>
+          <div class="chrome-right">
+            <span>☆</span>
+            <span>⇩</span>
+            <span>⋮</span>
+          </div>
+        </div>
+      </div>
+      <div class="reader-stage">
+        <div class="reader-main">
+          <div class="reader-subbar">
+            <div class="subbar-left">
+              <div class="surface-btn">⋯</div>
+              <div class="surface-chip">رحلة الطالب</div>
+              <div class="surface-chip">الدروس</div>
+              <div class="surface-chip">الأنشطة</div>
+            </div>
+            <div class="subbar-right">
+              <div class="surface-chip surface-search">ابحث داخل الكتاب <span>⌕</span></div>
+            </div>
+          </div>
+          <div class="book" id="book">
+        <section class="spread active" data-title="الغلاف" data-label="بداية الرحلة">
+          <article class="page right cover-page">
+            <div class="chapter-tag">المجلد الثاني | الطالب</div>
+            <h1>الكتاب التفاعلي لرحلة الطالب</h1>
+            <p class="muted">
+              من الصفحة الأولى، إلى الدرس، إلى شرح النشاط، ثم التطبيق، ثم المراجعة والكتابة والتقييم.
+              هذا الكتاب يحول تلك الرحلة إلى spreads قابلة للتنقل.
+            </p>
+            <div class="cover-boxes">
+              <div class="cover-stat"><strong>9</strong> spreads رئيسية</div>
+              <div class="cover-stat"><strong>20</strong> نقطة لإكمال الدرس</div>
+              <div class="cover-stat"><strong>10</strong> نقاط للنشاط</div>
+              <div class="cover-stat"><strong>10</strong> نقاط للتقييم</div>
+            </div>
+            <div class="quote-box">
+              التدفق الحالي في المشروع:
+              الموضوعات ← الدرس ← شرح النشاط ← صفحة التطبيق العملي ← مراجعة الدرس ← التقييم ← تسليماتي / نقاطي.
+            </div>
+            <div class="flow-strip" aria-label="تدفق الطالب">
+              <span class="flow-node">الموضوعات</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">الدرس</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">شرح النشاط</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">التطبيق</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">المراجعة</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">التقييم / التسليمات</span>
+            </div>
+            <div class="page-number">1</div>
+          </article>
+          <article class="page left">
+            <div class="chapter-tag">كيف يُقرأ الكتاب</div>
+            <h2>الخريطة السريعة</h2>
+            <ol class="tight-list">
+              <li>الصفحة الأولى للموضوعات ولوحة التقدم</li>
+              <li>صفحة الدرس وأهدافه وخطواته</li>
+              <li>صفحة شرح النشاط البصري</li>
+              <li>صفحة التطبيق العملي وأنواع الأنشطة</li>
+              <li>مشاهد فعلية من واجهات الطالب</li>
+              <li>صفحة المراجعة والمساعد الذكي</li>
+              <li>صفحات الكتابة والتقييم والتسليمات والنقاط</li>
+              <li>أطلس صفحات الطالب الكامل</li>
+            </ol>
+            <div class="note-card" style="margin-top: 14px;">
+              <h3>الشريط العلوي للطالب</h3>
+              <p>يظهر في أعلى صفحات الطالب ويحتوي على: <strong>الموضوعات</strong>، <strong>تسليماتي</strong>، <strong>نقاطي</strong>، <strong>الدردشة</strong>، ثم زر <strong>الملف الشخصي</strong> مع تبديل السمة.</p>
+            </div>
+            <div class="book-screen" data-nav-active="topics">
+              <div class="screen-top">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <div class="screen-title">رحلة الطالب</div>
+              </div>
+              <div class="screen-body">
+                <div class="pill-row">
+                  <span class="pill active">الموضوعات</span>
+                  <span class="pill">الدرس</span>
+                  <span class="pill">شرح النشاط</span>
+                  <span class="pill">التطبيق</span>
+                  <span class="pill">المراجعة</span>
+                  <span class="pill">التقييم</span>
+                </div>
+                <div class="metrics">
+                  <div class="metric"><strong>درس</strong> تعلم المحتوى</div>
+                  <div class="metric"><strong>نشاط</strong> تدريب عملي</div>
+                  <div class="metric"><strong>تقييم</strong> كتابة ودرجة</div>
+                </div>
+              </div>
+            </div>
+            <div class="page-number">2</div>
+          </article>
+        </section>
+
+        <section class="spread" data-title="الموضوعات" data-label="الصفحة الأولى">
+          <article class="page right">
+            <div class="chapter-tag">الفصل 1</div>
+            <h2>الصفحة الأولى للطالب</h2>
+            <ul class="tight-list">
+              <li>تظهر تحية باسم الطالب عند تسجيل الدخول.</li>
+              <li>لوحة تقدم فيها عدد الدروس المكتملة والتسليمات وتقييمات المعلم.</li>
+              <li>قسم النقاط والمستوى الحالي والهدف القادم.</li>
+              <li>بطاقات الموضوعات موزعة على فصلين.</li>
+              <li>كل بطاقة تعرض حالة الدرس والتسليم والتقييم.</li>
+            </ul>
+            <h3 style="margin-top:16px;">عناصر الصفحة الفعلية</h3>
+            <ul class="tight-list">
+              <li><strong>مرحباً، [اسم الطالب]</strong> أو عنوان "الموضوعات" إذا لم يوجد تسجيل دخول.</li>
+              <li><strong>لوحة التقدم</strong> مع زر <strong>عرض لوحة النقاط</strong>.</li>
+              <li><strong>موضوعات الفصل الأول</strong> و<strong>موضوعات الفصل الثاني</strong>.</li>
+            </ul>
+            <div class="callout">
+              إذا أغلق المعلم الدرس، فإن زر "عرض الدرس" يظهر معطلًا ومصحوبًا بعبارة "غير متاح حاليًا".
+            </div>
+            <div class="page-number">3</div>
+          </article>
+          <article class="page left">
+            <div class="chapter-tag">مشهد الصفحة</div>
+            <h2>قائمة الدروس</h2>
+            <div class="book-screen" data-nav-active="topics">
+              <div class="screen-top">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <div class="screen-title">الموضوعات</div>
+              </div>
+              <div class="screen-body">
+                <div class="mini-card"><strong>مرحباً، الطالبة</strong> أهلاً بك في منصة اللغة العربية. استعرض الدروس والأنشطة أدناه.</div>
+                <div class="pill-row">
+                  <span class="pill active">الموضوعات</span>
+                  <span class="pill">تسليماتي</span>
+                  <span class="pill">لوحة النقاط</span>
+                  <span class="pill">الدردشة</span>
+                </div>
+                <div class="metrics">
+                  <div class="metric"><strong>4 / 11</strong> دروس مكتملة</div>
+                  <div class="metric"><strong>3 / 11</strong> تسليمات</div>
+                  <div class="metric"><strong>95</strong> نقطة</div>
+                </div>
+                <div class="mini-card"><strong>لوحة التقدم</strong> ملخص تقدمك العام في الدروس والتسليمات والتقييمات.</div>
+                <div class="topic-grid">
+                  <div class="topic-card">
+                    <div class="topic-strip"></div>
+                    <strong>كتابة الفقرة</strong>
+                    <p class="muted">الدرس - التسليم - التقييم</p>
+                    <div class="pill-row"><span class="pill active">عرض الدرس</span></div>
+                  </div>
+                  <div class="topic-card">
+                    <div class="topic-strip"></div>
+                    <strong>التلخيص</strong>
+                    <p class="muted">الدرس - التسليم - التقييم</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="page-number">4</div>
+          </article>
+        </section>
+
+        <section class="spread" data-title="الدرس" data-label="صفحة الدرس">
+          <article class="page right">
+            <div class="chapter-tag">الفصل 2</div>
+            <h2>صفحة الدرس</h2>
+            <div class="card-grid">
+              <div class="note-card">
+                <h3>قبل البدء</h3>
+                <p>عنوان الدرس، وصف مختصر، وبطاقة أهداف مع زر "ابدأ الدرس".</p>
+              </div>
+              <div class="note-card">
+                <h3>بعد الضغط على ابدأ الدرس</h3>
+                <p>تظهر مقدمة الدرس، الفيديو التوضيحي، خطوات الدرس، ثم قسم <strong>أنشطة هذا الدرس</strong>.</p>
+              </div>
+              <div class="note-card">
+                <h3>الانتقال إلى النشاط</h3>
+                <p>زر النشاط لا يذهب إلى التطبيق مباشرة، بل يذهب أولًا إلى صفحة <strong>شرح النشاط</strong> ثم إلى التطبيق.</p>
+              </div>
+              <div class="note-card">
+                <h3>الانتقال إلى المراجعة</h3>
+                <p>في نهاية الدرس يوجد زر "الانتقال إلى مراجعة الدرس". عنده تُحتسب نقاط إكمال الدرس.</p>
+              </div>
+            </div>
+            <div class="page-number">5</div>
+          </article>
+          <article class="page left">
+            <div class="chapter-tag">مشهد الصفحة</div>
+            <h2>أهداف + خطوات + نشاط</h2>
+            <div class="book-screen" data-nav-active="topics">
+              <div class="screen-top">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <div class="screen-title">صفحة الدرس</div>
+              </div>
+              <div class="screen-body">
+                <div class="mini-card"><strong>أهداف الدرس</strong> بطاقة تمهيدية + زر ابدأ الدرس</div>
+                <div class="split">
+                  <div class="mini-card"><strong>مقدمة الدرس</strong> التهيئة + الأهمية</div>
+                  <div class="mini-card"><strong>فيديو توضيحي</strong> يظهر إذا كان مفتوحًا</div>
+                </div>
+                <div class="steps-grid">
+                  <div class="step-card">الخطوة 1</div>
+                  <div class="step-card">الخطوة 2</div>
+                  <div class="step-card">الخطوة 3</div>
+                  <div class="step-card">الخطوة 4</div>
+                </div>
+                <div class="pill-row">
+                  <span class="pill active">فتح صفحة النشاط</span>
+                  <span class="pill">الانتقال إلى مراجعة الدرس</span>
+                </div>
+                <div class="mini-card"><strong>أنشطة هذا الدرس</strong> وصف النشاط + زر فتح صفحة النشاط.</div>
+              </div>
+            </div>
+            <div class="page-number">6</div>
+          </article>
+        </section>
+
+        <section class="spread" data-title="شرح النشاط" data-label="التوضيح البصري">
+          <article class="page right">
+            <div class="chapter-tag">الفصل 3</div>
+            <h2>صفحة شرح النشاط</h2>
+            <ul class="tight-list">
+              <li>تعرض خطوات النشاط بصريًا في صفحة مستقلة.</li>
+              <li>فيها stepper يتيح الانتقال بين الخطوات.</li>
+              <li>فيها عرض توضيحي متحرك أو مثال مرئي.</li>
+              <li>فيها أزرار السابق، التالي، إعادة التشغيل، وتشغيل تلقائي.</li>
+              <li>فيها زر العودة إلى الدرس وزر ابدأ النشاط.</li>
+            </ul>
+            <h3 style="margin-top:16px;">النصوص الأساسية الظاهرة</h3>
+            <ul class="tight-list">
+              <li><strong>شرح النشاط: [اسم الدرس]</strong></li>
+              <li><strong>شاهد الخطوات بشكل بصري، ثم انتقل إلى التطبيق الحقيقي.</strong></li>
+              <li>العودة إلى الدرس / ابدأ النشاط / السابق / إعادة التشغيل / تشغيل تلقائي / التالي</li>
+            </ul>
+            <div class="callout">
+              هذه الصفحة هي "الأنيميشن" أو الشرح البصري الذي يسبق التطبيق العملي لكل نشاط مدعوم.
+            </div>
+            <div class="page-number">7</div>
+          </article>
+          <article class="page left">
+            <div class="chapter-tag">مشهد الصفحة</div>
+            <h2>الشرح قبل التطبيق</h2>
+            <div class="book-screen" data-nav-active="topics">
+              <div class="screen-top">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <div class="screen-title">شرح النشاط</div>
+              </div>
+              <div class="screen-body">
+                <div class="mini-card"><strong>شرح النشاط: كتابة الفقرة</strong> شاهد الخطوات بشكل بصري، ثم انتقل إلى التطبيق الحقيقي.</div>
+                <div class="split">
+                  <div class="mini-card">
+                    <strong>خطوات الشرح</strong>
+                    1. فهم الفكرة<br/>2. مشاهدة المثال<br/>3. الانتقال للتطبيق
+                  </div>
+                  <div class="mini-card">
+                    <strong>العرض التوضيحي</strong>
+                    مشهد يريك كيف تختار أو تكتب أو ترتب قبل أن تبدأ التطبيق الحقيقي.
+                  </div>
+                </div>
+                <div class="pill-row">
+                  <span class="pill">العودة إلى الدرس</span>
+                  <span class="pill">السابق</span>
+                  <span class="pill">إعادة التشغيل</span>
+                  <span class="pill">تشغيل تلقائي</span>
+                  <span class="pill">التالي</span>
+                  <span class="pill active">ابدأ النشاط</span>
+                </div>
+              </div>
+            </div>
+            <div class="page-number">8</div>
+          </article>
+        </section>
+
+        <section class="spread" data-title="الأنشطة" data-label="صفحة التطبيق العملي">
+          <article class="page right">
+            <div class="chapter-tag">الفصل 4</div>
+            <h2>أنواع الأنشطة وكيف تعمل</h2>
+            <div class="tabs" data-tab-group="student-activities">
+              <button class="tab-btn active" data-tab-target="scenePanel">المشاهد والاختيار</button>
+              <button class="tab-btn" data-tab-target="assemblePanel">الترتيب والتركيب</button>
+              <button class="tab-btn" data-tab-target="freePanel">التعبير الحر</button>
+              <button class="tab-btn" data-tab-target="collabPanel">المناقشة والحوار</button>
+            </div>
+
+            <div id="scenePanel" class="tab-panel active">
+              <div class="type-grid">
+                <div class="type-card"><h3>المحطات</h3><p>الطالب ينتقل بين مراحل أو صور أو مشاهد.</p></div>
+                <div class="type-card"><h3>الاختيار</h3><p>يسحب الإجابة أو يضغط عليها لتوضع في المكان الصحيح.</p></div>
+                <div class="type-card"><h3>التقدم</h3><p>يظهر شريط تقدم، وفي بعض الأنشطة مؤقت زمني.</p></div>
+                <div class="type-card"><h3>المسودة</h3><p>بعد اكتمال الاختيارات تُنشأ مسودة يمكن تعديلها.</p></div>
+              </div>
+            </div>
+
+            <div id="assemblePanel" class="tab-panel">
+              <div class="type-grid">
+                <div class="type-card"><h3>بطاقات قابلة للتحريك</h3><p>يتم ترتيبها باستخدام أعلى وأسفل.</p></div>
+                <div class="type-card"><h3>تحرير النص</h3><p>يمكن تعديل البطاقة نفسها وليس فقط ترتيبها.</p></div>
+                <div class="type-card"><h3>مسودة نهائية</h3><p>يتم جمع البطاقات داخل منطقة تحرير نهائية.</p></div>
+                <div class="type-card"><h3>إعادة الترتيب</h3><p>يمكن الرجوع للوضع الأصلي ثم المحاولة من جديد.</p></div>
+              </div>
+            </div>
+
+            <div id="freePanel" class="tab-panel">
+              <div class="type-grid">
+                <div class="type-card"><h3>اختيار محفز</h3><p>صورة أو قضية أو سيناريو أو موضوع حر.</p></div>
+                <div class="type-card"><h3>معاينة</h3><p>يرى الطالب تفاصيل المحفز قبل الكتابة.</p></div>
+                <div class="type-card"><h3>ثلاث مراحل</h3><p>اختيار، معاينة، كتابة.</p></div>
+                <div class="type-card"><h3>إرسال مباشر</h3><p>في النهاية يرسل التعبير ويحفظ في النشاطات.</p></div>
+              </div>
+            </div>
+
+            <div id="collabPanel" class="tab-panel">
+              <div class="type-grid">
+                <div class="type-card"><h3>مناقشة قضية</h3><p>الطالب يختار قضية أو مجموعة ثم يدخل غرفة نقاش جماعي.</p></div>
+                <div class="type-card"><h3>النص الحواري</h3><p>الطالب ينتظر مطابقة مع زميل ثم يبدأ الحوار الثنائي.</p></div>
+                <div class="type-card"><h3>غرف محادثة</h3><p>يظهر سجل حي للمحادثة داخل النشاط نفسه.</p></div>
+                <div class="type-card"><h3>اكتمال تعاوني</h3><p>يُسجّل النشاط في سجلات الإنجاز التعاوني.</p></div>
+              </div>
+            </div>
+            <div class="callout">
+              النشاطات التطبيقية في الكود الحالي تشمل: <strong>scene-choice</strong> و<strong>assemble</strong> و<strong>free expression</strong> و<strong>collaborative discussion</strong> و<strong>peer dialogue</strong>.
+            </div>
+            <div class="page-number">9</div>
+          </article>
+          <article class="page left">
+            <div class="chapter-tag">مشهد الصفحة</div>
+            <h2>صفحة التطبيق</h2>
+            <div class="book-screen" data-nav-active="topics">
+              <div class="screen-top">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <div class="screen-title">نشاط تطبيقي</div>
+              </div>
+              <div class="screen-body">
+                <div class="mini-card"><strong>عنوان النشاط</strong> [اسم النشاط]: [اسم الدرس] + وصف التعليمات كما يظهر أعلى الصفحة.</div>
+                <div class="scene-nav">
+                  <span class="active">المحطة 1</span>
+                  <span>المحطة 2</span>
+                  <span>المحطة 3</span>
+                  <span>المحطة 4</span>
+                </div>
+                <div class="mini-card"><strong>المشهد أو النص</strong> صورة أو فقرة أو موقف يشرح المطلوب.</div>
+                <div class="mini-card"><strong>الاختيارات</strong> جمل أو عناصر أو فقاعات يمكن سحبها أو الضغط عليها.</div>
+                <div class="progress"><span></span></div>
+                <div class="editor">هنا تظهر المسودة النهائية بعد الضغط على "إنشاء مسودة".</div>
+                <div class="pill-row">
+                  <span class="pill">السابق</span>
+                  <span class="pill">التالي</span>
+                  <span class="pill">إعادة التعيين</span>
+                  <span class="pill">إنشاء مسودة</span>
+                  <span class="pill active">إرسال النشاط</span>
+                </div>
+              </div>
+            </div>
+            <div class="page-number">10</div>
+          </article>
+        </section>
+
+        <section class="spread" data-title="المراجعة والتقييم" data-label="AI + submissions">
+          <article class="page right">
+            <div class="chapter-tag">الفصل 5</div>
+            <h2>المراجعة والكتابة والتقييم</h2>
+            <div class="card-grid">
+              <div class="note-card">
+                <h3>مراجعة الدرس</h3>
+                <p>ملخص الخطوات ونموذج الكتابة والمساعد الذكي.</p>
+              </div>
+              <div class="note-card">
+                <h3>المساعد الذكي</h3>
+                <p>يجيب وهو يعرف محتوى الدرس لأن الصفحة تمرر له المقدمة والخطوات والأنشطة والأسئلة.</p>
+              </div>
+              <div class="note-card">
+                <h3>الكتابة والتقييم</h3>
+                <p>يكتب الطالب النص في خانة واحدة أو في أقسام متعددة ثم يضغط "قيّم النص الآن".</p>
+              </div>
+              <div class="note-card">
+                <h3>بعد التقييم</h3>
+                <p>ينتقل الطالب إلى صفحة مراجعة التسليم ليرى تحليل الذكاء الاصطناعي ثم تقييم المعلم لاحقًا.</p>
+              </div>
+            </div>
+            <div class="callout">
+              إذا كانت الدرجة 85 أو أكثر، تظهر رسالة نتيجة مميزة بالإضافة إلى نقاط التقييم.
+            </div>
+            <div class="page-number">11</div>
+          </article>
+          <article class="page left">
+            <div class="chapter-tag">مشاهد الصفحة</div>
+            <h2>المراجعة ثم التقييم</h2>
+            <div class="book-screen">
+              <div class="screen-top">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <div class="screen-title">مراجعة الدرس</div>
+              </div>
+              <div class="screen-body">
+                <div class="split">
+                  <div class="mini-card"><strong>ملخص الخطوات</strong> بطاقات موجزة للدرس</div>
+                  <div class="mini-card"><strong>المساعد الذكي</strong> لديك سؤال؟ أو تحتاج لمناقشة فكرة؟ تحدث مع المساعد الذكي الآن.</div>
+                </div>
+                <div class="pill-row">
+                  <span class="pill">رجوع</span>
+                  <span class="pill active">أنا مستعد، لنبدأ الكتابة!</span>
+                </div>
+              </div>
+            </div>
+            <div class="book-screen" data-nav-active="submissions" style="margin-top: 12px;">
+              <div class="screen-top">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <div class="screen-title">تقييم الكتابة</div>
+              </div>
+              <div class="screen-body">
+                <div class="mini-card"><strong>مهمة الكتابة</strong> عنوان المهمة + وصفها + تعليمات النوع: discussion / dialogue / report / writing.</div>
+                <div class="editor">اكتب النص هنا...</div>
+                <div class="pill-row">
+                  <span class="pill active">قيّم النص الآن</span>
+                  <span class="pill">عرض كل كتاباتي</span>
+                </div>
+                <div class="stats-grid">
+                  <div class="metric"><strong>AI</strong> درجة فورية</div>
+                  <div class="metric"><strong>Rubric</strong> معايير واضحة</div>
+                  <div class="metric"><strong>10</strong> نقاط</div>
+                </div>
+              </div>
+            </div>
+            <div class="page-number">12</div>
+          </article>
+        </section>
+
+        <section class="spread" data-title="مشاهد واجهات الطالب" data-label="actual ui view">
+          <article class="page right">
+            <div class="chapter-tag">الفصل 6</div>
+            <h2>مشاهد فعلية من واجهات الطالب</h2>
+            <p class="muted">
+              هنا تظهر الواجهة كما بُنيت في المشروع: بنفس العناوين الرئيسية، نفس مناطق المحتوى، ونفس انتقال الرحلة بين الصفحات.
+            </p>
+            <div class="tabs" data-tab-group="student-pages">
+              <button class="tab-btn active" data-tab-target="studentTopicsView">الموضوعات</button>
+              <button class="tab-btn" data-tab-target="studentTopicView">الدرس</button>
+              <button class="tab-btn" data-tab-target="studentTutorialView">شرح النشاط</button>
+              <button class="tab-btn" data-tab-target="studentApplyView">التطبيق</button>
+              <button class="tab-btn" data-tab-target="studentSubmitView">التقييم والتسليمات</button>
+            </div>
+
+            <div id="studentTopicsView" class="tab-panel active">
+              <div class="ui-shell">
+                <div class="ui-header-band">
+                  <strong>مرحباً، [اسم الطالب]</strong>
+                  <div class="ui-subline">أهلاً بك في منصة اللغة العربية. استعرض الدروس والأنشطة أدناه.</div>
+                </div>
+                <div class="ui-body">
+                  <div class="ui-card"><strong>لوحة التقدم</strong> الدروس المكتملة / التسليمات / التقييمات من المعلم + زر عرض لوحة النقاط.</div>
+                  <div class="ui-grid">
+                    <div class="ui-card"><strong>موضوعات الفصل الأول</strong> بطاقات: كتابة الفقرة، تصميم موضوع، التلخيص، ترجمة علم، عرض كتاب، حكاية قصة.</div>
+                    <div class="ui-card"><strong>موضوعات الفصل الثاني</strong> بطاقات: وصف منظر طبيعي، مناقشة قضية، كتابة التقرير، التعبير الحر، النص الحواري.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="studentTopicView" class="tab-panel">
+              <div class="ui-shell">
+                <div class="ui-header-band">
+                  <strong>[اسم الدرس]</strong>
+                  <div class="ui-subline">أهداف الدرس + مقدمة الدرس + فيديو توضيحي + خطوات الدرس + أنشطة هذا الدرس.</div>
+                </div>
+                <div class="ui-body">
+                  <div class="ui-grid">
+                    <div class="ui-card"><strong>أهداف الدرس</strong> مع زر ابدأ الدرس.</div>
+                    <div class="ui-card"><strong>خطوات الدرس</strong> البطاقات التعليمية التي تشرح التسلسل قبل التنفيذ.</div>
+                    <div class="ui-card"><strong>أنشطة هذا الدرس</strong> زر شرح النشاط ثم الانتقال إلى التطبيق.</div>
+                    <div class="ui-card"><strong>الانتقال إلى مراجعة الدرس</strong> الزر النهائي بعد إنهاء التعلم الأساسي.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="studentTutorialView" class="tab-panel">
+              <div class="ui-shell">
+                <div class="ui-header-band">
+                  <strong>شرح النشاط: [اسم الدرس]</strong>
+                  <div class="ui-subline">شاهد الخطوات بشكل بصري، ثم انتقل إلى التطبيق الحقيقي.</div>
+                </div>
+                <div class="ui-body">
+                  <div class="ui-grid">
+                    <div class="ui-card"><strong>خطوات الشرح</strong> stepper مرقّم بعناوين الخطوات ووصف قصير لكل خطوة.</div>
+                    <div class="ui-card"><strong>منطقة العرض</strong> المشهد التوضيحي أو المثال المتحرك الذي يشرح الفكرة قبل العمل.</div>
+                  </div>
+                  <div class="pill-row">
+                    <span class="pill">العودة إلى الدرس</span>
+                    <span class="pill">السابق</span>
+                    <span class="pill">إعادة التشغيل</span>
+                    <span class="pill">تشغيل تلقائي</span>
+                    <span class="pill">التالي</span>
+                    <span class="pill active">ابدأ النشاط</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="studentApplyView" class="tab-panel">
+              <div class="ui-shell">
+                <div class="ui-header-band">
+                  <strong>[عنوان النشاط]: [اسم الدرس]</strong>
+                  <div class="ui-subline">شرح النشاط / المحطات أو المشاهد / المسودة / الإرسال النهائي.</div>
+                </div>
+                <div class="ui-body">
+                  <div class="ui-grid">
+                    <div class="ui-card"><strong>المشهد أو المحطة</strong> صورة أو نص أو موقف يشرح المطلوب.</div>
+                    <div class="ui-card"><strong>الاختيارات</strong> بطاقات، جمل، أو عناصر قابلة للنقر أو السحب أو الترتيب.</div>
+                    <div class="ui-card"><strong>المسودة النهائية</strong> تظهر بعد الضغط على إنشاء مسودة أو بعد جمع العناصر.</div>
+                    <div class="ui-card"><strong>أزرار التنفيذ</strong> السابق، التالي، إعادة التعيين، إنشاء مسودة، إرسال النشاط.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="studentSubmitView" class="tab-panel">
+              <div class="ui-shell">
+                <div class="ui-header-band">
+                  <strong>تقييم الكتابة + تسليماتي</strong>
+                  <div class="ui-subline">من مراجعة الدرس إلى قيّم النص الآن ثم عرض كل كتاباتي.</div>
+                </div>
+                <div class="ui-body">
+                  <div class="ui-grid">
+                    <div class="ui-card"><strong>المساعد الذكي</strong> موجود داخل صفحة المراجعة قبل الكتابة.</div>
+                    <div class="ui-card"><strong>مهمة الكتابة</strong> عنوان المهمة، نوعها، وخانة إدخال النص.</div>
+                    <div class="ui-card"><strong>تسليماتي</strong> كتاباتي وتقييماتي / سجل أنشطتي ودروسي.</div>
+                    <div class="ui-card"><strong>نقاطي وإنجازاتي</strong> إجمالي النقاط، المستوى الحالي، والهدف القادم.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="page-number">13</div>
+          </article>
+          <article class="page left">
+            <div class="chapter-tag">قراءة الشاشة</div>
+            <h2>كيف يقرأ الطالب الواجهة؟</h2>
+            <div class="spread-list">
+              <div class="note-card">
+                <h3>1. يبدأ من الموضوعات</h3>
+                <p>يقرأ لوحة التقدم، ثم يختار بطاقة موضوع عبر زر <strong>عرض الدرس</strong>.</p>
+              </div>
+              <div class="note-card">
+                <h3>2. يتعلم قبل أن يكتب</h3>
+                <p>صفحة الدرس ليست مكان التسليم؛ هي مكان الفهم، ثم يأتي بعدها شرح النشاط، ثم التطبيق.</p>
+              </div>
+              <div class="note-card">
+                <h3>3. النشاط منفصل عن الشرح</h3>
+                <p>الشرح البصري في صفحة مستقلة، ثم التطبيق في صفحة أخرى، وهو التدفق الذي طلبته في المشروع.</p>
+              </div>
+              <div class="note-card">
+                <h3>4. النهاية ليست عند الإرسال</h3>
+                <p>بعد التقييم تظهر التسليمات، النقاط، والتغذية الراجعة اللاحقة من المعلم.</p>
+              </div>
+            </div>
+            <div class="callout">
+              هذا الفصل هو المرجع الأسرع إذا أردت رؤية البنية الفعلية للواجهات بدل قراءة وصف عام فقط.
+            </div>
+            <div class="page-number">14</div>
+          </article>
+        </section>
+
+        <section class="spread" data-title="أطلس صفحات الطالب" data-label="full student flow">
+          <article class="page right">
+            <div class="chapter-tag">الفصل 7</div>
+            <h2>كل صفحات الطالب ومسار استخدامها</h2>
+            <p class="muted">
+              هذا الفصل يجمع الصفحات الظاهرة للطالب في المشروع الحالي، من لحظة الدخول حتى الكتابة والتقييم والنقاط والدردشة.
+            </p>
+            <div class="route-grid">
+              <div class="route-card">
+                <h3><code>/login</code></h3>
+                <p>صفحة الدخول الأولى قبل إظهار شريط التنقل وصفحات الطالب الخاصة.</p>
+              </div>
+              <div class="route-card">
+                <h3><code>/</code></h3>
+                <p>الموضوعات، لوحة التقدم، بطاقات الفصل الأول والثاني، وزر عرض الدرس.</p>
+              </div>
+              <div class="route-card">
+                <h3><code>/topic/:topicId</code></h3>
+                <p>صفحة الدرس وفيها الأهداف والمقدمة والفيديو والخطوات والأنشطة.</p>
+              </div>
+              <div class="route-card">
+                <h3><code>/activity/:topicId/tutorial</code></h3>
+                <p>الشرح البصري المنفصل الذي يسبق التطبيق العملي للنشاط.</p>
+              </div>
+              <div class="route-card">
+                <h3><code>/activity/:topicId/task</code></h3>
+                <p>صفحة التطبيق نفسها: اختيار، ترتيب، كتابة، أو نشاط تعاوني بحسب نوع الدرس.</p>
+              </div>
+              <div class="route-card">
+                <h3><code>/lesson-review/:topicId</code></h3>
+                <p>ملخص الدرس، نموذج الكتابة، والمساعد الذكي قبل بدء المهمة الكتابية.</p>
+              </div>
+              <div class="route-card">
+                <h3><code>/evaluate/:topicId</code></h3>
+                <p>كتابة النص، تشغيل التقييم، والانتقال إلى صفحة النتائج والكتابات السابقة.</p>
+              </div>
+              <div class="route-card">
+                <h3><code>/my-submissions</code></h3>
+                <p>كل كتابات الطالب وتقييماته وسجل أنشطته ودروسه.</p>
+              </div>
+              <div class="route-card">
+                <h3><code>/student-progress</code></h3>
+                <p>لوحة النقاط والإنجازات والمستوى والهدف القادم.</p>
+              </div>
+              <div class="route-card">
+                <h3><code>/chats</code> + <code>/profile</code></h3>
+                <p>الدردشة مع المعلم أو المشرف ثم الملف الشخصي وبيانات الحساب.</p>
+              </div>
+            </div>
+            <div class="flow-strip">
+              <span class="flow-node">دخول</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">موضوعات</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">درس</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">شرح</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">تطبيق</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">مراجعة</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">تقييم</span>
+              <span class="flow-arrow">←</span>
+              <span class="flow-node">تسليمات / نقاط / دردشة</span>
+            </div>
+            <div class="page-number">15</div>
+          </article>
+          <article class="page left">
+            <div class="chapter-tag">استخدام يومي</div>
+            <h2>كيف يتحرك الطالب خلال الرحلة كاملة؟</h2>
+            <div class="spread-list">
+              <div class="note-card">
+                <h3>1. اختيار الدرس</h3>
+                <p>يبدأ من <code>/</code> ويقرأ لوحة التقدم ثم يضغط <strong>عرض الدرس</strong> على البطاقة المناسبة.</p>
+              </div>
+              <div class="note-card">
+                <h3>2. الفهم قبل التطبيق</h3>
+                <p>داخل <code>/topic/:topicId</code> يقرأ الشرح والخطوات، ثم يضغط نشاط الدرس ليذهب إلى <code>/activity/:topicId/tutorial</code>.</p>
+              </div>
+              <div class="note-card">
+                <h3>3. الشرح ثم العمل</h3>
+                <p>بعد مشاهدة الخطوات بصريًا يبدأ النشاط من <code>/activity/:topicId/task</code>، ثم ينتقل إلى <code>/lesson-review/:topicId</code>.</p>
+              </div>
+              <div class="note-card">
+                <h3>4. الكتابة وما بعدها</h3>
+                <p>يكتب في <code>/evaluate/:topicId</code> ثم يراجع نتائجه في <code>/my-submissions</code> ويرى نقاطه في <code>/student-progress</code>.</p>
+              </div>
+              <div class="note-card">
+                <h3>5. الدعم الشخصي</h3>
+                <p>إذا احتاج مساعدة يستخدم <code>/chats</code>، وإذا أراد بياناته الشخصية ينتقل إلى <code>/profile</code>.</p>
+              </div>
+            </div>
+            <div class="callout">
+              بهذا يكون الكتاب قد غطى كل صفحة طالب ظاهرة في المشروع الحالي، مع ترتيبها الفعلي في الرحلة.
+            </div>
+            <div class="page-number">16</div>
+          </article>
+        </section>
+
+        <section class="spread" data-title="التسليمات والنقاط" data-label="my submissions">
+          <article class="page right">
+            <div class="chapter-tag">الملحق</div>
+            <h2>تسليماتي والنقاط والملف الشخصي</h2>
+            <ul class="tight-list">
+              <li>صفحة "تسليماتي" فيها تبويبان: الكتابات والتقييمات، وسجل الأنشطة والدروس.</li>
+              <li>صفحة مراجعة التسليم تعرض نص الطالب ثم تحليل AI ثم تقييم المعلم عند توفره.</li>
+              <li>صفحة النقاط تعرض إجمالي النقاط، الهدف القادم، المستويات والمكافآت.</li>
+              <li>الملف الشخصي يعرض الاسم والصف والبريد والدور وآخر ملاحظات الذكاء الاصطناعي.</li>
+              <li>مركز الدردشة يربط الطالب بمعلمه أو بالمشرف إذا كانت الدردشة متاحة.</li>
+            </ul>
+            <h3 style="margin-top:16px;">العناوين الفعلية في الصفحات</h3>
+            <ul class="tight-list">
+              <li><strong>تسليماتي</strong></li>
+              <li><strong>نقاطي وإنجازاتي</strong></li>
+              <li><strong>الملف الشخصي</strong></li>
+              <li><strong>الدردشة</strong> مع رسالة "الدردشة غير متاحة الآن" عند التعطيل</li>
+            </ul>
+            <h3 style="margin-top: 18px;">الدروس الظاهرة حاليًا</h3>
+            <div class="card-grid">
+              <div class="note-card"><strong>الفصل الأول</strong><br/>كتابة الفقرة، تصميم موضوع، التلخيص، ترجمة علم، عرض كتاب، حكاية قصة</div>
+              <div class="note-card"><strong>الفصل الثاني</strong><br/>وصف منظر طبيعي، مناقشة قضية، كتابة التقرير، التعبير الحر، النص الحواري</div>
+            </div>
+            <div class="page-number">17</div>
+          </article>
+          <article class="page left">
+            <div class="chapter-tag">مشهد الصفحة</div>
+            <h2>تسليماتي ولوحة النقاط</h2>
+            <div class="book-screen" data-nav-active="submissions">
+              <div class="screen-top">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <div class="screen-title">تسليماتي</div>
+              </div>
+              <div class="screen-body">
+                <div class="pill-row">
+                  <span class="pill active">كتاباتي وتقييماتي</span>
+                  <span class="pill">سجل أنشطتي ودروسي</span>
+                </div>
+                <div class="table">
+                  <div class="table-head">
+                    <div>الموضوع</div><div>التاريخ</div><div>AI</div><div>المعلم</div>
+                  </div>
+                  <div class="table-row">
+                    <div>كتابة الفقرة</div><div>2026/07/06</div><div>88</div><div>لم يُقيّم بعد</div>
+                  </div>
+                  <div class="table-row">
+                    <div>التلخيص</div><div>2026/07/02</div><div>82</div><div>79</div>
+                  </div>
+                </div>
+                <div class="stats-grid">
+                  <div class="metric"><strong>95</strong> نقطة</div>
+                  <div class="metric"><strong>4</strong> دروس مكتملة</div>
+                  <div class="metric"><strong>7</strong> أنشطة</div>
+                </div>
+                <div class="mini-card"><strong>الملف الشخصي</strong> الاسم الكامل / الصف / البريد / الدور / آخر ملاحظات الذكاء الاصطناعي</div>
+                <div class="mini-card"><strong>الدردشة</strong> قائمة المعلم أو المشرف + المحادثة + حالة الإتاحة</div>
+              </div>
+            </div>
+            <div class="callout">
+              انتهى الكتاب. يمكن العودة لأي spread من الفهرس أو متابعة القراءة من الأزرار العلوية.
+            </div>
+            <div class="page-number">18</div>
+          </article>
+        </section>
+          </div>
+          <div class="reader-footer">
+            <button class="control-btn" id="prevButtonBottom">السابق</button>
+            <div class="footer-meter">
+              <span>تقدم القراءة</span>
+              <div class="footer-track"><div class="footer-fill" id="footerFill"></div></div>
+              <span id="footerLabel">spread 1 من 9</span>
+            </div>
+            <div class="footer-actions">
+              <button class="control-btn" id="tocButtonBottom">الفهرس</button>
+              <button class="control-btn primary" id="nextButtonBottom">التالي</button>
+            </div>
+          </div>
+        </div>
+        <aside class="reader-sidebar">
+          <div class="sidebar-header">
+            <div>
+              <div class="sidebar-title">دليل الفصول</div>
+              <div class="sidebar-subtitle">كل محطة في رحلة الطالب</div>
+            </div>
+            <div class="surface-btn" style="width:42px;padding:0;">×</div>
+          </div>
+          <div class="sidebar-scroller">
+            <div class="chapter-list" id="inlineTocList"></div>
+            <div class="sidebar-card">
+              <strong id="currentSpreadTitle">الغلاف</strong>
+              <div class="sidebar-subtitle" id="currentSpreadLabel">بداية الرحلة</div>
+            </div>
+            <div class="sidebar-card">
+              <strong>تدفق الطالب</strong>
+              <div class="sidebar-subtitle">الموضوعات → الدرس → شرح النشاط → التطبيق → المراجعة → التقييم → التسليمات / النقاط / الدردشة</div>
+            </div>
+            <div class="sidebar-card">
+              <strong>ما يشرحه هذا الكتاب</strong>
+              <div class="sidebar-subtitle">الصفحات، الشريط العلوي، تفاصيل النشاطات، المراجعة، الكتابة، التقييم، والنتائج.</div>
+            </div>
+          </div>
+          <div class="sidebar-card">
+            <strong>الصفحة الحالية</strong>
+            <div class="sidebar-subtitle" id="currentSpreadIndex">1 / 9</div>
+          </div>
+        </aside>
+        <aside class="reader-tools" aria-label="أدوات سريعة">
+          <div class="tool-rail-btn active">☰</div>
+          <div class="tool-rail-btn">☷</div>
+          <div class="tool-rail-btn">🔖</div>
+          <div class="tool-rail-btn">✎</div>
+          <div class="tool-rail-btn">⚙</div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div class="toc-dialog" id="tocDialog">
+    <div class="toc-card">
+      <div class="reader-bar" style="margin-bottom: 14px;">
+        <div class="reader-bar-title">
+          <strong>فهرس الكتاب</strong>
+          <span>اختر spread للانتقال المباشر</span>
+        </div>
+        <div class="reader-controls">
+          <button class="control-btn" id="closeToc">إغلاق</button>
+        </div>
+      </div>
+      <div class="spread-list" id="tocList"></div>
+    </div>
+  </div>
+
+  <script>
+    const spreads = Array.from(document.querySelectorAll(".spread"));
+    const prevButton = document.getElementById("prevButton");
+    const nextButton = document.getElementById("nextButton");
+    const prevButtonBottom = document.getElementById("prevButtonBottom");
+    const nextButtonBottom = document.getElementById("nextButtonBottom");
+    const tocButtonBottom = document.getElementById("tocButtonBottom");
+    const pageIndicator = document.getElementById("pageIndicator");
+    const footerLabel = document.getElementById("footerLabel");
+    const footerFill = document.getElementById("footerFill");
+    const tocButton = document.getElementById("tocButton");
+    const tocDialog = document.getElementById("tocDialog");
+    const closeToc = document.getElementById("closeToc");
+    const tocList = document.getElementById("tocList");
+    const inlineTocList = document.getElementById("inlineTocList");
+    const currentSpreadTitle = document.getElementById("currentSpreadTitle");
+    const currentSpreadLabel = document.getElementById("currentSpreadLabel");
+    const currentSpreadIndex = document.getElementById("currentSpreadIndex");
+
+    let activeSpread = 0;
+
+    function renderSpread() {
+      spreads.forEach((spread, index) => {
+        spread.classList.toggle("active", index === activeSpread);
+      });
+      pageIndicator.textContent = `${activeSpread + 1} / ${spreads.length}`;
+      footerLabel.textContent = `spread ${activeSpread + 1} من ${spreads.length}`;
+      footerFill.style.width = `${((activeSpread + 1) / spreads.length) * 100}%`;
+      currentSpreadTitle.textContent = spreads[activeSpread].dataset.title;
+      currentSpreadLabel.textContent = spreads[activeSpread].dataset.label;
+      currentSpreadIndex.textContent = `${activeSpread + 1} / ${spreads.length}`;
+      prevButton.disabled = activeSpread === 0;
+      nextButton.disabled = activeSpread === spreads.length - 1;
+      prevButtonBottom.disabled = activeSpread === 0;
+      nextButtonBottom.disabled = activeSpread === spreads.length - 1;
+      inlineTocList.querySelectorAll(".chapter-item").forEach((item, index) => {
+        item.classList.toggle("active", index === activeSpread);
+      });
+    }
+
+    function goToSpread(index) {
+      activeSpread = Math.max(0, Math.min(spreads.length - 1, index));
+      renderSpread();
+      tocDialog.classList.remove("open");
+    }
+
+    prevButton.addEventListener("click", () => goToSpread(activeSpread - 1));
+    nextButton.addEventListener("click", () => goToSpread(activeSpread + 1));
+    prevButtonBottom.addEventListener("click", () => goToSpread(activeSpread - 1));
+    nextButtonBottom.addEventListener("click", () => goToSpread(activeSpread + 1));
+    tocButton.addEventListener("click", () => tocDialog.classList.add("open"));
+    tocButtonBottom.addEventListener("click", () => tocDialog.classList.add("open"));
+    closeToc.addEventListener("click", () => tocDialog.classList.remove("open"));
+
+    tocDialog.addEventListener("click", (event) => {
+      if (event.target === tocDialog) {
+        tocDialog.classList.remove("open");
+      }
+    });
+
+    spreads.forEach((spread, index) => {
+      const button = document.createElement("button");
+      button.className = "spread-link";
+      button.innerHTML = `<div><strong>${index + 1}. ${spread.dataset.title}</strong><span>${spread.dataset.label}</span></div><span>انتقال</span>`;
+      button.addEventListener("click", () => goToSpread(index));
+      tocList.appendChild(button);
+
+      const chapterItem = document.createElement("button");
+      chapterItem.className = "chapter-item";
+      chapterItem.innerHTML = `<strong>${index + 1}. ${spread.dataset.title}</strong><span>${spread.dataset.label}</span>`;
+      chapterItem.addEventListener("click", () => goToSpread(index));
+      inlineTocList.appendChild(chapterItem);
+    });
+
+    document.querySelectorAll(".book-screen").forEach((screen) => {
+      const active = screen.getAttribute("data-nav-active") || "topics";
+      const nav = document.createElement("div");
+      nav.className = "screen-navbar";
+      nav.innerHTML = `
+        <div class="screen-navbar-logo">مداد</div>
+        <div class="screen-navbar-links">
+          <span class="screen-nav-link ${active === "topics" ? "active" : ""}">الموضوعات</span>
+          <span class="screen-nav-link ${active === "submissions" ? "active" : ""}">تسليماتي</span>
+          <span class="screen-nav-link ${active === "points" ? "active" : ""}">نقاطي</span>
+          <span class="screen-nav-link ${active === "chat" ? "active" : ""}">الدردشة</span>
+        </div>
+        <div class="screen-navbar-actions">
+          <span class="screen-nav-badge">🌙</span>
+          <span class="screen-nav-badge">الملف الشخصي</span>
+        </div>
+      `;
+      screen.insertBefore(nav, screen.firstChild);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") goToSpread(activeSpread + 1);
+      if (event.key === "ArrowRight") goToSpread(activeSpread - 1);
+      if (event.key === "Escape") tocDialog.classList.remove("open");
+    });
+
+    document.querySelectorAll("[data-tab-group]").forEach((group) => {
+      const buttons = group.querySelectorAll(".tab-btn");
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const targetId = button.getAttribute("data-tab-target");
+          const host = group.parentElement;
+          buttons.forEach((item) => item.classList.remove("active"));
+          host.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.remove("active"));
+          button.classList.add("active");
+          host.querySelector("#" + targetId).classList.add("active");
+        });
+      });
+    });
+
+    renderSpread();
+  </script>
+</body>
+</html>

@@ -1,0 +1,2625 @@
+<!doctype html>
+<html lang="ar" dir="rtl" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>مداد | دليل الطالب التفاعلي</title>
+  <script>
+    document.documentElement.className = document.documentElement.className.replace("no-js", "js");
+  </script>
+  <style>
+    /* Book shell */
+    :root {
+      --primary: #0f766e;
+      --primary-dark: #0b4f4a;
+      --primary-soft: #e0f2ef;
+      --accent: #d4a23b;
+      --accent-soft: #fff1cc;
+      --ink: #121418;
+      --muted: #5b6470;
+      --paper: #fffdf7;
+      --paper-strong: #ffffff;
+      --surface: rgba(255, 255, 255, 0.94);
+      --line: rgba(15, 23, 42, 0.14);
+      --line-strong: rgba(15, 23, 42, 0.24);
+      --success: #16803c;
+      --danger: #b42318;
+      --warning: #a15c00;
+      --shadow-sm: 0 8px 20px rgba(15, 23, 42, 0.09);
+      --shadow-md: 0 22px 60px rgba(15, 23, 42, 0.16);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --focus: 0 0 0 4px rgba(15, 118, 110, 0.22);
+      --font: "Cairo", "Tajawal", "Noto Naskh Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+    }
+
+    [data-theme="dark"] {
+      --primary: #35d0c5;
+      --primary-dark: #1b8c86;
+      --primary-soft: rgba(53, 208, 197, 0.15);
+      --accent: #f2c05f;
+      --accent-soft: rgba(242, 192, 95, 0.16);
+      --ink: #f8fafc;
+      --muted: #b8c2d3;
+      --paper: #121826;
+      --paper-strong: #172033;
+      --surface: rgba(18, 24, 38, 0.94);
+      --line: rgba(148, 163, 184, 0.24);
+      --line-strong: rgba(148, 163, 184, 0.38);
+      --success: #7bd88f;
+      --danger: #ff9b92;
+      --warning: #ffd28a;
+      --shadow-sm: 0 10px 26px rgba(2, 6, 23, 0.32);
+      --shadow-md: 0 26px 68px rgba(2, 6, 23, 0.48);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font);
+      line-height: 1.65;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(212, 162, 59, 0.16), transparent 26rem),
+        radial-gradient(circle at 84% 12%, rgba(15, 118, 110, 0.14), transparent 24rem),
+        linear-gradient(135deg, #f7f2e8 0%, #eef7f5 52%, #f9f5ec 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    [data-theme="dark"] body,
+    body[data-theme="dark"] {
+      background:
+        radial-gradient(circle at 12% 8%, rgba(242, 192, 95, 0.12), transparent 26rem),
+        radial-gradient(circle at 84% 12%, rgba(53, 208, 197, 0.12), transparent 24rem),
+        linear-gradient(135deg, #0c1220 0%, #121826 54%, #101827 100%);
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
+    :focus-visible {
+      outline: none;
+      box-shadow: var(--focus);
+    }
+
+    .reader {
+      width: min(1480px, calc(100vw - 24px));
+      min-height: calc(100vh - 24px);
+      margin: 12px auto;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 10px;
+    }
+
+    .reader-bar,
+    .book-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .reader-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      box-shadow: 0 10px 24px rgba(15, 118, 110, 0.22);
+      font-weight: 900;
+    }
+
+    .reader-title {
+      min-width: 0;
+    }
+
+    .reader-title strong {
+      display: block;
+      color: var(--primary-dark);
+      line-height: 1.2;
+      font-size: 1.05rem;
+    }
+
+    .reader-title span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.86rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 40vw;
+    }
+
+    .reader-actions,
+    .nav-actions,
+    .demo-controls,
+    .inline-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .button,
+    .icon-button {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      min-height: 40px;
+      padding: 8px 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-weight: 800;
+      letter-spacing: 0;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      box-shadow: 0 10px 24px rgba(15, 118, 110, 0.18);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+      text-decoration: none;
+    }
+
+    .button:hover,
+    .icon-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 32px rgba(15, 118, 110, 0.24);
+    }
+
+    .button.secondary,
+    .icon-button.secondary {
+      background: var(--paper-strong);
+      color: var(--ink);
+      border-color: var(--line);
+      box-shadow: none;
+    }
+
+    .button.accent {
+      background: linear-gradient(135deg, #a66d10, var(--accent));
+      color: #1f1707;
+    }
+
+    .icon-button {
+      width: 40px;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .book-progress {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.09);
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .book-progress span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+      transition: width 0.26s ease;
+    }
+
+    .reader-layout {
+      display: grid;
+      grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .toc-panel {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+      overflow: auto;
+      max-height: calc(100vh - 142px);
+    }
+
+    .toc-panel h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      color: var(--primary-dark);
+    }
+
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .toc-button {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 30px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      text-align: right;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--ink);
+      padding: 8px;
+      line-height: 1.35;
+    }
+
+    .toc-button:hover,
+    .toc-button[aria-current="true"] {
+      background: var(--primary-soft);
+      border-color: rgba(15, 118, 110, 0.2);
+    }
+
+    .toc-index {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--paper-strong);
+      border: 1px solid var(--line);
+      color: var(--primary-dark);
+      font-weight: 900;
+      font-size: 0.82rem;
+    }
+
+    .toc-bookmark {
+      color: var(--accent);
+      visibility: hidden;
+    }
+
+    .toc-button.is-bookmarked .toc-bookmark {
+      visibility: visible;
+    }
+
+    .book-shell {
+      position: relative;
+      min-width: 0;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(90deg, rgba(15, 23, 42, 0.08), transparent 24px),
+        var(--paper);
+      border-radius: 20px;
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      min-height: 680px;
+    }
+
+    .book-shell::before {
+      content: "";
+      position: absolute;
+      inset-inline-start: 24px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(15, 23, 42, 0.08);
+      pointer-events: none;
+    }
+
+    .book-page {
+      padding: clamp(18px, 3vw, 44px);
+      min-height: 680px;
+      animation: pageIn 0.22s ease-out;
+    }
+
+    .js .book-page {
+      display: none;
+    }
+
+    .js .book-page.is-active {
+      display: block;
+    }
+
+    .page-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 10px;
+      color: var(--primary-dark);
+      font-weight: 900;
+      font-size: 0.9rem;
+    }
+
+    .book-page h1,
+    .book-page h2,
+    .book-page h3 {
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    .book-page h1 {
+      margin: 0 0 10px;
+      color: var(--primary-dark);
+      font-size: clamp(1.8rem, 2.6vw, 3rem);
+    }
+
+    .book-page h2 {
+      margin: 0 0 10px;
+      color: var(--primary-dark);
+      font-size: clamp(1.2rem, 1.5vw, 1.65rem);
+    }
+
+    .book-page h3 {
+      margin: 0 0 8px;
+      color: var(--ink);
+      font-size: 1.05rem;
+    }
+
+    .lead {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-weight: 700;
+      max-width: 74ch;
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+
+    .page-grid.three {
+      grid-template-columns: 1.05fr 0.95fr;
+    }
+
+    .panel,
+    .sim-panel,
+    .note-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel.tight {
+      padding: 12px;
+    }
+
+    .note-panel {
+      background: linear-gradient(135deg, var(--accent-soft), var(--surface));
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .mini-list,
+    .check-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .mini-list li,
+    .check-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--accent);
+      flex: 0 0 auto;
+      margin-top: 0.65em;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--paper-strong);
+      padding: 5px 10px;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 0.86rem;
+    }
+
+    .pill.done {
+      color: var(--success);
+      border-color: rgba(22, 128, 60, 0.35);
+      background: rgba(22, 128, 60, 0.08);
+    }
+
+    .paper-figure {
+      position: relative;
+      min-height: 260px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(transparent 31px, rgba(15, 23, 42, 0.07) 32px),
+        linear-gradient(90deg, rgba(212, 162, 59, 0.12), transparent 30%),
+        var(--paper-strong);
+      background-size: 100% 32px, auto, auto;
+      overflow: hidden;
+    }
+
+    .paper-figure svg {
+      width: 100%;
+      height: 100%;
+      min-height: 260px;
+      display: block;
+    }
+
+    .cover-page {
+      min-height: 680px;
+      display: grid;
+      align-items: stretch;
+    }
+
+    .cover-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
+      gap: 24px;
+      align-items: center;
+    }
+
+    .cover-title {
+      font-size: clamp(4rem, 12vw, 9rem);
+      margin: 0;
+      line-height: 0.9;
+      color: var(--primary-dark);
+      font-weight: 900;
+    }
+
+    .cover-subtitle {
+      margin: 10px 0;
+      color: var(--ink);
+      font-size: clamp(1.5rem, 3vw, 2.6rem);
+      font-weight: 900;
+    }
+
+    .cover-copy {
+      max-width: 48ch;
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: 1.12rem;
+      font-weight: 700;
+    }
+
+    .book-mark-strip {
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline-end: 42px;
+      width: 42px;
+      height: 128px;
+      background: linear-gradient(180deg, var(--accent), #b87914);
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .legend-grid,
+    .journey-map,
+    .topic-grid,
+    .status-grid,
+    .rubric-grid,
+    .mini-dashboard,
+    .progress-mini-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .legend-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .legend-item,
+    .status-box,
+    .dashboard-stat,
+    .rubric-item,
+    .lesson-step,
+    .submission-row,
+    .chat-row {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--paper-strong);
+      padding: 12px;
+    }
+
+    .journey-map {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .journey-station {
+      position: relative;
+      min-height: 86px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--paper-strong);
+      color: var(--ink);
+      text-align: right;
+      font-weight: 900;
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+
+    .journey-station:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+
+    .journey-station span {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+    }
+
+    /* Mini platform surfaces */
+    .mini-window {
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+      background: var(--paper-strong);
+      overflow: hidden;
+    }
+
+    .mini-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(212, 162, 59, 0.08));
+    }
+
+    .mini-logo {
+      font-weight: 900;
+      color: var(--primary-dark);
+      font-size: 1.25rem;
+    }
+
+    .mini-body {
+      padding: 14px;
+    }
+
+    .field {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 10px;
+      margin-bottom: 10px;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .field label {
+      display: block;
+      font-weight: 900;
+      color: var(--ink);
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+    }
+
+    .fake-input,
+    .fake-textarea {
+      min-height: 38px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--paper-strong);
+      padding: 8px 10px;
+      color: var(--muted);
+    }
+
+    .fake-textarea {
+      min-height: 112px;
+      align-items: flex-start;
+      white-space: pre-line;
+    }
+
+    .highlight {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.16);
+    }
+
+    .pulse {
+      animation: pulseFocus 1.2s ease-in-out infinite;
+    }
+
+    .mini-button {
+      min-height: 38px;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: #ffffff;
+      padding: 8px 14px;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+
+    .mini-button.secondary {
+      background: var(--paper-strong);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .mini-button.loading::before {
+      content: "";
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.55);
+      border-top-color: #ffffff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .demo-caption,
+    .feedback-line,
+    .case-error,
+    .case-success {
+      margin-top: 12px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: var(--paper-strong);
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .case-error {
+      color: var(--danger);
+      border-color: rgba(180, 35, 24, 0.25);
+      background: rgba(180, 35, 24, 0.08);
+    }
+
+    .case-success {
+      color: var(--success);
+      border-color: rgba(22, 128, 60, 0.25);
+      background: rgba(22, 128, 60, 0.08);
+    }
+
+    .screen-success {
+      display: grid;
+      place-items: center;
+      gap: 8px;
+      min-height: 120px;
+      text-align: center;
+      color: var(--success);
+      font-weight: 900;
+    }
+
+    .checkmark {
+      width: 54px;
+      height: 54px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: rgba(22, 128, 60, 0.12);
+      color: var(--success);
+      border: 1px solid rgba(22, 128, 60, 0.32);
+      font-size: 1.8rem;
+    }
+
+    .navbar-sim {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+      background: var(--paper-strong);
+      flex-wrap: wrap;
+    }
+
+    .nav-links-sim,
+    .topic-status-summary,
+    .tab-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .nav-link-sim,
+    .tab-sim {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-weight: 900;
+    }
+
+    .nav-link-sim.is-active,
+    .tab-sim.is-active {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      border-color: transparent;
+    }
+
+    .tooltip-box {
+      min-height: 48px;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-weight: 900;
+    }
+
+    .topic-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .topic-card-mini {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.1), transparent),
+        var(--paper-strong);
+      padding: 14px;
+      min-height: 160px;
+      overflow: hidden;
+    }
+
+    .topic-card-mini h3 {
+      color: var(--primary-dark);
+    }
+
+    .topic-card-mini.disabled {
+      opacity: 0.72;
+    }
+
+    .topic-card-mini .mini-button {
+      margin-top: 8px;
+    }
+
+    .status-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .dashboard-stat strong,
+    .status-box strong {
+      display: block;
+      color: var(--primary-dark);
+      font-size: 1.2rem;
+    }
+
+    .lesson-steps {
+      display: grid;
+      gap: 10px;
+    }
+
+    .lesson-step {
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .lesson-step.is-open {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .lesson-step.is-read h3::after {
+      content: " تم";
+      color: var(--success);
+      font-size: 0.82rem;
+    }
+
+    .video-box {
+      aspect-ratio: 16 / 9;
+      border: 1px dashed var(--line-strong);
+      border-radius: 14px;
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(212, 162, 59, 0.12)),
+        var(--paper-strong);
+      display: grid;
+      place-items: center;
+      color: var(--primary-dark);
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .video-play {
+      width: 58px;
+      height: 58px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: #ffffff;
+      color: var(--primary-dark);
+      margin: 0 auto 8px;
+      border: 1px solid var(--line);
+    }
+
+    .mini-progress {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.09);
+      border: 1px solid var(--line);
+      margin-top: 10px;
+    }
+
+    .mini-progress span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+      transition: width 0.25s ease;
+    }
+
+    .activity-practice-list,
+    .order-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .order-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--paper-strong);
+      padding: 10px;
+    }
+
+    .order-actions {
+      display: flex;
+      gap: 5px;
+      flex-wrap: nowrap;
+    }
+
+    .tiny-button {
+      min-width: 34px;
+      min-height: 32px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .qa-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--paper-strong);
+      overflow: hidden;
+    }
+
+    .qa-button {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      padding: 12px;
+      text-align: right;
+      font-weight: 900;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .qa-answer {
+      display: none;
+      padding: 0 12px 12px;
+      color: var(--muted);
+    }
+
+    .qa-item.is-open .qa-answer {
+      display: block;
+    }
+
+    .rubric-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .rubric-item strong {
+      display: block;
+      color: var(--primary-dark);
+    }
+
+    .checklist-interactive label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      background: var(--paper-strong);
+      border-radius: 12px;
+      padding: 10px;
+      font-weight: 800;
+    }
+
+    .checklist-interactive input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      flex: 0 0 auto;
+    }
+
+    .submission-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+
+    .submission-table th,
+    .submission-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      text-align: right;
+      vertical-align: top;
+    }
+
+    .submission-table th {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--primary-dark);
+      padding: 4px 9px;
+      font-weight: 900;
+    }
+
+    .chat-layout-mini {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      min-height: 230px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--paper-strong);
+    }
+
+    .chat-sidebar-mini {
+      border-inline-start: 1px solid var(--line);
+      padding: 10px;
+      background: var(--surface);
+    }
+
+    .chat-main-mini {
+      padding: 10px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+    }
+
+    .chat-bubble {
+      border-radius: 14px;
+      padding: 8px 10px;
+      max-width: 84%;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .chat-bubble.sent {
+      margin-inline-start: auto;
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .print-summary {
+      display: none;
+    }
+
+    /* Animation states */
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulseFocus {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.22); }
+      50% { box-shadow: 0 0 0 8px rgba(15, 118, 110, 0.08); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+    @media (max-width: 1040px) {
+      .reader-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .toc-panel {
+        display: none;
+        max-height: none;
+      }
+
+      .toc-panel.is-open {
+        display: block;
+      }
+
+      .reader-title span {
+        max-width: 54vw;
+      }
+
+      .cover-layout,
+      .page-grid,
+      .page-grid.three,
+      .topic-grid,
+      .rubric-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .reader {
+        width: min(100vw - 10px, 680px);
+        margin: 5px auto;
+      }
+
+      .reader-bar,
+      .book-nav {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .reader-actions,
+      .nav-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .reader-title span {
+        max-width: 78vw;
+      }
+
+      .book-shell,
+      .book-page {
+        min-height: auto;
+      }
+
+      .book-page {
+        padding: 16px;
+      }
+
+      .journey-map,
+      .legend-grid,
+      .status-grid,
+      .mini-dashboard,
+      .progress-mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cover-title {
+        font-size: clamp(3.5rem, 20vw, 5.4rem);
+      }
+
+      .chat-layout-mini {
+        grid-template-columns: 1fr;
+      }
+
+      .chat-sidebar-mini {
+        border-inline-start: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .submission-table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .button {
+        width: 100%;
+      }
+
+      .demo-controls .button,
+      .inline-actions .button {
+        width: auto;
+      }
+    }
+
+    /* Print behavior */
+    @media print {
+      :root {
+        --ink: #111111;
+        --muted: #444444;
+        --paper: #ffffff;
+        --paper-strong: #ffffff;
+        --surface: #ffffff;
+        --line: #c7c7c7;
+      }
+
+      body {
+        background: #ffffff !important;
+      }
+
+      .reader {
+        width: auto;
+        margin: 0;
+        display: block;
+      }
+
+      .reader-bar,
+      .book-nav,
+      .book-progress,
+      .toc-panel,
+      .demo-controls,
+      .bookmark-ribbon,
+      .icon-button,
+      .no-print {
+        display: none !important;
+      }
+
+      .book-shell {
+        border: 0;
+        box-shadow: none;
+        background: #ffffff;
+        overflow: visible;
+      }
+
+      .book-shell::before {
+        display: none;
+      }
+
+      .js .book-page,
+      .js .book-page.is-active,
+      .book-page {
+        display: block !important;
+        min-height: auto;
+        padding: 18mm 10mm;
+        break-after: page;
+        animation: none;
+      }
+
+      .panel,
+      .sim-panel,
+      .note-panel,
+      .mini-window,
+      .topic-card-mini,
+      .lesson-step,
+      .order-item {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      .fake-input.secret-print,
+      .password-value,
+      [data-secret-print="true"] {
+        color: transparent !important;
+        text-shadow: none !important;
+      }
+
+      .print-summary {
+        display: block;
+        padding: 12mm 10mm;
+        break-before: page;
+      }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" aria-hidden="true" focusable="false">
+    <symbol id="icon-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/></symbol>
+    <symbol id="icon-list" viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></symbol>
+    <symbol id="icon-prev" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="icon-next" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+    <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M10 4H6v16h4z"/><path d="M18 4h-4v16h4z"/></symbol>
+    <symbol id="icon-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v7h7"/></symbol>
+    <symbol id="icon-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol>
+    <symbol id="icon-printer" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></symbol>
+    <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 9 9 0 1 0 20.5 14.5z"/></symbol>
+    <symbol id="icon-fullscreen" viewBox="0 0 24 24"><path d="M8 3H3v5"/><path d="M16 3h5v5"/><path d="M21 16v5h-5"/><path d="M3 16v5h5"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></symbol>
+  </svg>
+
+  <div class="reader" id="reader">
+    <header class="reader-bar" aria-label="شريط أدوات الدليل">
+      <div class="reader-brand">
+        <div class="brand-mark" aria-hidden="true">م</div>
+        <div class="reader-title">
+          <strong>مداد</strong>
+          <span id="currentChapterTitle">دليل الطالب التفاعلي</span>
+        </div>
+      </div>
+      <div class="reader-actions">
+        <button class="icon-button secondary" type="button" id="tocToggle" aria-controls="tocPanel" aria-expanded="false" title="الفهرس">
+          <svg class="icon"><use href="#icon-list"></use></svg>
+        </button>
+        <button class="icon-button secondary" type="button" id="bookmarkToggle" aria-pressed="false" title="حفظ علامة">
+          <svg class="icon"><use href="#icon-bookmark"></use></svg>
+        </button>
+        <button class="icon-button secondary" type="button" id="themeToggle" title="وضع القراءة">
+          <svg class="icon"><use href="#icon-moon"></use></svg>
+        </button>
+        <button class="icon-button secondary" type="button" id="fullscreenToggle" title="ملء الشاشة">
+          <svg class="icon"><use href="#icon-fullscreen"></use></svg>
+        </button>
+        <button class="icon-button secondary" type="button" id="printButton" title="طباعة">
+          <svg class="icon"><use href="#icon-printer"></use></svg>
+        </button>
+        <button class="button secondary" type="button" id="resetProgress">مسح تقدم الدليل</button>
+      </div>
+    </header>
+
+    <div class="book-progress" aria-label="شريط تقدم القراءة"><span id="readingProgress"></span></div>
+
+    <div class="reader-layout">
+      <aside class="toc-panel" id="tocPanel" aria-label="فهرس الدليل">
+        <h2>الفهرس</h2>
+        <ol class="toc-list" id="tocList"></ol>
+      </aside>
+
+      <main class="book-shell" id="bookShell" tabindex="-1">
+        <article class="book-page cover-page" id="cover" data-title="الغلاف">
+          <span class="book-mark-strip" aria-hidden="true"></span>
+          <div class="cover-layout">
+            <section>
+              <p class="page-kicker"><svg class="icon"><use href="#icon-book"></use></svg> كتاب تفاعلي مستقل</p>
+              <h1 class="cover-title">مداد</h1>
+              <p class="cover-subtitle">دليل الطالب التفاعلي</p>
+              <p class="cover-copy">رحلتك في تطوير مهارات التعبير الكتابي، من تسجيل الدخول إلى قراءة تغذية المعلم الراجعة.</p>
+              <button class="button accent" type="button" data-action="next">ابدأ الرحلة</button>
+            </section>
+            <div class="paper-figure" role="img" aria-label="غلاف مستوحى من الورق والحبر والكتابة العربية">
+              <svg viewBox="0 0 520 420">
+                <rect x="62" y="40" width="330" height="330" rx="22" fill="#fffaf0" stroke="#d4a23b" stroke-width="3"/>
+                <rect x="92" y="78" width="270" height="16" rx="8" fill="#0f766e" opacity=".72"/>
+                <rect x="92" y="120" width="210" height="10" rx="5" fill="#5b6470" opacity=".35"/>
+                <rect x="92" y="150" width="236" height="10" rx="5" fill="#5b6470" opacity=".28"/>
+                <rect x="92" y="180" width="172" height="10" rx="5" fill="#5b6470" opacity=".28"/>
+                <path d="M380 104c45 22 70 58 70 103 0 76-60 136-138 136-47 0-90-23-114-59" fill="none" stroke="#0f766e" stroke-width="14" stroke-linecap="round" opacity=".18"/>
+                <path d="M245 282c38-66 82-110 142-137" fill="none" stroke="#0b4f4a" stroke-width="12" stroke-linecap="round"/>
+                <path d="M387 145c-12 33-20 68-19 105" fill="none" stroke="#d4a23b" stroke-width="11" stroke-linecap="round"/>
+                <circle cx="243" cy="282" r="17" fill="#d4a23b"/>
+                <path d="M176 304c54-17 93-35 119-67" fill="none" stroke="#121418" stroke-width="6" stroke-linecap="round" opacity=".5"/>
+                <path d="M145 255c23 24 58 35 96 26" fill="none" stroke="#121418" stroke-width="5" stroke-linecap="round" opacity=".45"/>
+              </svg>
+            </div>
+          </div>
+        </article>
+
+        <article class="book-page" id="how-to" data-title="طريقة استخدام الدليل">
+          <p class="page-kicker">الصفحة ٢</p>
+          <h1>طريقة استخدام الدليل</h1>
+          <p class="lead">اقرأ الدليل ككتاب رقمي: صفحة بعد صفحة، أو اختر فصلًا من الفهرس. كل مثال داخل الدليل تدريبي فقط ولا يستخدم حسابك الحقيقي.</p>
+          <div class="page-grid">
+            <section class="panel">
+              <h2>أدوات القراءة</h2>
+              <div class="legend-grid">
+                <div class="legend-item"><strong>التالي والسابق</strong><p class="muted">انتقل بين الصفحات من الأزرار أو من مفاتيح الأسهم.</p></div>
+                <div class="legend-item"><strong>الفهرس</strong><p class="muted">اضغط عنوان الفصل للانتقال إليه مباشرة.</p></div>
+                <div class="legend-item"><strong>العروض المصغرة</strong><p class="muted">شغّل المثال، أوقفه مؤقتًا، أعده، أو تقدّم خطوة خطوة.</p></div>
+                <div class="legend-item"><strong>علامة الحفظ</strong><p class="muted">احفظ صفحة مهمة، وسيعود الدليل إلى آخر صفحة قرأتها.</p></div>
+              </div>
+            </section>
+            <section class="note-panel">
+              <h2>تدريب سريع</h2>
+              <p>اضغط الزر الآتي لتجرّب الانتقال إلى الصفحة التالية.</p>
+              <button class="button" type="button" id="practiceNext">التالي</button>
+              <p class="feedback-line" id="practiceNextFeedback" aria-live="polite">ينتظر الدليل تجربتك.</p>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="journey" data-title="خريطة رحلة الطالب">
+          <p class="page-kicker">الصفحة ٣</p>
+          <h1>خريطة رحلة الطالب</h1>
+          <p class="lead">هذه هي الرحلة المعتادة داخل منصة مداد. اضغط أي محطة للانتقال إلى شرحها.</p>
+          <div class="journey-map">
+            <button class="journey-station" type="button" data-jump="login"><span>١</span>تسجيل الدخول</button>
+            <button class="journey-station" type="button" data-jump="password"><span>٢</span>تغيير كلمة المرور</button>
+            <button class="journey-station" type="button" data-jump="topics"><span>٣</span>استعراض الموضوعات</button>
+            <button class="journey-station" type="button" data-jump="lesson-open"><span>٤</span>فتح الدرس</button>
+            <button class="journey-station" type="button" data-jump="lesson-open"><span>٥</span>قراءة أهداف الدرس</button>
+            <button class="journey-station" type="button" data-jump="lesson-study"><span>٦</span>دراسة المحتوى</button>
+            <button class="journey-station" type="button" data-jump="activity-start"><span>٧</span>تنفيذ النشاط</button>
+            <button class="journey-station" type="button" data-jump="review"><span>٨</span>مراجعة الدرس</button>
+            <button class="journey-station" type="button" data-jump="evaluation"><span>٩</span>تنفيذ التقييم</button>
+            <button class="journey-station" type="button" data-jump="submit"><span>١٠</span>إرسال المهمة</button>
+            <button class="journey-station" type="button" data-jump="submissions"><span>١١</span>متابعة التغذية الراجعة والتقدم</button>
+          </div>
+        </article>
+
+        <article class="book-page" id="login" data-title="تسجيل الدخول">
+          <p class="page-kicker">الصفحة ٤</p>
+          <h1>تسجيل الدخول</h1>
+          <p class="lead">ابدأ بإدخال بياناتك. يمكن استخدام البريد الإلكتروني، ويدعم النظام اسم المستخدم مثل <strong>s123456</strong> كما يظهر في المثال.</p>
+          <div class="page-grid">
+            <section class="sim-panel demo" data-demo="login">
+              <div class="mini-window">
+                <div class="mini-topbar"><span class="mini-logo">مداد</span><span class="muted">تسجيل الدخول</span></div>
+                <div class="mini-body">
+                  <h2>تسجيل الدخول</h2>
+                  <p class="muted">أدخل بياناتك للمتابعة إلى المنصّة.</p>
+                  <div class="field login-id-field">
+                    <label>البريد الإلكتروني</label>
+                    <div class="fake-input"><span class="login-id-value">user@example.com / s123456</span></div>
+                  </div>
+                  <div class="field login-password-field">
+                    <label>كلمة المرور</label>
+                    <div class="fake-input secret-print"><span class="login-password-value">••••••••</span><span class="login-eye">إظهار</span></div>
+                  </div>
+                  <button class="mini-button login-submit" type="button">الدخول إلى المنصّة</button>
+                  <p class="muted">في حال واجهت مشكلة، الرجاء التواصل مع مسؤول النظام.</p>
+                  <div class="screen-success login-next-screen" hidden>
+                    <span class="checkmark">✓</span>
+                    <span>سينتقل الطالب إلى شاشة تغيير كلمة المرور عند الحاجة.</span>
+                  </div>
+                </div>
+              </div>
+              <p class="demo-caption" data-demo-caption aria-live="polite"></p>
+              <div class="demo-controls">
+                <button class="button" type="button" data-demo-action="play"><svg class="icon"><use href="#icon-play"></use></svg>تشغيل العرض</button>
+                <button class="button secondary" type="button" data-demo-action="pause"><svg class="icon"><use href="#icon-pause"></use></svg>إيقاف مؤقت</button>
+                <button class="button secondary" type="button" data-demo-action="reset"><svg class="icon"><use href="#icon-reset"></use></svg>إعادة العرض</button>
+                <button class="button secondary" type="button" data-demo-action="next">الخطوة التالية</button>
+              </div>
+            </section>
+            <section class="panel">
+              <h2>تذكّر</h2>
+              <ul class="mini-list">
+                <li><span class="dot"></span><span>أدخل اسم المستخدم أو البريد الإلكتروني.</span></li>
+                <li><span class="dot"></span><span>أدخل كلمة المرور المؤقتة التي استلمتها من المدرسة.</span></li>
+                <li><span class="dot"></span><span>اضغط «الدخول إلى المنصّة» وانتظر ظهور الشاشة التالية.</span></li>
+                <li><span class="dot"></span><span>لا تشارك كلمة مرورك مع أي شخص.</span></li>
+              </ul>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="password" data-title="تغيير كلمة المرور">
+          <p class="page-kicker">الصفحة ٥</p>
+          <h1>تعيين كلمة مرور جديدة</h1>
+          <p class="lead">تظهر هذه الشاشة في أول دخول عندما يحتاج الحساب إلى تغيير كلمة المرور المؤقتة.</p>
+          <div class="page-grid">
+            <section class="sim-panel demo" data-demo="password">
+              <div class="mini-window">
+                <div class="mini-topbar"><span class="mini-logo">مداد</span><span class="muted">تعيين كلمة مرور جديدة</span></div>
+                <div class="mini-body">
+                  <p class="muted">لأسباب تتعلق بالأمان، يرجى تعيين كلمة مرور جديدة لحسابك.</p>
+                  <div class="field pass-new-field">
+                    <label>كلمة المرور الجديدة</label>
+                    <div class="fake-input secret-print"><span class="pass-new-value">••••••••</span><span>إظهار</span></div>
+                  </div>
+                  <div class="field pass-confirm-field">
+                    <label>تأكيد كلمة المرور</label>
+                    <div class="fake-input secret-print"><span class="pass-confirm-value">••••••••</span></div>
+                  </div>
+                  <button class="mini-button pass-submit" type="button">تحديث كلمة المرور والمتابعة</button>
+                  <p class="pass-error case-error" hidden></p>
+                  <p class="pass-success case-success" hidden>تم تحديث كلمة المرور بنجاح! جاري تسجيل الدخول...</p>
+                </div>
+              </div>
+              <p class="demo-caption" data-demo-caption aria-live="polite"></p>
+              <div class="demo-controls">
+                <button class="button" type="button" data-demo-action="play"><svg class="icon"><use href="#icon-play"></use></svg>تشغيل العرض</button>
+                <button class="button secondary" type="button" data-demo-action="pause"><svg class="icon"><use href="#icon-pause"></use></svg>إيقاف مؤقت</button>
+                <button class="button secondary" type="button" data-demo-action="reset"><svg class="icon"><use href="#icon-reset"></use></svg>إعادة العرض</button>
+                <button class="button secondary" type="button" data-demo-action="next">الخطوة التالية</button>
+              </div>
+            </section>
+            <section class="note-panel">
+              <h2>القواعد الظاهرة في المنصة</h2>
+              <ul class="mini-list">
+                <li><span class="dot"></span><span>كلمة المرور يجب أن تكون 8 أحرف على الأقل.</span></li>
+                <li><span class="dot"></span><span>كلمتا المرور يجب أن تكونا متطابقتين.</span></li>
+                <li><span class="dot"></span><span>يفضل اختيار كلمة قوية تحتوي حروفًا وأرقامًا ورموزًا. هذه نصيحة أمان، وليست شرطًا إضافيًا في المنصة.</span></li>
+              </ul>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="navigation" data-title="التنقل الرئيس">
+          <p class="page-kicker">الصفحة ٦</p>
+          <h1>فهم التنقل الرئيس</h1>
+          <p class="lead">بعد الدخول تظهر للطالب روابطه الأساسية في الشريط العلوي.</p>
+          <section class="sim-panel">
+            <div class="navbar-sim">
+              <span class="mini-logo">مداد</span>
+              <div class="nav-links-sim" aria-label="روابط الطالب">
+                <button class="nav-link-sim is-active" type="button" data-nav-tip="تعرض بطاقات الدروس والأنشطة والتقييمات.">الموضوعات</button>
+                <button class="nav-link-sim" type="button" data-nav-tip="تعرض كتاباتك وتقييماتك وسجل أنشطتك ودروسك.">تسليماتي</button>
+                <button class="nav-link-sim" type="button" data-nav-tip="تعرض نقاطك وإنجازاتك والمستويات التي وصلت إليها.">نقاطي</button>
+                <button class="nav-link-sim" type="button" data-nav-tip="تفتح مساحة التواصل وسجل الإشعارات.">الدردشة</button>
+                <button class="nav-link-sim" type="button" data-nav-tip="من القائمة الشخصية يمكنك فتح الملف الشخصي أو تسجيل الخروج.">الملف الشخصي / تسجيل الخروج</button>
+              </div>
+            </div>
+            <div class="tooltip-box" id="navTip" aria-live="polite">اضغط أي رابط لمعرفة فائدته.</div>
+          </section>
+        </article>
+
+        <article class="book-page" id="topics" data-title="لوحة الموضوعات">
+          <p class="page-kicker">الصفحة ٧</p>
+          <h1>لوحة الموضوعات</h1>
+          <p class="lead">تبدأ رحلة الدروس من صفحة «الموضوعات». تعرض الصفحة الترحيب، ملخص التقدم، النقاط، وبطاقات الموضوعات.</p>
+          <div class="page-grid three">
+            <section class="sim-panel demo" data-demo="topics">
+              <div class="mini-window">
+                <div class="mini-topbar"><span class="mini-logo">الموضوعات</span><span class="topics-welcome">مرحباً، طالب مداد</span></div>
+                <div class="mini-body">
+                  <div class="mini-dashboard status-grid">
+                    <div class="dashboard-stat topic-stat-lesson"><span>الدروس المكتملة</span><strong>1/11</strong></div>
+                    <div class="dashboard-stat topic-stat-submit"><span>التسليمات</span><strong>0/11</strong></div>
+                    <div class="dashboard-stat topic-stat-rate"><span>التقييمات من المعلم</span><strong>0/11</strong></div>
+                  </div>
+                  <div class="topic-grid" style="margin-top:12px">
+                    <div class="topic-card-mini topic-feature">
+                      <h3>وصف منظر طبيعي</h3>
+                      <p class="muted">تعلم كيفية وصف المناظر الطبيعية بأسلوب أدبي مبدع.</p>
+                      <div class="topic-status-summary"><span class="pill done">الدرس</span><span class="pill">التسليم</span><span class="pill">التقييم</span></div>
+                      <button class="mini-button">عرض الدرس</button>
+                    </div>
+                    <div class="topic-card-mini disabled topic-disabled">
+                      <h3>النص الحواري</h3>
+                      <p class="muted">تعلّم فن كتابة الحوارات الجذابة والواقعية.</p>
+                      <button class="mini-button" disabled>عرض الدرس</button>
+                      <span class="pill">غير متاح حاليًا</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="demo-caption" data-demo-caption aria-live="polite"></p>
+              <div class="demo-controls">
+                <button class="button" type="button" data-demo-action="play"><svg class="icon"><use href="#icon-play"></use></svg>تشغيل العرض</button>
+                <button class="button secondary" type="button" data-demo-action="pause"><svg class="icon"><use href="#icon-pause"></use></svg>إيقاف مؤقت</button>
+                <button class="button secondary" type="button" data-demo-action="reset"><svg class="icon"><use href="#icon-reset"></use></svg>إعادة العرض</button>
+                <button class="button secondary" type="button" data-demo-action="next">الخطوة التالية</button>
+              </div>
+            </section>
+            <section class="panel">
+              <h2>موضوعات المنصة الظاهرة في البيانات</h2>
+              <h3>الفصل الدراسي 1</h3>
+              <p class="muted">كتابة الفقرة، تصميم موضوع، التلخيص، ترجمة علم، كيفية عرض كتاب، حكاية قصة.</p>
+              <h3>الفصل الدراسي 2</h3>
+              <p class="muted">وصف منظر طبيعي، مناقشة قضية، كيفية كتابة التقرير، التعبير الحر، النص الحواري.</p>
+              <p class="muted">سنستخدم «وصف منظر طبيعي» لبقية الشرح لأنه يحتوي درسًا ونشاطًا ومراجعة وتقييمًا كاملًا.</p>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="lesson-open" data-title="فتح الدرس">
+          <p class="page-kicker">الصفحة ٨</p>
+          <h1>فتح الدرس وقراءة الأهداف</h1>
+          <p class="lead">عند اختيار «عرض الدرس» تظهر بطاقة أهداف الدرس أولًا. اقرأها ثم اضغط «ابدأ الدرس».</p>
+          <div class="page-grid">
+            <section class="sim-panel demo" data-demo="lesson">
+              <div class="mini-window">
+                <div class="mini-topbar"><span class="mini-logo">الدرس الأول: وصف منظر طبيعي</span><span class="muted">وصف منظر طبيعي</span></div>
+                <div class="mini-body">
+                  <div class="lesson-goals-card">
+                    <h2>أهداف الدرس</h2>
+                    <p class="muted">في نهاية الدرس يُتوقَّع من الطالب أن يكون قادراً على أن:</p>
+                    <ul class="mini-list">
+                      <li><span class="dot"></span><span>يحدّد عناصر الوصف في المنظر الطبيعي.</span></li>
+                      <li><span class="dot"></span><span>يوظّف الحواس الخمس في وصف المنظر الطبيعي.</span></li>
+                      <li><span class="dot"></span><span>يكتب نصًا وصفيًا واضحًا وجميلًا.</span></li>
+                    </ul>
+                    <button class="mini-button lesson-start">ابدأ الدرس</button>
+                  </div>
+                  <div class="lesson-content-preview" hidden>
+                    <h2>مقدمة الدرس</h2>
+                    <p class="muted">الطبيعة مصدر من مصادر الإلهام اللغوي والأدبي.</p>
+                    <div class="mini-progress"><span></span></div>
+                  </div>
+                </div>
+              </div>
+              <p class="demo-caption" data-demo-caption aria-live="polite"></p>
+              <div class="demo-controls">
+                <button class="button" type="button" data-demo-action="play"><svg class="icon"><use href="#icon-play"></use></svg>تشغيل العرض</button>
+                <button class="button secondary" type="button" data-demo-action="pause"><svg class="icon"><use href="#icon-pause"></use></svg>إيقاف مؤقت</button>
+                <button class="button secondary" type="button" data-demo-action="reset"><svg class="icon"><use href="#icon-reset"></use></svg>إعادة العرض</button>
+                <button class="button secondary" type="button" data-demo-action="next">الخطوة التالية</button>
+              </div>
+            </section>
+            <section class="note-panel">
+              <h2>ملاحظة مهمة</h2>
+              <p>قد يفعّل المعلم أو يعطّل بعض الأقسام مثل الفيديو أو النشاط أو المراجعة أو التقييم. إذا ظهر قسم غير متاح، انتظر توجيه المعلم.</p>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="lesson-study" data-title="دراسة الدرس">
+          <p class="page-kicker">الصفحة ٩</p>
+          <h1>دراسة محتوى الدرس</h1>
+          <p class="lead">بعد بدء الدرس ستجد المقدمة، الفيديو التوضيحي عند تفعيله، وخطوات الدرس.</p>
+          <div class="page-grid">
+            <section class="sim-panel demo" data-demo="study">
+              <div class="mini-window">
+                <div class="mini-topbar"><span class="mini-logo">محتوى الدرس</span><span class="study-progress-label">0%</span></div>
+                <div class="mini-body">
+                  <div class="panel tight">
+                    <h2>مقدمة الدرس</h2>
+                    <p class="muted">تمثل الطبيعة مصدرًا من مصادر الإلهام اللغوي العام والأدبي الخاص.</p>
+                  </div>
+                  <div class="video-box study-video" style="margin:10px 0">
+                    <div><span class="video-play">▶</span><span class="study-video-text">فيديو توضيحي</span></div>
+                  </div>
+                  <div class="lesson-steps">
+                    <div class="lesson-step study-step-1"><h3>الخطوة 1: تعيين العناصر التي يشملها الوصف</h3><p class="muted">انظر إلى المنظر بعين فاحصة.</p></div>
+                    <div class="lesson-step study-step-2"><h3>الخطوة 2: اختيار المعاني المناسبة</h3><p class="muted">انتقِ ألفاظًا وتراكيب مناسبة.</p></div>
+                    <div class="lesson-step study-step-3"><h3>الخطوة 3: تحديد منطلق عملية الوصف</h3><p class="muted">ابدأ بالقريب أو البعيد أو بالوصف العام.</p></div>
+                  </div>
+                  <div class="mini-progress"><span class="study-progress"></span></div>
+                </div>
+              </div>
+              <p class="demo-caption" data-demo-caption aria-live="polite"></p>
+              <div class="demo-controls">
+                <button class="button" type="button" data-demo-action="play"><svg class="icon"><use href="#icon-play"></use></svg>تشغيل العرض</button>
+                <button class="button secondary" type="button" data-demo-action="pause"><svg class="icon"><use href="#icon-pause"></use></svg>إيقاف مؤقت</button>
+                <button class="button secondary" type="button" data-demo-action="reset"><svg class="icon"><use href="#icon-reset"></use></svg>إعادة العرض</button>
+                <button class="button secondary" type="button" data-demo-action="next">الخطوة التالية</button>
+              </div>
+            </section>
+            <section class="panel">
+              <h2>خطوات الدرس في المثال</h2>
+              <ul class="mini-list">
+                <li><span class="dot"></span><span>تعيين العناصر التي يشملها الوصف.</span></li>
+                <li><span class="dot"></span><span>اختيار المعاني المناسبة.</span></li>
+                <li><span class="dot"></span><span>تحديد منطلق عملية الوصف.</span></li>
+                <li><span class="dot"></span><span>التحرير والكتابة.</span></li>
+                <li><span class="dot"></span><span>المراجعة.</span></li>
+              </ul>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="activity-start" data-title="بدء النشاط">
+          <p class="page-kicker">الصفحة ١٠</p>
+          <h1>بدء النشاط</h1>
+          <p class="lead">يظهر قسم النشاط داخل الدرس عند تفعيله. يختلف نوع النشاط حسب الموضوع.</p>
+          <div class="page-grid">
+            <section class="sim-panel demo" data-demo="activityStart">
+              <div class="mini-window">
+                <div class="mini-topbar"><span class="mini-logo">نشاط تفاعلي: اختيار الوصف الأنسب</span><span class="muted activity-status">متاح</span></div>
+                <div class="mini-body">
+                  <p class="muted activity-desc">ابدأ النشاط وأكمل جميع المراحل.</p>
+                  <button class="mini-button activity-open">فتح صفحة النشاط</button>
+                  <p class="case-error activity-disabled-message" hidden>قسم الأنشطة غير متاح حاليًا.</p>
+                </div>
+              </div>
+              <p class="demo-caption" data-demo-caption aria-live="polite"></p>
+              <div class="demo-controls">
+                <button class="button" type="button" data-demo-action="play"><svg class="icon"><use href="#icon-play"></use></svg>تشغيل العرض</button>
+                <button class="button secondary" type="button" data-demo-action="pause"><svg class="icon"><use href="#icon-pause"></use></svg>إيقاف مؤقت</button>
+                <button class="button secondary" type="button" data-demo-action="reset"><svg class="icon"><use href="#icon-reset"></use></svg>إعادة العرض</button>
+                <button class="button secondary" type="button" data-demo-action="next">الخطوة التالية</button>
+              </div>
+            </section>
+            <section class="panel">
+              <h2>أنواع أنشطة مؤكدة من المنصة</h2>
+              <div class="pill-row">
+                <span class="pill">اختيار مشهد</span>
+                <span class="pill">تركيب أجزاء</span>
+                <span class="pill">مناقشة قضية</span>
+                <span class="pill">حوار ثنائي</span>
+                <span class="pill">تقرير</span>
+                <span class="pill">تعبير حر</span>
+                <span class="pill">بناء فقرة</span>
+                <span class="pill">تلخيص</span>
+                <span class="pill">ترجمة علم</span>
+                <span class="pill">عرض كتاب</span>
+                <span class="pill">حكاية قصة</span>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="activity-practice" data-title="تدريب تفاعلي">
+          <p class="page-kicker">الصفحة ١١</p>
+          <h1>إكمال تدريب داخل الدليل</h1>
+          <p class="lead">هذا تدريب آمن داخل الدليل فقط، ولا يُرسل إلى المعلم.</p>
+          <div class="page-grid">
+            <section class="panel">
+              <h2>رتّب خطوات وصف منظر طبيعي</h2>
+              <ol class="order-list" id="activityOrderList" aria-label="ترتيب خطوات النشاط"></ol>
+              <div class="inline-actions" style="margin-top:12px">
+                <button class="button" type="button" id="checkActivityOrder">تحقق من الترتيب</button>
+                <button class="button secondary" type="button" id="retryActivityOrder">إعادة المحاولة</button>
+              </div>
+              <p class="feedback-line" id="activityOrderFeedback" aria-live="polite">استخدم أزرار «أعلى» و«أسفل» لتحريك البطاقات.</p>
+            </section>
+            <section class="note-panel">
+              <h2>ملاحظة</h2>
+              <p>هذا تدريب داخل الدليل فقط، ولا يُرسل إلى المعلم.</p>
+              <p class="muted">في نشاط المنصة الحقيقي قد تسحب بطاقة، أو تضغط خيارًا، أو تكتب نصًا حسب نوع الدرس.</p>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="review" data-title="مراجعة الدرس">
+          <p class="page-kicker">الصفحة ١٢</p>
+          <h1>مراجعة الدرس</h1>
+          <p class="lead">بعد إنهاء الدرس يظهر زر «الانتقال إلى مراجعة الدرس». المراجعة تساعدك على تثبيت الفهم قبل التقييم النهائي.</p>
+          <div class="page-grid">
+            <section class="sim-panel demo" data-demo="review">
+              <div class="mini-window">
+                <div class="mini-topbar"><span class="mini-logo">مراجعة الدرس: وصف منظر طبيعي</span><span class="muted">قبل الكتابة</span></div>
+                <div class="mini-body">
+                  <div class="qa-item review-q1">
+                    <button class="qa-button" type="button">ما هي أول خطوة في وصف منظر طبيعي؟ <span>فتح</span></button>
+                    <div class="qa-answer">أول خطوة هي التفاعل البصري مع المنظر ورؤيته بعين فاحصة.</div>
+                  </div>
+                  <div class="qa-item review-q2" style="margin-top:8px">
+                    <button class="qa-button" type="button">ما أهمية المراجعة بعد الكتابة؟ <span>فتح</span></button>
+                    <div class="qa-answer">المراجعة ضرورية لتهذيب العبارات وإصلاح الأخطاء.</div>
+                  </div>
+                  <button class="mini-button review-ready" type="button" style="margin-top:12px">أنا مستعد، لنبدأ الكتابة!</button>
+                </div>
+              </div>
+              <p class="demo-caption" data-demo-caption aria-live="polite"></p>
+              <div class="demo-controls">
+                <button class="button" type="button" data-demo-action="play"><svg class="icon"><use href="#icon-play"></use></svg>تشغيل العرض</button>
+                <button class="button secondary" type="button" data-demo-action="pause"><svg class="icon"><use href="#icon-pause"></use></svg>إيقاف مؤقت</button>
+                <button class="button secondary" type="button" data-demo-action="reset"><svg class="icon"><use href="#icon-reset"></use></svg>إعادة العرض</button>
+                <button class="button secondary" type="button" data-demo-action="next">الخطوة التالية</button>
+              </div>
+            </section>
+            <section class="panel">
+              <h2>ليست هي التقييم النهائي</h2>
+              <p class="muted">المراجعة تعرض ملخص الخطوات ونموذجًا كتابيًا وتتيح سؤال المساعد داخل المنصة. أما التقييم فهو صفحة كتابة المهمة وتسليمها.</p>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="evaluation" data-title="التقييم والكتابة">
+          <p class="page-kicker">الصفحة ١٣</p>
+          <h1>التقييم ومهمة الكتابة</h1>
+          <p class="lead">في مثال «وصف منظر طبيعي» تظهر صفحة «تقييم الكتابة» وفيها وصف المهمة، مساحة الكتابة، ومعايير التقييم.</p>
+          <div class="page-grid">
+            <section class="sim-panel demo" data-demo="evaluation">
+              <div class="mini-window">
+                <div class="mini-topbar"><span class="mini-logo">تقييم الكتابة: وصف منظر طبيعي</span><span class="muted">مهمة التقييم الخاصة بالدرس</span></div>
+                <div class="mini-body">
+                  <div class="panel tight eval-task">
+                    <h2>مهمة التقييم الخاصة بالدرس</h2>
+                    <p class="muted">اكتب وصفًا متكاملًا لمنظر طبيعي تختاره، مع إبراز العناصر والصور الفنية والتسلسل في الوصف.</p>
+                  </div>
+                  <div class="field eval-field">
+                    <label>مهمة كتابة وصف لمنظر طبيعي</label>
+                    <div class="fake-textarea eval-textarea">اكتب النص هنا...</div>
+                  </div>
+                  <button class="mini-button eval-submit">قيّم النص الآن</button>
+                  <p class="case-error eval-error" hidden>الرجاء إدخال النص أولاً في قسم واحد على الأقل.</p>
+                </div>
+              </div>
+              <p class="demo-caption" data-demo-caption aria-live="polite"></p>
+              <div class="demo-controls">
+                <button class="button" type="button" data-demo-action="play"><svg class="icon"><use href="#icon-play"></use></svg>تشغيل العرض</button>
+                <button class="button secondary" type="button" data-demo-action="pause"><svg class="icon"><use href="#icon-pause"></use></svg>إيقاف مؤقت</button>
+                <button class="button secondary" type="button" data-demo-action="reset"><svg class="icon"><use href="#icon-reset"></use></svg>إعادة العرض</button>
+                <button class="button secondary" type="button" data-demo-action="next">الخطوة التالية</button>
+              </div>
+            </section>
+            <section class="panel">
+              <h2>معايير التقييم في هذا الدرس</h2>
+              <div class="rubric-grid">
+                <div class="rubric-item"><strong>تحديد عناصر الوصف ومكوناته</strong><span class="muted">هل ذكرت عناصر المشهد؟</span></div>
+                <div class="rubric-item"><strong>تنظيم الوصف وترتيبه</strong><span class="muted">هل رتبت الوصف بوضوح؟</span></div>
+                <div class="rubric-item"><strong>الصور الجمالية</strong><span class="muted">هل استخدمت صورًا معبرة؟</span></div>
+                <div class="rubric-item"><strong>دقة الوصف</strong><span class="muted">هل التفاصيل دقيقة؟</span></div>
+                <div class="rubric-item"><strong>سلامة اللغة</strong><span class="muted">هل راعيت الإملاء والترقيم؟</span></div>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="submit" data-title="إرسال المهمة">
+          <p class="page-kicker">الصفحة ١٤</p>
+          <h1>إرسال المهمة</h1>
+          <p class="lead">قبل الضغط على زر التقييم أو الإرسال، راجع إجابتك جيدًا. في هذا المثال لا يرسل الدليل أي بيانات حقيقية.</p>
+          <div class="page-grid">
+            <section class="panel checklist-interactive">
+              <h2>قائمة الاستعداد</h2>
+              <div class="check-list">
+                <label><input type="checkbox" data-submit-check> أكملت جميع الأجزاء</label>
+                <label><input type="checkbox" data-submit-check> راجعت الإملاء</label>
+                <label><input type="checkbox" data-submit-check> استخدمت علامات الترقيم</label>
+                <label><input type="checkbox" data-submit-check> تأكدت من وضوح الأفكار</label>
+                <label><input type="checkbox" data-submit-check> أصبحت المهمة جاهزة للإرسال</label>
+              </div>
+              <button class="button" type="button" id="fakeSubmit" disabled style="margin-top:12px">إرسال المهمة</button>
+              <p class="feedback-line" id="submitFeedback" aria-live="polite">سيعمل الزر بعد اكتمال القائمة.</p>
+            </section>
+            <section class="sim-panel demo" data-demo="submit">
+              <div class="mini-window">
+                <div class="mini-topbar"><span class="mini-logo">حالة الإرسال</span><span class="muted submit-state">مراجعة نهائية</span></div>
+                <div class="mini-body">
+                  <div class="fake-textarea">كانت الشمس تغرق في بحر من الألوان الدافئة...</div>
+                  <button class="mini-button submit-button">قيّم النص الآن</button>
+                  <div class="screen-success submit-success" hidden><span class="checkmark">✓</span><span>تم التسليم بنجاح. انتظر تغذية المعلم الراجعة.</span></div>
+                </div>
+              </div>
+              <p class="demo-caption" data-demo-caption aria-live="polite"></p>
+              <div class="demo-controls">
+                <button class="button" type="button" data-demo-action="play"><svg class="icon"><use href="#icon-play"></use></svg>تشغيل العرض</button>
+                <button class="button secondary" type="button" data-demo-action="pause"><svg class="icon"><use href="#icon-pause"></use></svg>إيقاف مؤقت</button>
+                <button class="button secondary" type="button" data-demo-action="reset"><svg class="icon"><use href="#icon-reset"></use></svg>إعادة العرض</button>
+                <button class="button secondary" type="button" data-demo-action="next">الخطوة التالية</button>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="submissions" data-title="تسليماتي والتغذية الراجعة">
+          <p class="page-kicker">الصفحة ١٥</p>
+          <h1>تسليماتي وتغذية المعلم الراجعة</h1>
+          <p class="lead">من صفحة «تسليماتي» يمكنك عرض كتاباتك السابقة، درجاتها، وتفاصيل الملاحظات.</p>
+          <section class="sim-panel demo" data-demo="submissions">
+            <div class="mini-window">
+              <div class="mini-topbar"><span class="mini-logo">تسليماتي</span><span class="muted">هنا يمكنك عرض جميع كتاباتك السابقة ونتائج تقييمها.</span></div>
+              <div class="mini-body">
+                <div class="tab-row">
+                  <button class="tab-sim submissions-tab is-active" type="button">كتاباتي وتقييماتي</button>
+                  <button class="tab-sim activities-tab" type="button">سجل أنشطتي ودروسي</button>
+                </div>
+                <table class="submission-table" style="margin-top:12px">
+                  <thead><tr><th>الموضوع</th><th>تقييم الذكاء الاصطناعي</th><th>تقييم المعلم</th><th>الإجراءات</th></tr></thead>
+                  <tbody>
+                    <tr><td>وصف منظر طبيعي</td><td><span class="score-badge">8/10</span></td><td class="teacher-status">لم يُقيّم بعد</td><td><button class="mini-button secondary">عرض التفاصيل</button></td></tr>
+                  </tbody>
+                </table>
+                <div class="panel tight teacher-feedback-panel" style="margin-top:12px" hidden>
+                  <h2>تقييم المعلم</h2>
+                  <p><strong>ملاحظات المعلم:</strong> وصفك مرتب، وأحسنت استخدام الصور الجمالية. راجع علامات الترقيم في الفقرة الأخيرة.</p>
+                  <span class="score-badge">9/10</span>
+                </div>
+              </div>
+            </div>
+            <p class="demo-caption" data-demo-caption aria-live="polite"></p>
+            <div class="demo-controls">
+              <button class="button" type="button" data-demo-action="play"><svg class="icon"><use href="#icon-play"></use></svg>تشغيل العرض</button>
+              <button class="button secondary" type="button" data-demo-action="pause"><svg class="icon"><use href="#icon-pause"></use></svg>إيقاف مؤقت</button>
+              <button class="button secondary" type="button" data-demo-action="reset"><svg class="icon"><use href="#icon-reset"></use></svg>إعادة العرض</button>
+              <button class="button secondary" type="button" data-demo-action="next">الخطوة التالية</button>
+            </div>
+          </section>
+        </article>
+
+        <article class="book-page" id="progress-profile-chat" data-title="النقاط والملف والدردشة">
+          <p class="page-kicker">الصفحة ١٦</p>
+          <h1>النقاط والملف الشخصي والدردشة</h1>
+          <p class="lead">هذه الصفحات تساعدك على متابعة تقدمك وبياناتك والتواصل المناسب داخل المنصة.</p>
+          <div class="page-grid">
+            <section class="panel">
+              <h2>نقاطي وإنجازاتي</h2>
+              <div class="progress-mini-grid status-grid">
+                <div class="status-box"><strong>30</strong><span>نقطة</span></div>
+                <div class="status-box"><strong>1</strong><span>دروس مكتملة</span></div>
+                <div class="status-box"><strong>1</strong><span>أنشطة تفاعلية</span></div>
+              </div>
+              <p class="muted">تعرض الصفحة رصيد النقاط، الهدف القادم، المستويات والمكافآت، والدروس أو الأنشطة أو التقييمات المكتملة.</p>
+            </section>
+            <section class="panel">
+              <h2>الملف الشخصي</h2>
+              <ul class="mini-list">
+                <li><span class="dot"></span><span>الاسم الكامل</span></li>
+                <li><span class="dot"></span><span>الصف الدراسي</span></li>
+                <li><span class="dot"></span><span>البريد الإلكتروني</span></li>
+                <li><span class="dot"></span><span>الدور: طالب</span></li>
+                <li><span class="dot"></span><span>آخر ملاحظات الذكاء الاصطناعي عند وجود تسليم سابق.</span></li>
+              </ul>
+            </section>
+            <section class="panel" style="grid-column:1 / -1">
+              <h2>الدردشة وسجل الإشعارات</h2>
+              <div class="chat-layout-mini">
+                <div class="chat-sidebar-mini">
+                  <strong>المعلمون</strong>
+                  <div class="chat-row" style="margin-top:8px">سجل الإشعارات<br><span class="muted">توثيق الأنشطة</span></div>
+                  <div class="chat-row" style="margin-top:8px">المعلم<br><span class="muted">معلم</span></div>
+                </div>
+                <div class="chat-main-mini">
+                  <strong>محادثة مع المعلم</strong>
+                  <div>
+                    <div class="chat-bubble">راجع وصفك قبل الإرسال.</div>
+                    <div class="chat-bubble sent">شكرًا، سأراجع علامات الترقيم.</div>
+                  </div>
+                  <div class="fake-input"><span>اكتب رسالة إلى المعلم...</span><button class="mini-button">إرسال</button></div>
+                </div>
+              </div>
+              <p class="muted">اكتب بأسلوب مهذب وواضح، ولا ترسل معلومات شخصية لا يحتاجها المعلم.</p>
+            </section>
+          </div>
+        </article>
+
+        <article class="book-page" id="final" data-title="مستعد للبدء">
+          <p class="page-kicker">الصفحة الأخيرة</p>
+          <h1>مستعد للبدء</h1>
+          <p class="lead">رتّب رحلة الطالب كاملة. عند نجاحك ستظهر رسالة الاستعداد.</p>
+          <div class="page-grid">
+            <section class="panel">
+              <h2>تحدي ترتيب الرحلة</h2>
+              <ol class="order-list" id="finalOrderList" aria-label="ترتيب رحلة الطالب"></ol>
+              <div class="inline-actions" style="margin-top:12px">
+                <button class="button" type="button" id="checkFinalOrder">تحقق من الترتيب</button>
+                <button class="button secondary" type="button" id="retryFinalOrder">إعادة الدليل</button>
+              </div>
+              <p class="feedback-line" id="finalOrderFeedback" aria-live="polite">رتّب البطاقات من أول خطوة إلى آخر خطوة.</p>
+            </section>
+            <section class="note-panel">
+              <h2>بعد النجاح</h2>
+              <div class="inline-actions">
+                <button class="button secondary" type="button" data-jump="how-to">العودة إلى الفهرس</button>
+                <button class="button secondary" type="button" id="restartGuide">إعادة الدليل</button>
+                <button class="button accent" type="button" id="printSummary">طباعة ملخص الخطوات</button>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <nav class="book-nav" aria-label="تنقل الصفحات">
+          <button class="button secondary" type="button" data-action="prev"><svg class="icon"><use href="#icon-prev"></use></svg>السابق</button>
+          <div class="nav-actions">
+            <span id="pageCounter" aria-live="polite">صفحة 1 من 17</span>
+            <span class="pill" id="chapterProgress">0%</span>
+          </div>
+          <button class="button" type="button" data-action="next">التالي<svg class="icon"><use href="#icon-next"></use></svg></button>
+        </nav>
+      </main>
+    </div>
+  </div>
+
+  <section class="print-summary" aria-label="ملخص مطبوع">
+    <h1>ملخص خطوات الطالب في منصة مداد</h1>
+    <ol>
+      <li>تسجيل الدخول باسم المستخدم أو البريد الإلكتروني وكلمة المرور.</li>
+      <li>تغيير كلمة المرور المؤقتة عند أول دخول.</li>
+      <li>اختيار الموضوع من لوحة الموضوعات.</li>
+      <li>قراءة أهداف الدرس ثم بدء الدرس.</li>
+      <li>دراسة المقدمة والفيديو والخطوات عند تفعيلها.</li>
+      <li>إكمال النشاط المتاح.</li>
+      <li>مراجعة الدرس قبل التقييم.</li>
+      <li>كتابة المهمة ومراجعتها.</li>
+      <li>إرسال المهمة ومتابعة تسليماتي والتغذية الراجعة.</li>
+    </ol>
+  </section>
+
+  <noscript>
+    <div class="panel" style="margin:12px">تم تعطيل التشغيل التفاعلي؛ لذلك تُعرض صفحات الدليل كلها بترتيب مقروء دون العروض المتحركة.</div>
+  </noscript>
+
+  <script>
+    /* Chapter data */
+    const STORAGE = {
+      page: "midad_student_ebook_current_page",
+      bookmarks: "midad_student_ebook_bookmarks",
+      theme: "midad_student_ebook_theme"
+    };
+
+    const pageElements = Array.from(document.querySelectorAll(".book-page"));
+    const pageById = new Map(pageElements.map((page, index) => [page.id, index]));
+    const tocList = document.getElementById("tocList");
+    const pageCounter = document.getElementById("pageCounter");
+    const progressBar = document.getElementById("readingProgress");
+    const chapterProgress = document.getElementById("chapterProgress");
+    const currentChapterTitle = document.getElementById("currentChapterTitle");
+    const bookShell = document.getElementById("bookShell");
+    const tocPanel = document.getElementById("tocPanel");
+    const tocToggle = document.getElementById("tocToggle");
+    const bookmarkToggle = document.getElementById("bookmarkToggle");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let currentPage = readNumber(STORAGE.page, 0);
+    let bookmarks = readArray(STORAGE.bookmarks);
+    const demoStates = {};
+
+    function readNumber(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        const parsed = Number.parseInt(raw || "", 10);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function readArray(key) {
+      try {
+        const raw = localStorage.getItem(key);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function writeStorage(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        /* Persistence is optional. */
+      }
+    }
+
+    function clampPage(index) {
+      return Math.max(0, Math.min(index, pageElements.length - 1));
+    }
+
+    function buildToc() {
+      tocList.textContent = "";
+      pageElements.forEach((page, index) => {
+        const li = document.createElement("li");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "toc-button";
+        button.dataset.pageIndex = String(index);
+
+        const number = document.createElement("span");
+        number.className = "toc-index";
+        number.textContent = String(index + 1);
+
+        const title = document.createElement("span");
+        title.textContent = page.dataset.title || `صفحة ${index + 1}`;
+
+        const mark = document.createElement("span");
+        mark.className = "toc-bookmark";
+        mark.textContent = "★";
+
+        button.append(number, title, mark);
+        li.append(button);
+        tocList.append(li);
+      });
+    }
+
+    /* Navigation */
+    function showPage(index, shouldFocus = false) {
+      currentPage = clampPage(index);
+      pageElements.forEach((page, pageIndex) => {
+        page.classList.toggle("is-active", pageIndex === currentPage);
+      });
+
+      const visibleNumber = currentPage + 1;
+      const total = pageElements.length;
+      const percent = Math.round((visibleNumber / total) * 100);
+      const title = pageElements[currentPage].dataset.title || `صفحة ${visibleNumber}`;
+
+      pageCounter.textContent = `صفحة ${visibleNumber} من ${total}`;
+      chapterProgress.textContent = `${percent}%`;
+      currentChapterTitle.textContent = title;
+      progressBar.style.width = `${percent}%`;
+      writeStorage(STORAGE.page, String(currentPage));
+
+      document.querySelectorAll(".toc-button").forEach((button) => {
+        const buttonIndex = Number(button.dataset.pageIndex);
+        button.setAttribute("aria-current", buttonIndex === currentPage ? "true" : "false");
+        button.classList.toggle("is-bookmarked", bookmarks.includes(buttonIndex));
+      });
+
+      bookmarkToggle.setAttribute("aria-pressed", bookmarks.includes(currentPage) ? "true" : "false");
+      if (shouldFocus) {
+        bookShell.focus({ preventScroll: true });
+      }
+    }
+
+    function goNext() {
+      showPage(currentPage + 1, true);
+    }
+
+    function goPrev() {
+      showPage(currentPage - 1, true);
+    }
+
+    document.addEventListener("click", (event) => {
+      const actionButton = event.target.closest("[data-action]");
+      if (actionButton?.dataset.action === "next") goNext();
+      if (actionButton?.dataset.action === "prev") goPrev();
+
+      const tocButton = event.target.closest(".toc-button");
+      if (tocButton) {
+        showPage(Number(tocButton.dataset.pageIndex), true);
+        tocPanel.classList.remove("is-open");
+        tocToggle.setAttribute("aria-expanded", "false");
+      }
+
+      const jump = event.target.closest("[data-jump]");
+      if (jump) {
+        const target = pageById.get(jump.dataset.jump);
+        if (target !== undefined) showPage(target, true);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.target && ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName)) return;
+      if (event.key === "ArrowLeft") goNext();
+      if (event.key === "ArrowRight") goPrev();
+    });
+
+    let touchStartX = 0;
+    bookShell.addEventListener("touchstart", (event) => {
+      touchStartX = event.changedTouches[0]?.clientX || 0;
+    }, { passive: true });
+
+    bookShell.addEventListener("touchend", (event) => {
+      const endX = event.changedTouches[0]?.clientX || 0;
+      const delta = endX - touchStartX;
+      if (Math.abs(delta) < 55) return;
+      if (delta < 0) goNext();
+      if (delta > 0) goPrev();
+    }, { passive: true });
+
+    tocToggle.addEventListener("click", () => {
+      const open = !tocPanel.classList.contains("is-open");
+      tocPanel.classList.toggle("is-open", open);
+      tocToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+
+    bookmarkToggle.addEventListener("click", () => {
+      if (bookmarks.includes(currentPage)) {
+        bookmarks = bookmarks.filter((item) => item !== currentPage);
+      } else {
+        bookmarks = [...bookmarks, currentPage].sort((a, b) => a - b);
+      }
+      writeStorage(STORAGE.bookmarks, JSON.stringify(bookmarks));
+      showPage(currentPage);
+    });
+
+    document.getElementById("printButton").addEventListener("click", () => window.print());
+    document.getElementById("printSummary").addEventListener("click", () => window.print());
+
+    document.getElementById("fullscreenToggle").addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen?.();
+      } else {
+        await document.exitFullscreen?.();
+      }
+    });
+
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = next;
+      writeStorage(STORAGE.theme, next);
+    });
+
+    document.getElementById("resetProgress").addEventListener("click", () => {
+      Object.values(STORAGE).forEach((key) => {
+        try { localStorage.removeItem(key); } catch {}
+      });
+      bookmarks = [];
+      document.documentElement.dataset.theme = "light";
+      showPage(0, true);
+      resetOrderGame("activity");
+      resetOrderGame("final");
+    });
+
+    document.getElementById("restartGuide").addEventListener("click", () => showPage(0, true));
+    document.getElementById("retryFinalOrder").addEventListener("click", () => resetOrderGame("final"));
+
+    const savedTheme = (() => {
+      try { return localStorage.getItem(STORAGE.theme); } catch { return null; }
+    })();
+    if (savedTheme === "dark" || savedTheme === "light") {
+      document.documentElement.dataset.theme = savedTheme;
+    }
+
+    /* Demo engine */
+    function by(root, selector) {
+      return root.querySelector(selector);
+    }
+
+    function setText(root, selector, text) {
+      const element = by(root, selector);
+      if (element) element.textContent = text;
+    }
+
+    function show(root, selector, visible) {
+      const element = by(root, selector);
+      if (element) element.hidden = !visible;
+    }
+
+    function clearHighlights(root) {
+      root.querySelectorAll(".highlight, .pulse, .is-open, .is-read, .loading, .is-active").forEach((element) => {
+        element.classList.remove("highlight", "pulse", "is-open", "is-read", "loading", "is-active");
+      });
+    }
+
+    const demos = {
+      login: {
+        max: 7,
+        captions: [
+          "ابدأ من حقل البريد الإلكتروني. يمكن كتابة اسم مستخدم مثل s123456.",
+          "أدخل اسم المستخدم التجريبي: s123456.",
+          "انتقل إلى حقل كلمة المرور.",
+          "أدخل كلمة المرور المؤقتة كنقاط مخفية.",
+          "جرّب زر الإظهار والإخفاء دون مشاركة كلمة المرور.",
+          "اضغط «الدخول إلى المنصّة».",
+          "تظهر حالة «جاري الدخول...».",
+          "ينتقل الحساب الذي يحتاج تغييرًا إلى شاشة كلمة المرور الجديدة."
+        ],
+        render(root, step) {
+          clearHighlights(root);
+          show(root, ".login-next-screen", false);
+          setText(root, ".login-id-value", step >= 1 ? "s123456" : "user@example.com / s123456");
+          setText(root, ".login-password-value", step >= 3 ? (step >= 4 ? "Midad2026" : "••••••••") : "••••••••");
+          setText(root, ".login-eye", step >= 4 ? "إخفاء" : "إظهار");
+          setText(root, ".login-submit", step >= 6 ? "جاري الدخول..." : "الدخول إلى المنصّة");
+          by(root, ".login-submit")?.classList.toggle("loading", step === 6);
+          if (step === 0 || step === 1) by(root, ".login-id-field")?.classList.add("highlight", "pulse");
+          if (step === 2 || step === 3 || step === 4) by(root, ".login-password-field")?.classList.add("highlight", "pulse");
+          if (step === 5 || step === 6) by(root, ".login-submit")?.classList.add("highlight");
+          if (step >= 7) show(root, ".login-next-screen", true);
+        }
+      },
+      password: {
+        max: 4,
+        captions: [
+          "أنشئ كلمة مرور جديدة، ثم أعد كتابتها في حقل التأكيد.",
+          "مثال غير صحيح: كلمة قصيرة. تظهر الرسالة الفعلية من المنصة.",
+          "مثال غير صحيح: الكلمتان غير متطابقتين.",
+          "مثال صحيح: 8 أحرف أو أكثر والكلمتان متطابقتان.",
+          "تظهر رسالة النجاح ثم يكمل الطالب الدخول."
+        ],
+        render(root, step) {
+          clearHighlights(root);
+          show(root, ".pass-error", false);
+          show(root, ".pass-success", false);
+          setText(root, ".pass-new-value", "••••••••");
+          setText(root, ".pass-confirm-value", "••••••••");
+          setText(root, ".pass-submit", "تحديث كلمة المرور والمتابعة");
+          if (step === 0) by(root, ".pass-new-field")?.classList.add("highlight", "pulse");
+          if (step === 1) {
+            setText(root, ".pass-new-value", "••••");
+            setText(root, ".pass-error", "كلمة المرور يجب أن تكون 8 أحرف على الأقل.");
+            show(root, ".pass-error", true);
+            by(root, ".pass-new-field")?.classList.add("highlight");
+          }
+          if (step === 2) {
+            setText(root, ".pass-new-value", "••••••••");
+            setText(root, ".pass-confirm-value", "•••••••••");
+            setText(root, ".pass-error", "كلمتا المرور غير متطابقتين.");
+            show(root, ".pass-error", true);
+            by(root, ".pass-confirm-field")?.classList.add("highlight");
+          }
+          if (step === 3) {
+            by(root, ".pass-submit")?.classList.add("highlight");
+          }
+          if (step >= 4) {
+            show(root, ".pass-success", true);
+            by(root, ".pass-success")?.classList.add("highlight");
+          }
+        }
+      },
+      topics: {
+        max: 4,
+        captions: [
+          "تبدأ الصفحة بتحية الطالب أو عنوان «الموضوعات».",
+          "لوحة التقدم تعرض الدروس المكتملة والتسليمات والتقييمات من المعلم.",
+          "بطاقة الموضوع تعرض العنوان والوصف وحالة الدرس والتسليم والتقييم.",
+          "إذا عطّل المعلم درسًا تظهر عبارة «غير متاح حاليًا».",
+          "زر «عرض الدرس» يفتح الموضوع المتاح."
+        ],
+        render(root, step) {
+          clearHighlights(root);
+          if (step === 0) by(root, ".topics-welcome")?.classList.add("highlight");
+          if (step === 1) root.querySelectorAll(".dashboard-stat").forEach((item) => item.classList.add("highlight"));
+          if (step === 2) by(root, ".topic-feature")?.classList.add("highlight");
+          if (step === 3) by(root, ".topic-disabled")?.classList.add("highlight");
+          if (step === 4) by(root, ".topic-feature .mini-button")?.classList.add("highlight");
+        }
+      },
+      lesson: {
+        max: 4,
+        captions: [
+          "افتح الموضوع من بطاقة «عرض الدرس».",
+          "اقرأ عنوان الدرس ووصف الموضوع.",
+          "اقرأ أهداف الدرس قبل البدء.",
+          "اضغط «ابدأ الدرس».",
+          "يظهر محتوى الدرس وتبدأ القراءة."
+        ],
+        render(root, step) {
+          clearHighlights(root);
+          show(root, ".lesson-content-preview", step >= 4);
+          by(root, ".lesson-goals-card")?.classList.toggle("highlight", step === 2);
+          by(root, ".lesson-start")?.classList.toggle("highlight", step === 3);
+          const progress = by(root, ".lesson-content-preview .mini-progress span");
+          if (progress) progress.style.width = step >= 4 ? "35%" : "0";
+        }
+      },
+      study: {
+        max: 5,
+        captions: [
+          "ابدأ بقراءة مقدمة الدرس.",
+          "إذا كان الفيديو مفعّلًا فستجده في قسم «فيديو توضيحي».",
+          "افتح الخطوة الأولى واقرأها جيدًا.",
+          "علّم الخطوة الأولى في ذهنك كخطوة مقروءة وانتقل للثانية.",
+          "تابع الخطوات حتى تكتمل الصورة.",
+          "عند إنهاء الدرس اضغط زر الانتقال إلى المراجعة إذا كان متاحًا."
+        ],
+        render(root, step) {
+          clearHighlights(root);
+          const width = [0, 20, 40, 58, 78, 100][step] || 0;
+          setText(root, ".study-progress-label", `${width}%`);
+          const bar = by(root, ".study-progress");
+          if (bar) bar.style.width = `${width}%`;
+          if (step === 1) by(root, ".study-video")?.classList.add("highlight");
+          if (step >= 2) by(root, ".study-step-1")?.classList.add("is-open");
+          if (step >= 3) by(root, ".study-step-1")?.classList.add("is-read");
+          if (step >= 4) by(root, ".study-step-2")?.classList.add("is-open");
+          if (step >= 5) by(root, ".study-step-3")?.classList.add("is-open");
+        }
+      },
+      activityStart: {
+        max: 3,
+        captions: [
+          "ابحث عن قسم النشاط داخل صفحة الدرس.",
+          "إذا كان النشاط متاحًا سيظهر زر «فتح صفحة النشاط».",
+          "في موضوع المناقشة يظهر «فتح صفحة المناقشة»، وفي النص الحواري يظهر «فتح صفحة الحوار».",
+          "إذا عطّل المعلم النشاط تظهر رسالة عدم الإتاحة."
+        ],
+        render(root, step) {
+          clearHighlights(root);
+          show(root, ".activity-disabled-message", step === 3);
+          setText(root, ".activity-status", step === 3 ? "غير متاح" : "متاح");
+          setText(root, ".activity-open", step === 2 ? "فتح صفحة المناقشة / الحوار عند الحاجة" : "فتح صفحة النشاط");
+          by(root, ".activity-open")?.classList.toggle("highlight", step === 1 || step === 2);
+          by(root, ".activity-disabled-message")?.classList.toggle("highlight", step === 3);
+        }
+      },
+      review: {
+        max: 3,
+        captions: [
+          "اقرأ ملخص الخطوات في المراجعة.",
+          "افتح سؤالًا لترى الإجابة وتتحقق من فهمك.",
+          "افتح سؤالًا آخر قبل المتابعة.",
+          "عندما تكون مستعدًا اضغط «أنا مستعد، لنبدأ الكتابة!»."
+        ],
+        render(root, step) {
+          clearHighlights(root);
+          root.querySelectorAll(".qa-item").forEach((item) => item.classList.remove("is-open"));
+          if (step >= 1) by(root, ".review-q1")?.classList.add("is-open", "highlight");
+          if (step >= 2) by(root, ".review-q2")?.classList.add("is-open", "highlight");
+          if (step >= 3) by(root, ".review-ready")?.classList.add("highlight");
+        }
+      },
+      evaluation: {
+        max: 5,
+        captions: [
+          "اقرأ عنوان المهمة ووصفها أولًا.",
+          "افتح مساحة الكتابة الخاصة بالمهمة.",
+          "إذا ضغطت التقييم دون كتابة يظهر تنبيه بضرورة إدخال النص.",
+          "اكتب نصك في القسم المطلوب.",
+          "راجع المعايير قبل الإرسال.",
+          "اضغط «قيّم النص الآن» عندما تكون جاهزًا."
+        ],
+        render(root, step) {
+          clearHighlights(root);
+          show(root, ".eval-error", step === 2);
+          setText(root, ".eval-textarea", step >= 3 ? "كانت الشمس تغرق في بحر من الألوان الدافئة، وتنسج أشعتها الذهبية على صفحة البحر..." : "اكتب النص هنا...");
+          by(root, ".eval-task")?.classList.toggle("highlight", step === 0);
+          by(root, ".eval-field")?.classList.toggle("highlight", step === 1 || step === 3);
+          by(root, ".eval-error")?.classList.toggle("highlight", step === 2);
+          by(root, ".eval-submit")?.classList.toggle("highlight", step === 5);
+        }
+      },
+      submit: {
+        max: 3,
+        captions: [
+          "ابدأ بالمراجعة النهائية للنص.",
+          "اضغط زر الإرسال أو التقييم بعد التأكد.",
+          "تظهر حالة انتظار مثل «...جاري التقييم» أو «...جاري الحفظ».",
+          "بعد النجاح انتظر تغذية المعلم الراجعة."
+        ],
+        render(root, step) {
+          clearHighlights(root);
+          show(root, ".submit-success", step >= 3);
+          setText(root, ".submit-state", ["مراجعة نهائية", "إرسال", "جاري الحفظ", "تم بنجاح"][step] || "مراجعة نهائية");
+          setText(root, ".submit-button", step === 2 ? "...جاري التقييم" : "قيّم النص الآن");
+          by(root, ".submit-button")?.classList.toggle("loading", step === 2);
+          by(root, ".submit-button")?.classList.toggle("highlight", step === 1 || step === 2);
+        }
+      },
+      submissions: {
+        max: 4,
+        captions: [
+          "افتح «تسليماتي» من الشريط العلوي.",
+          "تبويب «كتاباتي وتقييماتي» يعرض الموضوع وتاريخ التسليم ودرجات التقييم.",
+          "إذا لم يقيّم المعلم التسليم بعد تظهر عبارة «لم يُقيّم بعد».",
+          "بعد وصول التقييم تظهر ملاحظات المعلم والدرجة.",
+          "تبويب «سجل أنشطتي ودروسي» يعرض الدروس والأنشطة المؤكدة."
+        ],
+        render(root, step) {
+          clearHighlights(root);
+          show(root, ".teacher-feedback-panel", step >= 3);
+          setText(root, ".teacher-status", step >= 3 ? "9/10" : "لم يُقيّم بعد");
+          by(root, ".submissions-tab")?.classList.toggle("is-active", step < 4);
+          by(root, ".activities-tab")?.classList.toggle("is-active", step >= 4);
+          if (step === 1) by(root, ".submission-table")?.classList.add("highlight");
+          if (step === 2) by(root, ".teacher-status")?.classList.add("highlight");
+          if (step === 3) by(root, ".teacher-feedback-panel")?.classList.add("highlight");
+          if (step === 4) by(root, ".activities-tab")?.classList.add("highlight");
+        }
+      }
+    };
+
+    function renderDemo(root) {
+      const id = root.dataset.demo;
+      const config = demos[id];
+      if (!config) return;
+      const state = demoStates[id] || { step: 0, timer: null };
+      demoStates[id] = state;
+      state.step = Math.max(0, Math.min(state.step, config.max));
+      config.render(root, state.step);
+      setText(root, "[data-demo-caption]", config.captions[state.step] || "");
+    }
+
+    function stopDemo(id) {
+      const state = demoStates[id];
+      if (state?.timer) {
+        window.clearInterval(state.timer);
+        state.timer = null;
+      }
+    }
+
+    function startDemo(root) {
+      const id = root.dataset.demo;
+      const config = demos[id];
+      if (!config) return;
+      const state = demoStates[id] || { step: 0, timer: null };
+      demoStates[id] = state;
+      stopDemo(id);
+      if (reducedMotion) {
+        state.step = config.max;
+        renderDemo(root);
+        return;
+      }
+      state.timer = window.setInterval(() => {
+        if (state.step >= config.max) {
+          stopDemo(id);
+          return;
+        }
+        state.step += 1;
+        renderDemo(root);
+      }, 1150);
+    }
+
+    document.querySelectorAll(".demo").forEach((root) => {
+      renderDemo(root);
+      root.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-demo-action]");
+        if (!button) return;
+        const id = root.dataset.demo;
+        const config = demos[id];
+        const state = demoStates[id] || { step: 0, timer: null };
+        demoStates[id] = state;
+        if (button.dataset.demoAction === "play") startDemo(root);
+        if (button.dataset.demoAction === "pause") stopDemo(id);
+        if (button.dataset.demoAction === "reset") {
+          stopDemo(id);
+          state.step = 0;
+          renderDemo(root);
+        }
+        if (button.dataset.demoAction === "next") {
+          stopDemo(id);
+          state.step = state.step >= config.max ? 0 : state.step + 1;
+          renderDemo(root);
+        }
+      });
+    });
+
+    /* Login demo and small interactions */
+    document.getElementById("practiceNext").addEventListener("click", () => {
+      document.getElementById("practiceNextFeedback").textContent = "أحسنت. سينقلك الزر إلى خريطة الرحلة.";
+      window.setTimeout(() => showPage(pageById.get("journey") || 2, true), reducedMotion ? 0 : 450);
+    });
+
+    document.querySelectorAll(".nav-link-sim").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".nav-link-sim").forEach((item) => item.classList.remove("is-active"));
+        button.classList.add("is-active");
+        document.getElementById("navTip").textContent = button.dataset.navTip;
+      });
+    });
+
+    document.querySelectorAll(".qa-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        button.closest(".qa-item")?.classList.toggle("is-open");
+      });
+    });
+
+    /* Activity demo and final order games */
+    const orderGames = {
+      activity: {
+        list: document.getElementById("activityOrderList"),
+        feedback: document.getElementById("activityOrderFeedback"),
+        items: ["اختيار المعاني المناسبة", "المراجعة", "تعيين العناصر التي يشملها الوصف", "التحرير والكتابة", "تحديد منطلق عملية الوصف"],
+        correct: ["تعيين العناصر التي يشملها الوصف", "اختيار المعاني المناسبة", "تحديد منطلق عملية الوصف", "التحرير والكتابة", "المراجعة"]
+      },
+      final: {
+        list: document.getElementById("finalOrderList"),
+        feedback: document.getElementById("finalOrderFeedback"),
+        items: ["اختيار الموضوع", "تسجيل الدخول", "التقييم", "تنفيذ النشاط", "متابعة التغذية الراجعة", "تغيير كلمة المرور", "دراسة الدرس", "الإرسال", "المراجعة"],
+        correct: ["تسجيل الدخول", "تغيير كلمة المرور", "اختيار الموضوع", "دراسة الدرس", "تنفيذ النشاط", "المراجعة", "التقييم", "الإرسال", "متابعة التغذية الراجعة"]
+      }
+    };
+
+    function renderOrderGame(name) {
+      const game = orderGames[name];
+      game.list.textContent = "";
+      game.items.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "order-item";
+        const text = document.createElement("span");
+        text.textContent = item;
+
+        const actions = document.createElement("span");
+        actions.className = "order-actions";
+
+        const up = document.createElement("button");
+        up.type = "button";
+        up.className = "tiny-button";
+        up.textContent = "أعلى";
+        up.disabled = index === 0;
+        up.addEventListener("click", () => moveOrderItem(name, index, -1));
+
+        const down = document.createElement("button");
+        down.type = "button";
+        down.className = "tiny-button";
+        down.textContent = "أسفل";
+        down.disabled = index === game.items.length - 1;
+        down.addEventListener("click", () => moveOrderItem(name, index, 1));
+
+        actions.append(up, down);
+        li.append(text, actions);
+        game.list.append(li);
+      });
+    }
+
+    function moveOrderItem(name, index, direction) {
+      const game = orderGames[name];
+      const target = index + direction;
+      if (target < 0 || target >= game.items.length) return;
+      const copy = [...game.items];
+      [copy[index], copy[target]] = [copy[target], copy[index]];
+      game.items = copy;
+      renderOrderGame(name);
+    }
+
+    function checkOrderGame(name) {
+      const game = orderGames[name];
+      const ok = game.items.every((item, index) => item === game.correct[index]);
+      game.feedback.textContent = ok
+        ? name === "final"
+          ? "أحسنت! أصبحت مستعدًا لاستخدام منصّة مداد."
+          : "أحسنت. هذا هو ترتيب خطوات الوصف."
+        : "حاول مرة أخرى. ابحث عن أول خطوة ثم حرّك البطاقات بالترتيب.";
+      game.feedback.classList.toggle("case-success", ok);
+      game.feedback.classList.toggle("case-error", !ok);
+    }
+
+    function resetOrderGame(name) {
+      const game = orderGames[name];
+      game.items = name === "activity"
+        ? ["اختيار المعاني المناسبة", "المراجعة", "تعيين العناصر التي يشملها الوصف", "التحرير والكتابة", "تحديد منطلق عملية الوصف"]
+        : ["اختيار الموضوع", "تسجيل الدخول", "التقييم", "تنفيذ النشاط", "متابعة التغذية الراجعة", "تغيير كلمة المرور", "دراسة الدرس", "الإرسال", "المراجعة"];
+      game.feedback.textContent = name === "activity"
+        ? "استخدم أزرار «أعلى» و«أسفل» لتحريك البطاقات."
+        : "رتّب البطاقات من أول خطوة إلى آخر خطوة.";
+      game.feedback.classList.remove("case-success", "case-error");
+      renderOrderGame(name);
+    }
+
+    document.getElementById("checkActivityOrder").addEventListener("click", () => checkOrderGame("activity"));
+    document.getElementById("retryActivityOrder").addEventListener("click", () => resetOrderGame("activity"));
+    document.getElementById("checkFinalOrder").addEventListener("click", () => checkOrderGame("final"));
+
+    /* Evaluation and submission interactions */
+    const submitChecks = Array.from(document.querySelectorAll("[data-submit-check]"));
+    const fakeSubmit = document.getElementById("fakeSubmit");
+    const submitFeedback = document.getElementById("submitFeedback");
+
+    submitChecks.forEach((input) => {
+      input.addEventListener("change", () => {
+        const ready = submitChecks.every((item) => item.checked);
+        fakeSubmit.disabled = !ready;
+        submitFeedback.textContent = ready ? "المهمة جاهزة للإرسال الآن." : "سيعمل الزر بعد اكتمال القائمة.";
+      });
+    });
+
+    fakeSubmit.addEventListener("click", () => {
+      submitFeedback.textContent = "تم الإرسال داخل الدليل فقط. لا توجد بيانات حقيقية.";
+      submitFeedback.classList.add("case-success");
+    });
+
+    /* Accessibility */
+    document.addEventListener("visibilitychange", () => {
+      Object.keys(demoStates).forEach(stopDemo);
+    });
+
+    /* Persistence */
+    buildToc();
+    resetOrderGame("activity");
+    resetOrderGame("final");
+    showPage(currentPage);
+  </script>
+</body>
+</html>

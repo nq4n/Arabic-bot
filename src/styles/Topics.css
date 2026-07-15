@@ -6,6 +6,14 @@
   margin: 0 auto;
 }
 
+.topics-page .card,
+.topics-page .topic-dashboard-item,
+.topics-page .topic-points-panel,
+.topics-page .gamification-summary {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .topics-header {
   text-align: center;
 }
@@ -27,6 +35,8 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  content-visibility: auto;
+  contain-intrinsic-size: 640px;
 }
 
 .semester-topic-header {
@@ -143,9 +153,13 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
-  transition: box-shadow 0.3s, transform 0.3s;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
   min-height: 340px;
-  background-color: var(--bg-secondary);
+  background-color: color-mix(in srgb, var(--bg-secondary) 96%, white);
+  contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: 340px;
+  will-change: transform;
 }
 
 .topic-card::before {
@@ -155,7 +169,8 @@
   background-image: var(--topic-image);
   background-size: cover;
   background-position: center;
-  opacity: 0.3;
+  opacity: 0.18;
+  transform: translateZ(0);
 }
 
 .topic-card::after {
@@ -185,8 +200,8 @@
 }
 
 .topic-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .card-content {
@@ -235,7 +250,7 @@
 
 .card-actions {
   padding: 1rem 1.5rem;
-  background-color: color-mix(in srgb, var(--bg-card) 70%, transparent);
+  background-color: color-mix(in srgb, var(--bg-card) 92%, transparent);
   border-top: 1px solid var(--border-strong);
   display: flex;
   justify-content: space-between;
@@ -305,6 +320,7 @@
 
   .topic-card {
     min-height: auto;
+    contain-intrinsic-size: 280px;
   }
 
   .card-actions {
@@ -377,7 +393,7 @@
   height: 100%;
   background: var(--primary);
   border-radius: 999px;
-  transition: width 0.5s ease-out;
+  transition: width 0.24s ease-out;
 }
 
 .points-needed {

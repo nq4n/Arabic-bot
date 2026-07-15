@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
   useLocation,
+  useParams,
 } from "react-router-dom";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabaseClient";
@@ -18,29 +19,35 @@ import AchievementToast from "./components/AchievementToast";
 import SkeletonPage from "./components/SkeletonPage";
 
 // Pages
-import Topics from "./pages/Topics";
-import Topic from "./pages/topic";
-import LessonReview from "./pages/LessonReview";
-import Evaluate from "./pages/Evaluate";
-import Login from "./pages/Login";
-import TeacherPanel from "./pages/TeacherPanel";
-import MySubmissions from "./pages/MySubmissions";
-import Submissions from "./pages/Submissions";
-import ActivitySubmissionsPage from "./pages/ActivitySubmissionsPage"; // New import
-import SubmissionReview from "./pages/SubmissionReview";
-import StudentProgress from "./pages/StudentProgress";
-import AboutUs from "./pages/AboutUs";
+import Topics from "./pages/lessons/Topics";
+import Topic from "./pages/lessons/topic";
+import LessonReview from "./pages/lessons/LessonReview";
+import Evaluate from "./pages/lessons/Evaluate";
+import Login from "./pages/auth/Login";
+import TeacherPanel from "./pages/teacher/TeacherPanel";
+import MySubmissions from "./pages/student/MySubmissions";
+import Submissions from "./pages/teacher/Submissions";
+import ActivitySubmissionsPage from "./pages/teacher/ActivitySubmissionsPage";
+import SubmissionReview from "./pages/teacher/SubmissionReview";
+import StudentProgress from "./pages/teacher/StudentProgress";
+import AboutUs from "./pages/shared/AboutUs";
 import FirstLoginChangePassword from "./components/FirstLoginChangePassword";
-import ChatCenter from "./pages/ChatCenter";
-import Profile from "./pages/Profile";
-import CollaborativeActivity from "./pages/CollaborativeActivity";
-import PeerDialogueActivity from "./pages/PeerDialogueActivity";
-import ReportAssemblyActivity from "./pages/ReportAssemblyActivity";
-import LandscapeDescriptionTutorial from "./pages/LandscapeDescriptionTutorial";
-import Activity from "./pages/Activity";
-import LessonActivityPage from "./pages/LessonActivityPage";
+import ChatCenter from "./pages/shared/ChatCenter";
+import Profile from "./pages/student/Profile";
+import LandscapeDescriptionTutorial from "./pages/activities/LandscapeDescriptionTutorial";
+import Activity from "./pages/activities/Activity";
 
 export type UserRole = "student" | "teacher" | "admin" | null;
+
+function LegacyActivityRouteRedirect() {
+  const { topicId } = useParams<{ topicId: string }>();
+
+  if (!topicId) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Navigate to={`/activity/${topicId}/tutorial`} replace />;
+}
 
 const AppContent = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -204,7 +211,7 @@ const AppContent = () => {
             path="/collaborative-activity/:topicId"
             element={
               <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
-                <CollaborativeActivity />
+                <LegacyActivityRouteRedirect />
               </ProtectedRoute>
             }
           />
@@ -212,7 +219,7 @@ const AppContent = () => {
             path="/peer-dialogue/:topicId"
             element={
               <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
-                <PeerDialogueActivity />
+                <LegacyActivityRouteRedirect />
               </ProtectedRoute>
             }
           />
@@ -220,7 +227,7 @@ const AppContent = () => {
             path="/report-assembly/:topicId"
             element={
               <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
-                <ReportAssemblyActivity />
+                <LegacyActivityRouteRedirect />
               </ProtectedRoute>
             }
           />
@@ -236,7 +243,7 @@ const AppContent = () => {
             path="/activity/:topicId"
             element={
               <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
-                <LessonActivityPage />
+                <LandscapeDescriptionTutorial />
               </ProtectedRoute>
             }
           />

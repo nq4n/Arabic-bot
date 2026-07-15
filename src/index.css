@@ -38,7 +38,7 @@
   --bg-secondary: rgba(255, 255, 255, 0.92);
 
   /* Background (softer + richer) */
-  --bg-main: linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)), url('/bg.png');
+  --bg-main: linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)), url('/bdg.png');
 
   /* Borders + Radius */
   --border-color: rgba(15, 23, 42, 0.12);
@@ -97,7 +97,7 @@
   --bg-card: rgba(15, 23, 42, 0.70);
   --bg-secondary: rgba(15, 23, 42, 0.88);
 
-  --bg-main: linear-gradient(rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.88)), url('/bg.png');
+  --bg-main: linear-gradient(rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.88)), url('/bdg.png');
 
   --border-color: rgba(148, 163, 184, 0.20);
   --border-strong: rgba(148, 163, 184, 0.30);

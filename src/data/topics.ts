@@ -1,11 +1,8 @@
 /* eslint-disable no-useless-escape */
 // src/data/topics.ts
 
-import { semester1Topics } from "./semester1Topics";
-import { semester2Topics } from "./semester2Topics";
-
-export { semester1Topics } from "./semester1Topics";
-export { semester2Topics } from "./semester2Topics";
+import { semester1Topics as sourceSemester1Topics } from "./semester1Topics";
+import { semester2Topics as sourceSemester2Topics } from "./semester2Topics";
 
 export type PredefinedQuestion = {
   id: string;
@@ -119,6 +116,19 @@ export type Topic = {
     mode?: "writing" | "discussion" | "report" | "dialogue";
   };
 };
+
+const setSemester = (topic: Topic, semester: Topic["semester"]): Topic => ({
+  ...topic,
+  semester,
+});
+
+export const semester1Topics: Topic[] = sourceSemester2Topics.map((topic) =>
+  setSemester(topic, 1)
+);
+
+export const semester2Topics: Topic[] = sourceSemester1Topics.map((topic) =>
+  setSemester(topic, 2)
+);
 
 export const topicsBySemester = {
   1: semester1Topics,
