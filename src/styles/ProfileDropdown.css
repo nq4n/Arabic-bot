@@ -13,8 +13,9 @@
   background-color: var(--bg-main);
   border: 1px solid var(--border-color);
   color: var(--text-main);
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
+  aspect-ratio: 1;
   border-radius: 50%;
   cursor: pointer;
 
@@ -24,6 +25,7 @@
 
   padding: 0;
   overflow: hidden;
+  box-sizing: border-box;
 
   transition: background-color 0.2s ease,
               border-color 0.2s ease;

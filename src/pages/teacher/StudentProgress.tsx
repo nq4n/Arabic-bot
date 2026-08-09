@@ -36,33 +36,55 @@ export default function StudentProgress() {
                 setLoading(true);
 
                 // 1. Fetch all data needed for point calculation (same as teacher panel)
-                const { data: trackData, error: trackError } = await supabase
-                    .from('student_tracking')
-                    .select('tracking_data')
-                    .eq('student_id', session.user.id)
-                    .maybeSingle();
+                const [
+                    trackingResult,
+                    activityResult,
+                    collaborativeResult,
+                    submissionsResult,
+                    rewardsResult,
+                ] = await Promise.all([
+                    supabase
+                        .from('student_tracking')
+                        .select('tracking_data')
+                        .eq('student_id', session.user.id)
+                        .maybeSingle(),
+                    supabase
+                        .from('activity_submissions')
+                        .select('topic_id, activity_id, status')
+                        .eq('student_id', session.user.id),
+                    supabase
+                        .from('collaborative_activity_completions')
+                        .select('topic_id, activity_kind')
+                        .eq('student_id', session.user.id),
+                    supabase
+                        .from('submissions')
+                        .select('topic_title, teacher_response')
+                        .eq('student_id', session.user.id),
+                    supabase
+                        .from('point_rewards')
+                        .select('*')
+                        .order('min_points', { ascending: true }),
+                ]);
+
+                const { data: trackData, error: trackError } = trackingResult;
 
                 const tracking = trackError && trackError.code !== 'PGRST116' 
                     ? null 
                     : ((trackData?.tracking_data as any) || null);
 
-                // Fetch activity submissions as fallback (in case activities aren't in tracking_data)
-                const { data: activityData } = await supabase
-                    .from('activity_submissions')
-                    .select('topic_id, activity_id')
-                    .eq('student_id', session.user.id);
+                if (activityResult.error) {
+                    console.error('Error fetching activity submissions:', activityResult.error);
+                }
+                if (collaborativeResult.error) {
+                    console.error('Error fetching collaborative completions:', collaborativeResult.error);
+                }
+                if (submissionsResult.error) {
+                    console.error('Error fetching submissions:', submissionsResult.error);
+                }
 
-                // Fetch collaborative completions as fallback
-                const { data: collaborativeData } = await supabase
-                    .from('collaborative_activity_completions')
-                    .select('topic_id, activity_kind')
-                    .eq('student_id', session.user.id);
-
-                // Fetch submissions for evaluations
-                const { data: submissionsData } = await supabase
-                    .from('submissions')
-                    .select('topic_title')
-                    .eq('student_id', session.user.id);
+                const activityData = activityResult.data || [];
+                const collaborativeData = collaborativeResult.data || [];
+                const submissionsData = submissionsResult.data || [];
 
                 // Calculate points using same method as teacher panel (with fallbacks)
                 const totalPointsValue = calculatePointsFromData({
@@ -75,17 +97,6 @@ export default function StudentProgress() {
                     submissions: submissionsData || [],
                 });
 
-                console.log('StudentProgress - Calculated points:', {
-                    lessons: tracking?.lessons ? Object.keys(tracking.lessons).length : 0,
-                    activities: tracking?.activities ? Object.values(tracking.activities).reduce((sum: number, act: any) => sum + (act?.completedIds?.length || 0), 0) : 0,
-                    activitySubmissions: activityData?.length || 0,
-                    evaluations: tracking?.evaluations ? Object.keys(tracking.evaluations).length : 0,
-                    submissions: submissionsData?.length || 0,
-                    collaborative: tracking?.collaborative ? Object.keys(tracking.collaborative).length : 0,
-                    collaborativeCompletions: collaborativeData?.length || 0,
-                    calculated: totalPointsValue,
-                    stored: tracking?.points?.total || 0,
-                });
                 setTotalPoints(totalPointsValue);
 
                 // 2. Calculate stats from tracking_data (using already fetched data)
@@ -143,14 +154,9 @@ export default function StudentProgress() {
 
                 // Compute fallback activities if none tracked
                 if (trackedActivities === 0) {
-                    const { data: activityRows, error: activityError } = await supabase
-                        .from('activity_submissions')
-                        .select('topic_id, activity_id, status')
-                        .eq('student_id', session.user.id);
-
-                    if (!activityError && activityRows) {
+                    if (!activityResult.error && activityData) {
                         const activitySet = new Set<string>();
-                        (activityRows as any[]).forEach((row) => {
+                        (activityData as any[]).forEach((row) => {
                             // Count each unique topic/activity pair that has not been rejected
                             if (!row.status || row.status !== 'rejected') {
                                 activitySet.add(`${row.topic_id}|${row.activity_id}`);
@@ -162,24 +168,15 @@ export default function StudentProgress() {
 
                 // Compute fallback evaluations if none tracked
                 if (trackedEvaluations === 0) {
-                    const { data: evalRows, error: evalError } = await supabase
-                        .from('submissions')
-                        .select('teacher_response')
-                        .eq('student_id', session.user.id);
-
-                    if (!evalError && evalRows) {
-                        evaluationsFallback = (evalRows as any[]).filter((row) => row.teacher_response).length;
+                    if (!submissionsResult.error && submissionsData) {
+                        evaluationsFallback = (submissionsData as any[]).filter((row) => row.teacher_response).length;
                     }
                 }
 
                 // Compute fallback collaborative completions if none tracked
                 if (trackedCollaborative === 0) {
-                    const { data: collabRows, error: collabError } = await supabase
-                        .from('collaborative_activity_completions')
-                        .select('id')
-                        .eq('student_id', session.user.id);
-                    if (!collabError && collabRows) {
-                        collaborativeFallback = (collabRows as any[]).length;
+                    if (!collaborativeResult.error && collaborativeData) {
+                        collaborativeFallback = (collaborativeData as any[]).length;
                     }
                 }
 
@@ -198,13 +195,8 @@ export default function StudentProgress() {
                     totalEvaluations: evaluationsFinal,
                 });
 
-                // 2. Fetch rewards to show progress
-                const { data: rewardsData } = await supabase
-                    .from('point_rewards')
-                    .select('*')
-                    .order('min_points', { ascending: true });
-
-                if (rewardsData) setRewards(rewardsData as PointReward[]);
+                // 2. Show rewards fetched with the main progress data
+                if (rewardsResult.data) setRewards(rewardsResult.data as PointReward[]);
 
             } catch (err: any) {
                 setError(`Error fetching achievement data: ${err.message}`);

@@ -618,38 +618,144 @@
 
     /* Mini platform surfaces */
     .mini-window {
+      --app-bg: linear-gradient(
+          color-mix(in srgb, var(--paper-strong) 88%, transparent),
+          color-mix(in srgb, var(--paper-strong) 88%, transparent)
+        ),
+        repeating-linear-gradient(
+          -18deg,
+          rgba(15, 118, 110, 0.045) 0 2px,
+          transparent 2px 18px
+        );
       border: 1px solid var(--line-strong);
-      border-radius: 14px;
-      background: var(--paper-strong);
+      border-radius: 24px;
+      background: var(--app-bg);
       overflow: hidden;
+      box-shadow: var(--shadow-sm);
     }
 
-    .mini-topbar {
+    .app-preview-nav {
+      position: relative;
+      min-height: 58px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      padding: 10px 12px;
+      gap: 12px;
+      padding: 10px 16px;
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--surface) 94%, transparent),
+        color-mix(in srgb, var(--surface) 74%, transparent)
+      );
       border-bottom: 1px solid var(--line);
-      background: linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(212, 162, 59, 0.08));
+      box-shadow: var(--shadow-sm);
+    }
+
+    .app-preview-logo {
+      color: var(--ink);
+      font-size: 2rem;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .app-preview-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .app-preview-link {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--ink);
+      background: transparent;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .app-preview-link.active {
+      border-color: var(--primary);
+      color: var(--primary-dark);
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+    }
+
+    .app-preview-user {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .mini-topbar {
+      display: grid;
+      gap: 6px;
+      padding: 18px 18px 8px;
+      text-align: center;
+      border-bottom: 0;
+      background: transparent;
     }
 
     .mini-logo {
       font-weight: 900;
       color: var(--primary-dark);
-      font-size: 1.25rem;
+      font-size: clamp(1.25rem, 1vw + 1rem, 1.75rem);
+      line-height: 1.2;
+    }
+
+    .mini-topbar .muted {
+      color: var(--muted);
+      font-weight: 800;
     }
 
     .mini-body {
-      padding: 14px;
+      padding: 16px 18px 18px;
+    }
+
+    .mini-window.login-preview {
+      max-width: 520px;
+      margin-inline: auto;
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.10), transparent 62%),
+        var(--paper-strong);
+    }
+
+    .mini-window.login-preview .mini-topbar {
+      padding-top: 24px;
+    }
+
+    .mini-window.login-preview .mini-logo {
+      font-size: clamp(3rem, 8vw, 5.8rem);
+      line-height: 0.9;
+      color: var(--ink);
+    }
+
+    .mini-window.login-preview .mini-body {
+      max-width: 430px;
+      margin: 0 auto;
+      padding-bottom: 24px;
+    }
+
+    .mini-window.login-preview .mini-body h2 {
+      text-align: center;
+      margin-top: 0;
     }
 
     .field {
       border: 1px solid var(--line);
       border-radius: 12px;
       background: var(--surface);
-      padding: 10px;
-      margin-bottom: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
       transition: box-shadow 0.2s ease, border-color 0.2s ease;
     }
 
@@ -670,9 +776,9 @@
       justify-content: space-between;
       gap: 8px;
       border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--paper-strong);
-      padding: 8px 10px;
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 10px 12px;
       color: var(--muted);
     }
 
@@ -693,9 +799,11 @@
 
     .mini-button {
       min-height: 38px;
-      border: 0;
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 999px;
-      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
+        linear-gradient(135deg, var(--primary-dark), var(--primary));
       color: #ffffff;
       padding: 8px 14px;
       font-weight: 900;
@@ -703,6 +811,7 @@
       align-items: center;
       justify-content: center;
       gap: 7px;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
     }
 
     .mini-button.secondary {
@@ -732,6 +841,21 @@
       background: var(--paper-strong);
       color: var(--muted);
       font-weight: 800;
+    }
+
+    .demo-caption {
+      display: grid;
+      gap: 4px;
+      border-inline-start: 4px solid var(--primary);
+      background: color-mix(in srgb, var(--primary) 7%, var(--paper-strong));
+      color: var(--ink);
+    }
+
+    .demo-caption::before {
+      content: "الخطوة الحالية";
+      color: var(--primary-dark);
+      font-size: 0.82rem;
+      font-weight: 900;
     }
 
     .case-error {
@@ -824,13 +948,15 @@
     .topic-card-mini {
       position: relative;
       border: 1px solid var(--line);
-      border-radius: 14px;
+      border-radius: 8px;
       background:
-        linear-gradient(135deg, rgba(15, 118, 110, 0.1), transparent),
+        linear-gradient(180deg, color-mix(in srgb, var(--surface) 74%, transparent), color-mix(in srgb, var(--surface) 96%, transparent)),
+        linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(212, 162, 59, 0.10)),
         var(--paper-strong);
       padding: 14px;
       min-height: 160px;
       overflow: hidden;
+      box-shadow: var(--shadow-sm);
     }
 
     .topic-card-mini h3 {
@@ -1185,6 +1311,20 @@
 
       .chat-layout-mini {
         grid-template-columns: 1fr;
+      }
+
+      .app-preview-nav {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .app-preview-links {
+        justify-content: flex-start;
+      }
+
+      .app-preview-user {
+        position: static;
+        align-self: flex-start;
       }
 
       .chat-sidebar-mini {
@@ -2022,6 +2162,43 @@
       }
     }
 
+    function decorateAppPreviews() {
+      const links = ["الموضوعات", "تسليماتي", "نقاطي", "الدردشة"];
+      document.querySelectorAll(".mini-window").forEach((preview) => {
+        const demoId = preview.closest(".demo")?.dataset.demo || "";
+        if (demoId === "login" || demoId === "password") {
+          preview.classList.add("login-preview");
+          return;
+        }
+        if (preview.querySelector(".app-preview-nav")) return;
+
+        const activeLabel = demoId === "submissions" ? "تسليماتي" : "الموضوعات";
+        const nav = document.createElement("div");
+        nav.className = "app-preview-nav";
+        nav.setAttribute("aria-label", "شريط تنقل مصغر يحاكي منصة مداد");
+
+        const logo = document.createElement("span");
+        logo.className = "app-preview-logo";
+        logo.textContent = "مداد";
+
+        const linkWrap = document.createElement("div");
+        linkWrap.className = "app-preview-links";
+        links.forEach((label) => {
+          const item = document.createElement("span");
+          item.className = `app-preview-link${label === activeLabel ? " active" : ""}`;
+          item.textContent = label;
+          linkWrap.append(item);
+        });
+
+        const user = document.createElement("span");
+        user.className = "app-preview-user";
+        user.textContent = "ط";
+
+        nav.append(logo, linkWrap, user);
+        preview.prepend(nav);
+      });
+    }
+
     function clampPage(index) {
       return Math.max(0, Math.min(index, pageElements.length - 1));
     }
@@ -2207,14 +2384,14 @@
       login: {
         max: 7,
         captions: [
-          "ابدأ من حقل البريد الإلكتروني. يمكن كتابة اسم مستخدم مثل s123456.",
-          "أدخل اسم المستخدم التجريبي: s123456.",
-          "انتقل إلى حقل كلمة المرور.",
-          "أدخل كلمة المرور المؤقتة كنقاط مخفية.",
-          "جرّب زر الإظهار والإخفاء دون مشاركة كلمة المرور.",
-          "اضغط «الدخول إلى المنصّة».",
-          "تظهر حالة «جاري الدخول...».",
-          "ينتقل الحساب الذي يحتاج تغييرًا إلى شاشة كلمة المرور الجديدة."
+          "افعل: اضغط حقل البريد الإلكتروني. انتبه: في مداد يمكن إدخال البريد أو اسم المستخدم.",
+          "افعل: اكتب اسم المستخدم التجريبي s123456. انتبه: المثال ليس حسابًا حقيقيًا.",
+          "افعل: انتقل إلى حقل كلمة المرور. انتبه: مكانه أسفل حقل البريد مباشرة.",
+          "افعل: اكتب كلمة المرور المؤقتة. انتبه: تظهر كنقاط مخفية كما في المنصة.",
+          "افعل: جرّب زر الإظهار والإخفاء. انتبه: لا تشارك كلمة المرور مع أحد.",
+          "افعل: اضغط «الدخول إلى المنصّة». انتبه: الزر الرئيس في أسفل بطاقة الدخول.",
+          "افعل: انتظر. انتبه: يظهر نص «جاري الدخول...» أثناء المعالجة.",
+          "افعل: تابع الشاشة التالية. انتبه: إذا كان الدخول الأول ستظهر شاشة تغيير كلمة المرور."
         ],
         render(root, step) {
           clearHighlights(root);
@@ -2233,11 +2410,11 @@
       password: {
         max: 4,
         captions: [
-          "أنشئ كلمة مرور جديدة، ثم أعد كتابتها في حقل التأكيد.",
-          "مثال غير صحيح: كلمة قصيرة. تظهر الرسالة الفعلية من المنصة.",
-          "مثال غير صحيح: الكلمتان غير متطابقتين.",
-          "مثال صحيح: 8 أحرف أو أكثر والكلمتان متطابقتان.",
-          "تظهر رسالة النجاح ثم يكمل الطالب الدخول."
+          "افعل: اكتب كلمة مرور جديدة ثم أعد كتابتها. انتبه: يوجد حقلان في بطاقة واحدة.",
+          "افعل: لاحظ المثال القصير. انتبه: تظهر رسالة «كلمة المرور يجب أن تكون 8 أحرف على الأقل.»",
+          "افعل: لاحظ اختلاف الحقلين. انتبه: تظهر رسالة «كلمتا المرور غير متطابقتين.»",
+          "افعل: استخدم كلمة من 8 أحرف أو أكثر في الحقلين. انتبه: هذا هو الحد الأدنى في المنصة.",
+          "افعل: اضغط التحديث. انتبه: تظهر رسالة النجاح ثم يكمل الطالب الدخول."
         ],
         render(root, step) {
           clearHighlights(root);
@@ -2272,11 +2449,11 @@
       topics: {
         max: 4,
         captions: [
-          "تبدأ الصفحة بتحية الطالب أو عنوان «الموضوعات».",
-          "لوحة التقدم تعرض الدروس المكتملة والتسليمات والتقييمات من المعلم.",
-          "بطاقة الموضوع تعرض العنوان والوصف وحالة الدرس والتسليم والتقييم.",
-          "إذا عطّل المعلم درسًا تظهر عبارة «غير متاح حاليًا».",
-          "زر «عرض الدرس» يفتح الموضوع المتاح."
+          "افعل: اقرأ أعلى الصفحة. انتبه: تظهر تحية الطالب أو عنوان «الموضوعات».",
+          "افعل: راجع لوحة التقدم. انتبه: تعرض الدروس المكتملة والتسليمات والتقييمات من المعلم.",
+          "افعل: افحص بطاقة الموضوع. انتبه: ترى العنوان والوصف وحالات الدرس والتسليم والتقييم.",
+          "افعل: لاحظ البطاقة غير المتاحة. انتبه: تظهر عبارة «غير متاح حاليًا» عندما يعطل المعلم الدرس.",
+          "افعل: اضغط «عرض الدرس». انتبه: الزر يفتح الموضوع المتاح فقط."
         ],
         render(root, step) {
           clearHighlights(root);
@@ -2290,11 +2467,11 @@
       lesson: {
         max: 4,
         captions: [
-          "افتح الموضوع من بطاقة «عرض الدرس».",
-          "اقرأ عنوان الدرس ووصف الموضوع.",
-          "اقرأ أهداف الدرس قبل البدء.",
-          "اضغط «ابدأ الدرس».",
-          "يظهر محتوى الدرس وتبدأ القراءة."
+          "افعل: افتح الموضوع من بطاقة «عرض الدرس». انتبه: ستبقى داخل قسم الموضوعات.",
+          "افعل: اقرأ عنوان الدرس ووصف الموضوع. انتبه: العنوان يحدد الدرس الحالي.",
+          "افعل: اقرأ أهداف الدرس قبل البدء. انتبه: الأهداف تخبرك بما ستتعلمه.",
+          "افعل: اضغط «ابدأ الدرس». انتبه: الزر يظهر أسفل بطاقة الأهداف.",
+          "افعل: ابدأ القراءة. انتبه: تظهر المقدمة ومحتوى الدرس بعد الضغط."
         ],
         render(root, step) {
           clearHighlights(root);
@@ -2308,12 +2485,12 @@
       study: {
         max: 5,
         captions: [
-          "ابدأ بقراءة مقدمة الدرس.",
-          "إذا كان الفيديو مفعّلًا فستجده في قسم «فيديو توضيحي».",
-          "افتح الخطوة الأولى واقرأها جيدًا.",
-          "علّم الخطوة الأولى في ذهنك كخطوة مقروءة وانتقل للثانية.",
-          "تابع الخطوات حتى تكتمل الصورة.",
-          "عند إنهاء الدرس اضغط زر الانتقال إلى المراجعة إذا كان متاحًا."
+          "افعل: ابدأ بقراءة مقدمة الدرس. انتبه: المقدمة تشرح أهمية المهارة.",
+          "افعل: شاهد الفيديو إذا كان مفعّلًا. انتبه: يظهر في قسم «فيديو توضيحي».",
+          "افعل: اقرأ الخطوة الأولى كاملة. انتبه: كل خطوة لها عنوان ووصف.",
+          "افعل: انتقل للخطوة التالية بعد الفهم. انتبه: شريط التقدم يوضح تقدمك.",
+          "افعل: أكمل بقية الخطوات. انتبه: بعض الخطوات تعرض اختيارات أو أمثلة.",
+          "افعل: بعد إنهاء الدرس اضغط زر المراجعة إذا كان متاحًا. انتبه: المعلم قد يعطل بعض الأقسام."
         ],
         render(root, step) {
           clearHighlights(root);
@@ -2331,10 +2508,10 @@
       activityStart: {
         max: 3,
         captions: [
-          "ابحث عن قسم النشاط داخل صفحة الدرس.",
-          "إذا كان النشاط متاحًا سيظهر زر «فتح صفحة النشاط».",
-          "في موضوع المناقشة يظهر «فتح صفحة المناقشة»، وفي النص الحواري يظهر «فتح صفحة الحوار».",
-          "إذا عطّل المعلم النشاط تظهر رسالة عدم الإتاحة."
+          "افعل: ابحث عن قسم النشاط داخل صفحة الدرس. انتبه: يظهر بعد خطوات الدرس.",
+          "افعل: اضغط «فتح صفحة النشاط» عندما يكون متاحًا. انتبه: الزر يكون غير مفعل إذا أغلقه المعلم.",
+          "افعل: اقرأ نص الزر. انتبه: في المناقشة يظهر «فتح صفحة المناقشة»، وفي الحوار يظهر «فتح صفحة الحوار».",
+          "افعل: انتظر توجيه المعلم إذا كان النشاط مغلقًا. انتبه: تظهر رسالة عدم الإتاحة."
         ],
         render(root, step) {
           clearHighlights(root);
@@ -2348,10 +2525,10 @@
       review: {
         max: 3,
         captions: [
-          "اقرأ ملخص الخطوات في المراجعة.",
-          "افتح سؤالًا لترى الإجابة وتتحقق من فهمك.",
-          "افتح سؤالًا آخر قبل المتابعة.",
-          "عندما تكون مستعدًا اضغط «أنا مستعد، لنبدأ الكتابة!»."
+          "افعل: اقرأ ملخص الخطوات في المراجعة. انتبه: هذه مرحلة فهم وليست التسليم النهائي.",
+          "افعل: افتح سؤالًا. انتبه: تظهر الإجابة لمراجعة الفكرة.",
+          "افعل: افتح سؤالًا آخر قبل المتابعة. انتبه: المراجعة تساعدك قبل الكتابة.",
+          "افعل: اضغط «أنا مستعد، لنبدأ الكتابة!». انتبه: هذا ينقلك إلى صفحة التقييم."
         ],
         render(root, step) {
           clearHighlights(root);
@@ -2364,12 +2541,12 @@
       evaluation: {
         max: 5,
         captions: [
-          "اقرأ عنوان المهمة ووصفها أولًا.",
-          "افتح مساحة الكتابة الخاصة بالمهمة.",
-          "إذا ضغطت التقييم دون كتابة يظهر تنبيه بضرورة إدخال النص.",
-          "اكتب نصك في القسم المطلوب.",
-          "راجع المعايير قبل الإرسال.",
-          "اضغط «قيّم النص الآن» عندما تكون جاهزًا."
+          "افعل: اقرأ عنوان المهمة ووصفها أولًا. انتبه: الوصف يحدد المطلوب بالضبط.",
+          "افعل: افتح مساحة الكتابة الخاصة بالمهمة. انتبه: اكتب في القسم المطلوب فقط.",
+          "افعل: لاحظ التنبيه عند ترك النص فارغًا. انتبه: يجب إدخال نص في قسم واحد على الأقل.",
+          "افعل: اكتب نصك في مربع الكتابة. انتبه: راجع وضوح الأفكار قبل الإرسال.",
+          "افعل: راجع المعايير. انتبه: التقييم ينظر إلى العناصر والتنظيم والصور والدقة وسلامة اللغة.",
+          "افعل: اضغط «قيّم النص الآن» عندما تكون جاهزًا. انتبه: لا تضغطه قبل المراجعة."
         ],
         render(root, step) {
           clearHighlights(root);
@@ -2384,10 +2561,10 @@
       submit: {
         max: 3,
         captions: [
-          "ابدأ بالمراجعة النهائية للنص.",
-          "اضغط زر الإرسال أو التقييم بعد التأكد.",
-          "تظهر حالة انتظار مثل «...جاري التقييم» أو «...جاري الحفظ».",
-          "بعد النجاح انتظر تغذية المعلم الراجعة."
+          "افعل: ابدأ بالمراجعة النهائية للنص. انتبه: تحقق من الإملاء والترقيم قبل الضغط.",
+          "افعل: اضغط زر الإرسال أو التقييم بعد التأكد. انتبه: لا تكرر الضغط أثناء الانتظار.",
+          "افعل: انتظر حالة المعالجة. انتبه: قد يظهر «...جاري التقييم» أو «...جاري الحفظ».",
+          "افعل: تابع «تسليماتي» بعد النجاح. انتبه: تغذية المعلم الراجعة قد تصل لاحقًا."
         ],
         render(root, step) {
           clearHighlights(root);
@@ -2401,11 +2578,11 @@
       submissions: {
         max: 4,
         captions: [
-          "افتح «تسليماتي» من الشريط العلوي.",
-          "تبويب «كتاباتي وتقييماتي» يعرض الموضوع وتاريخ التسليم ودرجات التقييم.",
-          "إذا لم يقيّم المعلم التسليم بعد تظهر عبارة «لم يُقيّم بعد».",
-          "بعد وصول التقييم تظهر ملاحظات المعلم والدرجة.",
-          "تبويب «سجل أنشطتي ودروسي» يعرض الدروس والأنشطة المؤكدة."
+          "افعل: افتح «تسليماتي» من الشريط العلوي. انتبه: هذا هو مكان متابعة كتاباتك.",
+          "افعل: راجع تبويب «كتاباتي وتقييماتي». انتبه: يعرض الموضوع وتاريخ التسليم ودرجات التقييم.",
+          "افعل: افحص عمود تقييم المعلم. انتبه: إذا لم يصل الرد تظهر عبارة «لم يُقيّم بعد».",
+          "افعل: افتح التفاصيل بعد وصول التقييم. انتبه: تظهر ملاحظات المعلم والدرجة.",
+          "افعل: افتح «سجل أنشطتي ودروسي». انتبه: يعرض الدروس والأنشطة المؤكدة."
         ],
         render(root, step) {
           clearHighlights(root);
@@ -2616,6 +2793,7 @@
     });
 
     /* Persistence */
+    decorateAppPreviews();
     buildToc();
     resetOrderGame("activity");
     resetOrderGame("final");

@@ -46,19 +46,15 @@
   box-shadow: var(--shadow-sm);
 }
 
-.section-title {
-  display: flex;
-  align-items: center;
+.review-section .section-title {
   font-size: 1.6rem;
-  color: var(--primary-color);
-  margin-top: 0;
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border-color);
 }
 
-.section-title .icon {
-  margin-left: 1rem; /* RTL */
+.review-section .section-title .icon {
+  margin-left: 1rem;
 }
 
 /* Summary List */
@@ -113,13 +109,25 @@
 /* Final Page Action */
 .page-actions {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
   margin-top: 3rem;
   padding-top: 2rem;
   border-top: 2px dashed var(--border-color);
 }
+
+.page-actions:has(.button:only-child) {
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .page-actions {
+    justify-content: center;
+  }
+}
+
+
 
 .cta-button {
   font-size: 1.05rem;
@@ -130,18 +138,41 @@
   width: fit-content;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: 0.5rem;
 }
 
 .cta-button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px var(--primary-shadow);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px var(--primary-shadow);
+}
+
+.cta-button .fas {
+  margin-right: 0.75rem;
 }
 
 .muted-note {
   margin-top: 1rem;
   color: var(--text-secondary);
   font-size: 0.95rem;
+}
+
+/* Sequential review stepper (matches topic page) */
+.review-page .topic-stepper {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.review-page .topic-stepper-content .review-section.card {
+  margin-bottom: 0;
+  opacity: 1;
+  transform: none;
+  animation: sectionReveal 0.4s ease;
+}
+
+.review-page .topic-stepper-content .review-section.card .section-title {
+  border-bottom-color: var(--border-color);
 }
 
 @media (max-width: 768px) {

@@ -39,6 +39,7 @@ export type ActivityProgress = Record<
 export const VISIBILITY_STORAGE_KEY = "lesson_visibility_settings";
 const PROGRESS_STORAGE_KEY = "lesson_progress_settings";
 const ACTIVITY_STORAGE_KEY = "lesson_activity_progress";
+export const PREVIEW_MODE_KEY = "teacher_preview_mode";
 
 const safeParse = <T,>(value: string | null): T | null => {
   if (!value) return null;
@@ -67,6 +68,40 @@ const normalizeVisibility = (
     };
   });
   return normalized;
+};
+
+export const isPreviewMode = (): boolean => {
+  try {
+    return localStorage.getItem(PREVIEW_MODE_KEY) === "true";
+  } catch {
+    return false;
+  }
+};
+
+export const setPreviewMode = (value: boolean): boolean => {
+  try {
+    localStorage.setItem(PREVIEW_MODE_KEY, value ? "true" : "false");
+  } catch {
+    return false;
+  }
+  return true;
+};
+
+// Returns whether a given section should be treated as active for the current
+// viewer. During teacher preview mode every section is unlocked so the teacher
+// can browse the site exactly as a student with everything enabled.
+export const isSectionActive = (
+  visibility: LessonVisibility,
+  topicId: string,
+  section: LessonSection,
+  fallback: boolean
+): boolean => {
+  if (isPreviewMode()) return true;
+  return visibility[topicId]?.[section] ?? fallback;
+};
+
+export const isSectionUnlockedInPreview = (section: LessonSection): boolean => {
+  return section !== "lesson" || isPreviewMode();
 };
 
 const normalizeSectionSettings = (

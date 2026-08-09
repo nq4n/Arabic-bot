@@ -4,7 +4,7 @@ import { supabase } from "../../supabaseClient";
 import { topics, WritingSection } from "../../data/topics";
 import { rubrics } from "../../data/rubrics";
 import { getAIAnalysis } from "../../services/aiEvaluationService";
-import { LessonVisibility } from "../../utils/lessonSettings";
+import { LessonVisibility, isSectionActive } from "../../utils/lessonSettings";
 import "../../styles/Evaluate.css";
 import { Session } from "@supabase/supabase-js";
 import { logAdminNotification } from "../../utils/adminNotifications";
@@ -282,7 +282,7 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
     );
   }
 
-  if (!(lessonVisibility[topic.id]?.evaluation ?? true)) {
+  if (!isSectionActive(lessonVisibility, topic.id, "evaluation", true)) {
     return (
       <div className="evaluate-page" dir="rtl">
         <header className="evaluate-header page-header">

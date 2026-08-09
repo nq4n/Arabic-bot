@@ -7,6 +7,7 @@ import {
   LessonVisibility,
   buildLessonVisibilityFromRows,
   getLessonVisibility,
+  isSectionActive,
 } from "../../utils/lessonSettings";
 import PeerDialogueChat from "../../components/PeerDialogueChat";
 import { SkeletonHeader, SkeletonSection } from "../../components/SkeletonBlocks";
@@ -71,7 +72,7 @@ export default function PeerDialogueActivity() {
   }, []);
 
   const isActivityActive = topic
-    ? lessonVisibility[topic.id]?.activity ?? true
+    ? isSectionActive(lessonVisibility, topic.id, "activity", true)
     : false;
 
   useEffect(() => {
@@ -284,7 +285,7 @@ export default function PeerDialogueActivity() {
   }
 
   const isCollaborativeActive = topic
-    ? lessonVisibility[topic.id]?.activity ?? true
+    ? isSectionActive(lessonVisibility, topic.id, "activity", true)
     : true;
 
   if (!isActivityActive || !isCollaborativeActive) {

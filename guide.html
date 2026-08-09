@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دليل الدروس — منصة اللغة العربية</title>
+<style>
+:root{--primary:#1a5276;--primary-light:#2980b9;--accent:#d4ac0d;--bg:#f8f9fa;--card-bg:#fff;--text:#2c3e50;--text-light:#5d6d7e;--border:#e5e8ec;--section-bg:#eaf2f8;--lesson-color:#2471a3;--review-color:#1e8449;--eval-color:#922b21;--shadow:0 2px 12px rgba(0,0,0,0.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+.sidebar{position:fixed;top:0;right:0;width:300px;height:100vh;background:linear-gradient(180deg,var(--primary) 0%,#0e2f44 100%);color:#fff;overflow-y:auto;padding:20px 0;z-index:100;box-shadow:-4px 0 20px rgba(0,0,0,0.15)}
+.sidebar h2{text-align:center;padding:10px 20px 20px;font-size:1.2em;border-bottom:1px solid rgba(255,255,255,0.2);margin-bottom:10px}
+.sidebar .semester-title{padding:12px 25px 6px;font-size:0.85em;text-transform:uppercase;letter-spacing:1px;opacity:0.7;font-weight:bold}
+.sidebar a{display:block;padding:10px 30px;color:rgba(255,255,255,0.85);text-decoration:none;font-size:0.92em;transition:all 0.2s;border-right:3px solid transparent}
+.sidebar a:hover,.sidebar a.active{background:rgba(255,255,255,0.1);border-right-color:var(--accent);color:#fff}
+.sidebar a .badge{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:rgba(255,255,255,0.2);border-radius:50%;font-size:0.75em;margin-left:8px}
+.main{margin-right:300px;padding:40px;max-width:1100px}
+.page-header{text-align:center;padding:40px 20px;margin-bottom:40px;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);border-radius:16px;color:#fff}
+.page-header h1{font-size:2.2em;margin-bottom:10px}
+.page-header p{font-size:1.1em;opacity:0.9}
+.semester-section{margin-bottom:50px}
+.semester-heading{font-size:1.6em;color:var(--primary);border-bottom:3px solid var(--accent);padding-bottom:10px;margin-bottom:25px}
+.lesson-card{background:var(--card-bg);border-radius:16px;box-shadow:var(--shadow);margin-bottom:35px;overflow:hidden;border:1px solid var(--border)}
+.lesson-header{background:linear-gradient(135deg,var(--primary-light),var(--primary));color:#fff;padding:20px 30px;display:flex;align-items:center;gap:15px}
+.lesson-num{width:45px;height:45px;background:rgba(255,255,255,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3em;font-weight:bold}
+.lesson-header h3{font-size:1.3em}
+.lesson-ref{font-size:0.8em;opacity:0.85;margin-top:4px;font-family:'Courier New',monospace;direction:ltr;text-align:right}
+.sections-tabs{display:flex;border-bottom:2px solid var(--border)}
+.tab-btn{flex:1;padding:14px 20px;border:none;background:#f1f3f5;cursor:pointer;font-size:0.95em;font-weight:600;color:var(--text-light);transition:all 0.2s;font-family:inherit}
+.tab-btn:hover{background:#e5e8ec}
+.tab-btn.active-l{background:var(--lesson-color);color:#fff}
+.tab-btn.active-r{background:var(--review-color);color:#fff}
+.tab-btn.active-e{background:var(--eval-color);color:#fff}
+.section-content{display:none;padding:25px 30px}
+.section-content.active{display:block}
+.section-content h4{color:var(--primary);margin-bottom:15px;font-size:1.1em;border-bottom:1px dashed var(--border);padding-bottom:8px;margin-top:20px}
+.section-content p{margin-bottom:8px}
+.section-content ul{padding-right:20px;margin-bottom:10px}
+.section-content li{margin-bottom:4px}
+.activity-item{background:var(--section-bg);border-radius:10px;padding:12px 16px;margin-bottom:10px;border-right:4px solid var(--primary-light)}
+.activity-item strong{color:var(--primary);display:block;margin-bottom:4px}
+.highlight-box{background:#fef9e7;border:1px solid #f9e79f;border-radius:10px;padding:15px 20px;margin:15px 0;border-right:4px solid var(--accent)}
+.highlight-box.warning{background:#fdedec;border-color:#f5b7b1;border-right-color:#e74c3c}
+.points-box{background:#e8f8f5;border:1px solid #a3e4d7;border-radius:10px;padding:15px 20px;margin:15px 0;border-right:4px solid #1abc9c;font-weight:bold;color:#1e8449}
+.points-box strong{color:#148f77}
+@media(max-width:900px){.sidebar{width:0;padding:0}.main{margin-right:0;padding:20px}.sections-tabs{flex-direction:column}}
+@media print{.sidebar{display:none}.main{margin-right:0;padding:0}.lesson-card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+<h2>دليل المنصة</h2>
+<div class="semester-title">الفصل الدراسي الأول</div>
+<a href="#s1l1"><span class="badge">1</span> كتابة الفقرة</a>
+<a href="#s1l2"><span class="badge">2</span> تصميم موضوع</a>
+<a href="#s1l3"><span class="badge">3</span> التلخيص</a>
+<a href="#s1l4"><span class="badge">4</span> ترجمة علم</a>
+<a href="#s1l5"><span class="badge">5</span> كيفية عرض كتاب</a>
+<a href="#s1l6"><span class="badge">6</span> حكاية قصة</a>
+<div class="semester-title">الفصل الدراسي الثاني</div>
+<a href="#s2l1"><span class="badge">1</span> وصف منظر طبيعي</a>
+<a href="#s2l2"><span class="badge">2</span> مناقشة قضية</a>
+<a href="#s2l3"><span class="badge">3</span> كيفية كتابة التقرير</a>
+<a href="#s2l4"><span class="badge">4</span> التعبير الحر</a>
+<a href="#s2l5"><span class="badge">5</span> النص الحواري</a>
+</nav>
+<div class="main">
+<div class="page-header">
+<h1>دليل الدروس الشامل</h1>
+<p>شرح تفصيلي لكيفية عمل كل قسم (الدرس، المراجعة، التقييم) مع نظام النقاط والتقييم</p>
+<p style="margin-top:8px;font-size:0.9em">المرجع: topic.tsx | LessonReview.tsx | Evaluate.tsx | rubrics.ts | pointCalculation.ts | studentTracking.ts</p>
+</div>
+<div class="highlight-box" style="margin-bottom:40px">
+<h3 style="margin-bottom:12px;color:var(--primary)">نظام النقاط (POINT_VALUES من pointCalculation.ts)</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+<div class="points-box" style="margin:0"><strong>إكمال الدرس</strong><br>20 نقطة<br><small>trackLessonCompletion</small></div>
+<div class="points-box" style="margin:0"><strong>النشاط التفاعلي</strong><br>10 نقاط<br><small>trackActivitySubmission</small></div>
+<div class="points-box" style="margin:0"><strong>التقييم الكتابي</strong><br>10 نقاط<br><small>trackEvaluationSubmission</small></div>
+<div class="points-box" style="margin:0"><strong>النشاط التعاوني</strong><br>10 نقاط<br><small>trackCollaborativeCompletion</small></div>
+</div>
+<p style="margin-top:12px;font-size:0.9em;color:var(--text-light)">يُحسب المجموع الكلي تلقائيًا من student_tracking في Supabase. كل درس = 20 + 10 = 30 نقطة أساسية + نقاط النشاط التعاوني إن وُجد.</p>
+</div>
+<div class="semester-section">
+<h2 class="semester-heading">الفصل الدراسي الأول</h2>
+<div class="lesson-card" id="s1l1">
+<div class="lesson-header">
+<div class="lesson-num">1</div>
+<div><h3>كتابة الفقرة</h3><div class="lesson-ref">semester2Topics.ts — paragraph-writing</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s1l1','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s1l1','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s1l1','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s1l1-lesson">
+<h4>عنوانه</h4>
+<p>الدرس الأول: كتابة الفقرة</p>
+<h4>ما الهدف منه</h4>
+<p>تعليم الطالب بناء فقرة مترابطة تعبّر عن idea رئيسة واحدة، عبر 5 خطوات: تحديد الفكرة ← جمع الأفكار الداعمة ← ترتيب الجمل ← ربط الأفكار ← المراجعة. صُمِّمت الخطوات بهذا التسلسل لأن الفقرة المحكمة تتطلب انتقالًا منطقيًا من العام إلى الخاص.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>صيد الفكرة الرئيسة: </strong>اقرأ مجموعة جمل عن البحر، ثم حدّد الجملة التي تصلح فكرة رئيسة للفقرة. الهدف: تمييز الفكرة الرئيسة عن التفاصيل المساندة.</div>
+<div class="activity-item"><strong>جسر الترابط: </strong>حوّل جملاً منفصلة إلى فقرة مترابطة باستخدام أدوات الربط (لذلك، كما أن، ومن هنا، ثم).</div>
+<div class="activity-item"><strong>عيادة الفقرة: </strong>راجع فقرة قصيرة وضع لها خطة تحسين قبل إعادة كتابتها من حيث الفكرة والترابط واللغة.</div>
+<div class="activity-item" style="border-right-color:#8e44ad"><strong>نشاط تفاعلي: </strong>ورشة بناء الفقرة: اختر الجملة الأنسب في كل محطة (فكرة رئيسة، دعم، مثال، رابط، خاتمة) ثم اجمعها في فقرة واحدة متماسكة.</div>
+<h4>السؤال</h4>
+<p>• ما المقصود بالفقرة؟</p>
+<p>• لماذا يجب أن تكون للفقرة فكرة رئيسة واحدة؟</p>
+<p>• اذكر وسيلة تجعل الفقرة أكثر ترابطًا.</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في إتاحة الدرس من لوحة المعلم (TeacherPanel.tsx)، إضافة النموذج الكتابي 'علاقة الإنسان بالبحر'، المعاينة كطالب، متابعة التقدم.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض الأقسام بالترتيب (أهداف ← مقدمة ← خطوات ← نشاط)، تنفيذ الأنشطة الثلاثة + الورشة التفاعلية، الضغط على 'الانتقال إلى مراجعة الدرس'.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس (trackLessonCompletion في studentTracking.ts)
+</div>
+<p style="margin-top:10px">لا تقييم مباشر في هذا القسم. يُتابع النظام إكمال الدرس عبر studentTracking.ts ويُحدّث قاعدة البيانات.</p>
+</div>
+<div class="section-content" id="s1l1-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: كتابة الفقرة</p>
+<h4>ما الهدف منه</h4>
+<p>تثبيت مهارات بناء الفقرة قبل الكتابة التقييمية. قُسّمت إلى: ملخص الخطوات، النموذج الكتابي 'علاقة الإنسان بالبحر'، المساعد الذكي المُزوَّد بمحتوى الدرس.</p>
+<h4>تعليمات النشاط</h4>
+<p>راجع ملخص الخطوات الخمس، اقرأ النموذج الكتابي، اسأل المساعد الذكي عن أي نقطة، اضغط 'أنا مستعد، لنبدأ الكتابة!'.</p>
+<h4>السؤال</h4>
+<p>هل فهمت كيف تبني فقرة مترابطة تدور حول فكرة رئيسة واحدة؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في إتاحة المراجعة، إعداد النموذج الكتابي وأسئلة المراجعة في البيانات.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة، طرح أسئلة على المساعد، التأكيد على الاستعداد.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر. جسر انتقال فقط.</p>
+</div>
+<div class="section-content" id="s1l1-eval">
+<h4>عنوانه</h4>
+<p>تقييم الكتابة: كتابة الفقرة</p>
+<h4>ما الهدف منه</h4>
+<p>قياس مهارة كتابة فقرة محكمة البناء عبر كتابة فقرة قصيرة، مع تقييم AI فوري وتقييم المعلم لاحقًا.</p>
+<h4>تعليمات النشاط</h4>
+<p>اكتب فقرة واحدة مترابطة حول موضوع تختارك، على أن تتضمن فكرة رئيسة واضحة، وأفكارًا داعمة، وأدوات ربط مناسبة.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اكتب فقرة واحدة مترابطة حول موضوع تختارك، على أن تتضمن فكرة رئيسة واضحة، وأفكارًا داعمة، وأدوات ربط مناسبة.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير في rubrics.ts (5 معايير)، مراجعة التسليمات من SubmissionReview.tsx، التقييم يدويًا باختيار مستوى لكل معيار.</p>
+<h4>ما دور الطالب</h4>
+<p>قراءة المهمة والمعايير، الكتابة، الإرسال، مشاهدة تقييم AI، الانتقال لصفحة المراجعة.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم (trackEvaluationSubmission في studentTracking.ts)
+</div>
+<p style="margin-top:10px">تقييم AI فوري عبر aiEvaluationService.ts وفق 5 معايير من rubrics.ts + تقييم المعلم لاحقًا من SubmissionReview.tsx. يُسجَّل في student_tracking.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>الفكرة الرئيسة (2) | الأفكار الداعمة (2) | ترابط الجمل (2) | سلامة اللغة (2) | علامات الترقيم (2) — المجموع: 10</div>
+</div>
+</div>
+<div class="lesson-card" id="s1l2">
+<div class="lesson-header">
+<div class="lesson-num">2</div>
+<div><h3>تصميم موضوع</h3><div class="lesson-ref">semester2Topics.ts — topic-planning</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s1l2','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s1l2','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s1l2','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s1l2-lesson">
+<h4>عنوانه</h4>
+<p>الدرس الثاني: تصميم موضوع</p>
+<h4>ما الهدف منه</h4>
+<p>تعليم الطالب وضع خطة واضحة للموضوع قبل الكتابة عبر 5 خطوات: تحديد البداية ← تحديد العناصر ← ترتيب الأفكار ← اختيار الأسلوب ← تحديد الخاتمة.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>بوصلة الموضوع: </strong>حدد اتجاه الموضوع: الفكرة، الهدف، القارئ، ونوع الأسلوب (شرح، إقناع، وصف، عرض رأي).</div>
+<div class="activity-item"><strong>خريطة الأفكار: </strong>ابن خريطة موضوع من مقدمة وثلاث أفكار رئيسة وخاتمة مناسبة.</div>
+<div class="activity-item"><strong>محكمة المقدمة والخاتمة: </strong>قارن بين مقدمتين وخاتمتين واختر الأقوى وعلّل اختيارك.</div>
+<div class="activity-item" style="border-right-color:#8e44ad"><strong>نشاط تفاعلي: </strong>استوديو تصميم الموضوع: رتّب بطاقات التصميم من المدخل إلى العناصر ثم الخاتمة، ثم حوّل التصميم إلى خطة كتابة واضحة.</div>
+<h4>السؤال</h4>
+<p>• ما المقصود بتصميم الموضوع؟</p>
+<p>• ما المراحل الأساسية لتصميم موضوع؟</p>
+<p>• كيف يساعد التصميم الكاتب؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة، إضافة النموذج 'الكرم عند العرب'، المعاينة.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض الدرس، تنفيذ الأنشطة + الاستوديو التفاعلي، الإكمال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس
+</div>
+<p style="margin-top:10px">تتبع تلقائي عبر studentTracking.ts.</p>
+</div>
+<div class="section-content" id="s1l2-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: تصميم موضوع</p>
+<h4>ما الهدف منه</h4>
+<p>مراحل التصميم مع نموذج 'الكرم عند العرب'.</p>
+<h4>تعليمات النشاط</h4>
+<p>مراجعة، قراءة النموذج، سؤال المساعد.</p>
+<h4>السؤال</h4>
+<p>هل فهمت كيف تصمم موضوعًا قبل كتابته؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة والتفاعل.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر.</p>
+</div>
+<div class="section-content" id="s1l2-eval">
+<h4>عنوانه</h4>
+<p>تقييم الكتابة: تصميم موضوع</p>
+<h4>ما الهدف منه</h4>
+<p>قياس مهارة تصميم موضوع متكامل.</p>
+<h4>تعليمات النشاط</h4>
+<p>اكتب تصميمًا لموضوع تختاره، مع بيان الفكرة العامة والعناصر الأساسية وترتيبها المنطقي.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اختر موضوعًا، ثم اكتب تصميمًا واضحًا له يتضمن المقدمة والأفكار الرئيسة والفرعية والخاتمة.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير (5 معايير: البداية والفكرة، العناصر، الترتيب، الخاتمة، وضوح العرض).</p>
+<h4>ما دور الطالب</h4>
+<p>كتابة تصميم والإرسال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم
+</div>
+<p style="margin-top:10px">تقييم AI + تقييم المعلم. يُسجَّل في student_tracking.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>البداية والفكرة (2) | العناصر (2) | الترتيب (2) | الخاتمة (2) | وضوح العرض (2) — المجموع: 10</div>
+</div>
+</div>
+<div class="lesson-card" id="s1l3">
+<div class="lesson-header">
+<div class="lesson-num">3</div>
+<div><h3>التلخيص</h3><div class="lesson-ref">semester2Topics.ts — summarization</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s1l3','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s1l3','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s1l3','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s1l3-lesson">
+<h4>عنوانه</h4>
+<p>الدرس الثالث: التلخيص</p>
+<h4>ما الهدف منه</h4>
+<p>تعليم مهارة استخلاص أهم أفكار النص وإعادة صياغتها بإيجاز عبر 5 خطوات: الإعداد والقراءة ← تحديد الأفكار ← إعادة الصياغة ← ضبط الحجم ← المراجعة.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>مفاتيح النص: </strong>استخرج الكلمات المفتاحية والجملة التي تحمل المعنى العام في نص قصير.</div>
+<div class="activity-item"><strong>احذف الزائد: </strong>اختصر نصًا بحذف التكرار والأمثلة الزائدة دون تغيير المعنى.</div>
+<div class="activity-item"><strong>تلخيص الثلث: </strong>اكتب تلخيصًا لا يتجاوز ثلث النص الأصلي مع الحفاظ على الفكرة الأساسية.</div>
+<div class="activity-item" style="border-right-color:#8e44ad"><strong>نشاط تفاعلي: </strong>مختبر التلخيص الذكي: اقرأ كل نص قصير واختر التلخيص الأفضل (موجز، دقيق، خال من الحشو) في 3 محطات مع وقت محدد 90 ثانية.</div>
+<h4>السؤال</h4>
+<p>• ما المقصود بالتلخيص؟</p>
+<p>• ما الذي ينبغي حذفه عند التلخيص؟</p>
+<p>• لماذا نعيد صياغة التلخيص بأسلوبنا؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض وتنفيذ الأنشطة + المختبر التفاعلي.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس
+</div>
+<p style="margin-top:10px">تتبع تلقائي.</p>
+</div>
+<div class="section-content" id="s1l3-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: التلخيص</p>
+<h4>ما الهدف منه</h4>
+<p>مراحل التلخيص مع نموذج 'هدف البحث العلمي'.</p>
+<h4>تعليمات النشاط</h4>
+<p>مراجعة، قراءة النموذج، سؤال المساعد.</p>
+<h4>السؤال</h4>
+<p>هل فهمت كيف تلخص نصًا بأسلوبك؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة والتفاعل.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر.</p>
+</div>
+<div class="section-content" id="s1l3-eval">
+<h4>عنوانه</h4>
+<p>تقييم الكتابة: التلخيص</p>
+<h4>ما الهدف منه</h4>
+<p>قياس مهارة التلخيص الواضح والموجز.</p>
+<h4>تعليمات النشاط</h4>
+<p>اكتب تلخيصًا واضحًا لنص تختاره، مبرزًا الفكرة العامة والأفكار الأساسية بأسلوبك الخاص.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اختر نصًا قصيرًا، ثم اكتب تلخيصًا له في فقرة واحدة يبرز الأفكار الأساسية دون تفاصيل زائدة.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير (5 معايير: الأفكار الأساسية، الإيجاز، إعادة الصياغة، الترابط، سلامة اللغة).</p>
+<h4>ما دور الطالب</h4>
+<p>كتابة تلخيص والإرسال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم
+</div>
+<p style="margin-top:10px">تقييم AI + تقييم المعلم.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>الأفكار الأساسية (2) | الإيجاز (2) | إعادة الصياغة (2) | الترابط (2) | سلامة اللغة (2) — المجموع: 10</div>
+</div>
+</div>
+<div class="lesson-card" id="s1l4">
+<div class="lesson-header">
+<div class="lesson-num">4</div>
+<div><h3>ترجمة علم</h3><div class="lesson-ref">semester2Topics.ts — biography-writing</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s1l4','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s1l4','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s1l4','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s1l4-lesson">
+<h4>عنوانه</h4>
+<p>الدرس الرابع: ترجمة علم</p>
+<h4>ما الهدف منه</h4>
+<p>تعليم كتابة ترجمة موجزة لشخصية بارزة عبر 5 خطوات: جمع المعلومات ← انتقاؤها ← تنظيم العرض ← الكتابة ← المراجعة والتوثيق.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>بطاقة الشخصية: </strong>اجمع معلومات أساسية عن شخصية علمية (اسم، مجال، إنجاز، سبب الاختيار).</div>
+<div class="activity-item"><strong>سلم الأحداث: </strong>رتّب معلومات الشخصية من التعريف إلى الإنجاز ثم الأثر.</div>
+<div class="activity-item"><strong>جملة الأثر: </strong>اكتب خاتمة تبين أثر الشخصية في العلم أو المجتمع.</div>
+<div class="activity-item" style="border-right-color:#8e44ad"><strong>نشاط تفاعلي: </strong>بطاقة ترجمة علم: حوّل المعلومات المتفرقة إلى ترجمة منظمة لشخصية علمية (ابن الهيثم) عبر 5 بطاقات مرتبة.</div>
+<h4>السؤال</h4>
+<p>• ما المقصود بترجمة علم؟</p>
+<p>• لماذا يجب انتقاء المعلومات؟</p>
+<p>• اذكر عنصرين مهمين في ترجمة العلم.</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض وتنفيذ الأنشطة + البطاقة التفاعلية.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس
+</div>
+<p style="margin-top:10px">تتبع تلقائي.</p>
+</div>
+<div class="section-content" id="s1l4-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: ترجمة علم</p>
+<h4>ما الهدف منه</h4>
+<p>مراحل كتابة الترجمة مع نموذج 'ابن الهيثم'.</p>
+<h4>تعليمات النشاط</h4>
+<p>مراجعة، قراءة النموذج، سؤال المساعد.</p>
+<h4>السؤال</h4>
+<p>هل فهمت كيف تكتب ترجمة علم؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة والتفاعل.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر.</p>
+</div>
+<div class="section-content" id="s1l4-eval">
+<h4>عنوانه</h4>
+<p>تقييم الكتابة: ترجمة علم</p>
+<h4>ما الهدف منه</h4>
+<p>قياس مهارة كتابة ترجمة موجزة ومنظمة.</p>
+<h4>تعليمات النشاط</h4>
+<p>اكتب ترجمة علم لشخصية تختارها، مراعيًا دقة المعلومات وترتيبها وسلامة اللغة.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اختر شخصية معروفة، ثم اكتب ترجمة موجزة لها تتضمن التعريف بها ونشأتها وأبرز أعمالها وأثرها.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير (5 معايير: التعريف بالشخصية، انتقاء المعلومات، التنظيم، إبراز الأثر، سلامة اللغة).</p>
+<h4>ما دور الطالب</h4>
+<p>كتابة ترجمة والإرسال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم
+</div>
+<p style="margin-top:10px">تقييم AI + تقييم المعلم.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>التعريف بالشخصية (2) | انتقاء المعلومات (2) | التنظيم (2) | إبراز الأثر (2) | سلامة اللغة (2) — المجموع: 10</div>
+</div>
+</div>
+<div class="lesson-card" id="s1l5">
+<div class="lesson-header">
+<div class="lesson-num">5</div>
+<div><h3>كيفية عرض كتاب</h3><div class="lesson-ref">semester2Topics.ts — book-presentation</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s1l5','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s1l5','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s1l5','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s1l5-lesson">
+<h4>عنوانه</h4>
+<p>الدرس الخامس: كيفية عرض كتاب</p>
+<h4>ما الهدف منه</h4>
+<p>تعلم عرض كتاب أمام القارئ عبر 5 خطوات: الإعداد والقراءة ← التصميم ← الكتابة ← إبداء الرأي ← المراجعة.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>بطاقة الكتاب: </strong>أنشئ بطاقة تعريف واضحة للكتاب (عنوان، مؤلف، موضوع، سبب الاختيار).</div>
+<div class="activity-item"><strong>عرض الدقيقة الواحدة: </strong>لخّص محتوى الكتاب في عرض قصير (فكرة رئيسة + فكرتين فرعيتين فقط).</div>
+<div class="activity-item"><strong>رأي القارئ: </strong>اكتب رأيك في الكتاب مع سبب واضح وتوصية للقارئ.</div>
+<div class="activity-item" style="border-right-color:#8e44ad"><strong>نشاط تفاعلي: </strong>منصة عرض كتاب: اختر العبارة الأنسب لكل جزء من عرض الكتاب (بطاقة الكتاب، عرض المحتوى، الرأي والتقويم) في 3 محطات.</div>
+<h4>السؤال</h4>
+<p>• ما المقصود بعرض الكتاب؟</p>
+<p>• ما المعلومات التي تبدأ بها عرض الكتاب؟</p>
+<p>• لماذا نذكر رأينا في عرض الكتاب؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض وتنفيذ الأنشطة + المنصة التفاعلية.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس
+</div>
+<p style="margin-top:10px">تتبع تلقائي.</p>
+</div>
+<div class="section-content" id="s1l5-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: كيفية عرض كتاب</p>
+<h4>ما الهدف منه</h4>
+<p>مراحل عرض الكتاب مع نموذج 'حكاية الأعيان بسيرة أهل عمان'.</p>
+<h4>تعليمات النشاط</h4>
+<p>مراجعة، قراءة النموذج، سؤال المساعد.</p>
+<h4>السؤال</h4>
+<p>هل فهمت كيف تعرض كتابًا أمام القارئ؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة والتفاعل.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر.</p>
+</div>
+<div class="section-content" id="s1l5-eval">
+<h4>عنوانه</h4>
+<p>تقييم الكتابة: كيفية عرض كتاب</p>
+<h4>ما الهدف منه</h4>
+<p>قياس مهارة عرض كتاب متكامل.</p>
+<h4>تعليمات النشاط</h4>
+<p>اكتب عرضًا موجزًا لكتاب، مراعيًا ذكر هدف المؤلف وأبرز الموضوعات وموقفك من الكتاب.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اختر كتابًا قرأته، ثم اكتب عرضًا له يذكر معلوماته الأساسية وموضوعه وأهم أفكاره ورأيك فيه.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير (5 معايير: معلومات الكتاب، عرض المحتوى، المنهج والمصادر، الرأي والتقويم، سلامة اللغة).</p>
+<h4>ما دور الطالب</h4>
+<p>كتابة عرض كتاب والإرسال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم
+</div>
+<p style="margin-top:10px">تقييم AI + تقييم المعلم.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>معلومات الكتاب (2) | عرض المحتوى (2) | المنهج والمصادر (2) | الرأي والتقويم (2) | سلامة اللغة (2) — المجموع: 10</div>
+</div>
+</div>
+<div class="lesson-card" id="s1l6">
+<div class="lesson-header">
+<div class="lesson-num">6</div>
+<div><h3>حكاية قصة</h3><div class="lesson-ref">semester2Topics.ts — storytelling</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s1l6','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s1l6','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s1l6','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s1l6-lesson">
+<h4>عنوانه</h4>
+<p>الدرس السادس: حكاية قصة</p>
+<h4>ما الهدف منه</h4>
+<p>تعلم تحويل واقعة أو قصة إلى حكاية منظمة مشوقة عبر 5 خطوات: تحديد العناصر ← ترتيب الأحداث ← اختيار ضمير السرد ← إضفاء التشويق ← المراجعة.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>شرارة القصة: </strong>اختر بداية تشد القارئ وتعرّف بالشخصية والمكان والزمان.</div>
+<div class="activity-item"><strong>سلم الحبكة: </strong>رتّب أحداث القصة في بداية وعقدة وحل.</div>
+<div class="activity-item"><strong>لمسة الحياة: </strong>أضف حوارًا ووصفًا حسياً يجعل القصة أكثر حيوية.</div>
+<div class="activity-item" style="border-right-color:#8e44ad"><strong>نشاط تفاعلي: </strong>مسار القصة: اختر الحدث الأنسب في كل مرحلة (بداية القصة، العقدة، الحل والنهاية) ثم حوّل المسار إلى قصة مترابطة.</div>
+<h4>السؤال</h4>
+<p>• ما العناصر الأساسية في حكاية القصة؟</p>
+<p>• متى نستخدم ضمير المتكلم؟</p>
+<p>• كيف نجعل القصة أكثر تشويقًا؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض وتنفيذ الأنشطة + المسار التفاعلي.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس
+</div>
+<p style="margin-top:10px">تتبع تلقائي.</p>
+</div>
+<div class="section-content" id="s1l6-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: حكاية قصة</p>
+<h4>ما الهدف منه</h4>
+<p>مراحل السرد مع نموذج 'موقف مساعدة طفل'.</p>
+<h4>تعليمات النشاط</h4>
+<p>مراجعة، قراءة النموذج، سؤال المساعد.</p>
+<h4>السؤال</h4>
+<p>هل فهمت كيف تحكي قصة مشوقة؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة والتفاعل.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر.</p>
+</div>
+<div class="section-content" id="s1l6-eval">
+<h4>عنوانه</h4>
+<p>تقييم الكتابة: حكاية قصة</p>
+<h4>ما الهدف منه</h4>
+<p>قياس مهارة كتابة قصة منظمة ومشوقة.</p>
+<h4>تعليمات النشاط</h4>
+<p>اكتب قصة قصيرة منظمة ومشوقة، مع تحديد الشخصيات وتسلسل الأحداث وسلامة اللغة.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اكتب قصة قصيرة أو احكِ موقفًا مررت به، ملتزمًا بتسلسل الأحداث ووضوح الشخصيات والنهاية.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير (5 معايير: عناصر القصة، تسلسل الأحداث، أسلوب السرد، التشويق، سلامة اللغة).</p>
+<h4>ما دور الطالب</h4>
+<p>كتابة قصة والإرسال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم
+</div>
+<p style="margin-top:10px">تقييم AI + تقييم المعلم.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>عناصر القصة (2) | تسلسل الأحداث (2) | أسلوب السرد (2) | التشويق (2) | سلامة اللغة (2) — المجموع: 10</div>
+</div>
+</div>
+</div>
+<div class="semester-section">
+<h2 class="semester-heading">الفصل الدراسي الثاني</h2>
+<div class="lesson-card" id="s2l1">
+<div class="lesson-header">
+<div class="lesson-num">1</div>
+<div><h3>وصف منظر طبيعي</h3><div class="lesson-ref">semester1Topics.ts — landscape-description</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s2l1','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s2l1','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s2l1','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s2l1-lesson">
+<h4>عنوانه</h4>
+<p>الدرس الأول: وصف منظر طبيعي</p>
+<h4>ما الهدف منه</h4>
+<p>تعليم الطالب مهارة الوصف الأدبي للمناظر الطبيعية عبر 5 خطوات: تعيين العناصر ← اختيار المعاني ← تحديد المنطلق ← التحرير ← المراجعة.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>عدسة الوصف: </strong>انظر إلى صورة منظر طبيعي وسجّل العناصر (لون، صوت، حركة، مكان). الهدف: تدريب الطالب على جمع مادة الوصف قبل الكتابة.</div>
+<div class="activity-item"><strong>لوحة الحواس: </strong>حوّل الملاحظات إلى جمل وصفية تستخدم الحواس الخمس (رؤية، سمع، لمس، شم، تذوق).</div>
+<div class="activity-item"><strong>من العادي إلى الأدبي: </strong>طوّر جملة عادية إلى جملة أدبية مؤثرة باستبدال الكلمة العامة بتفصيل محدد وإضافة صورة أو تشبيه.</div>
+<div class="activity-item" style="border-right-color:#8e44ad"><strong>نشاط تفاعلي: </strong>اختيار الوصف الأنسب: اسحب بطاقة الوصف وأسقطها فوق الصورة (8 مشاهد مختلفة: شاطئ، جبل، واحة، غابة، بحيرة، مرتفعات، غابة ضبابية، قمة ثلجية) ثم اكتب وصفًا نهائيًا.</div>
+<h4>السؤال</h4>
+<p>• ما هي أول خطوة في وصف منظر طبيعي؟</p>
+<p>• ماذا يعني 'تحديد منطلق عملية الوصف'؟</p>
+<p>• ما أهمية المراجعة بعد الكتابة؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في إتاحة الدرس من لوحة المعلم (TeacherPanel.tsx)، تضمين فيديو توضيحي عبر videoUrl، معاينة الدرس كطالب، متابعة التقدم.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض الأقسام بالترتيب (أهداف ← مقدمة ← خطوات ← فيديو ← نشاط)، تنفيذ الأنشطة، الضغط على 'الانتقال إلى مراجعة الدرس'.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس (trackLessonCompletion في studentTracking.ts)
+</div>
+<p style="margin-top:10px">لا تقييم مباشر. يُتابع النظام إكمال الدرس عبر studentTracking.ts ويُحدّث قاعدة البيانات (Supabase).</p>
+</div>
+<div class="section-content" id="s2l1-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: وصف منظر طبيعي</p>
+<h4>ما الهدف منه</h4>
+<p>تثبيت تعلمات الدرس قبل الكتابة. قُسّمت إلى: ملخص الخطوات، النموذج الكتابي 'وصف غروب الشمس'، المساعد الذكي.</p>
+<h4>تعليمات النشاط</h4>
+<p>راجع الملخص، اقرأ النموذج، اسأل المساعد، اضغط 'أنا مستعد، لنبدأ الكتابة!'.</p>
+<h4>السؤال</h4>
+<p>هل فهمت خطوات الوصف بشكل كافٍ للبدء في الكتابة؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في إتاحة المراجعة، إعداد النموذج الكتابي وأسئلة المراجعة.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة، طرح أسئلة على المساعد، التأكيد على الاستعداد.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر. جسر انتقال فقط.</p>
+</div>
+<div class="section-content" id="s2l1-eval">
+<h4>عنوانه</h4>
+<p>تقييم الكتابة: وصف منظر طبيعي</p>
+<h4>ما الهدف منه</h4>
+<p>قياس اكتساب مهارة الوصف عبر كتابة وصف متكامل، مع تقييم AI فوري وتقييم المعلم لاحقًا.</p>
+<h4>تعليمات النشاط</h4>
+<p>اكتب وصفًا متكاملًا لمنظر طبيعي (حقيقي أو متخيّل) ملتزمًا بخطوات الدرس مع إبراز العناصر والصور الفنية.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اكتب وصفًا متكاملًا لمنظر طبيعي تختاره ملتزمًا بخطوات الدرس، مع إبراز العناصر والصور الفنية والتسلسل في الوصف.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير في rubrics.ts (5 معايير)، مراجعة التسليمات من SubmissionReview.tsx، التقييم يدويًا باختيار مستوى لكل معيار.</p>
+<h4>ما دور الطالب</h4>
+<p>قراءة المهمة والمعايير، الكتابة، الإرسال، مشاهدة تقييم AI، الانتقال لصفحة المراجعة.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم (trackEvaluationSubmission في studentTracking.ts)
+</div>
+<p style="margin-top:10px">تقييم AI فوري عبر aiEvaluationService.ts وفق 5 معايير من rubrics.ts + تقييم المعلم لاحقًا من SubmissionReview.tsx. يُسجَّل في student_tracking.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>عناصر الوصف (2) | التنظيم (2) | الصور الجمالية (2) | الدقة (2) | سلامة اللغة (2) — المجموع: 10</div>
+</div>
+</div>
+<div class="lesson-card" id="s2l2">
+<div class="lesson-header">
+<div class="lesson-num">2</div>
+<div><h3>مناقشة قضية</h3><div class="lesson-ref">semester1Topics.ts — discussing-issue</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s2l2','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s2l2','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s2l2','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s2l2-lesson">
+<h4>عنوانه</h4>
+<p>الدرس الثاني: مناقشة قضية</p>
+<h4>ما الهدف منه</h4>
+<p>تعليم مهارة المناقشة الموضوعية عبر 5 خطوات: فهم القضية ← احترام المتحدث ← التعبير المهذب ← التركيز على الموضوع ← الموضوعية.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>تحديد القضية: </strong>حوّل موضوعًا عامًا إلى سؤال نقاش واضح له رأيان أو أكثر.</div>
+<div class="activity-item"><strong>ميزان الحجج: </strong>اجمع حجة مؤيدة ومعارضة، ثم ادعم كل حجة بدليل مناسب.</div>
+<div class="activity-item"><strong>رد محترم: </strong>اكتب ردًا على رأي مخالف مع المحافظة على أدب الحوار (ابدأ بتقدير الرأي الآخر، اذكر نقطة الاختلاف، قدّم دليلاً).</div>
+<div class="activity-item" style="border-right-color:#27ae60"><strong>نشاط تعاوني: </strong>مناقشة جماعية: مناقشة قضية العبث بالممتلكات العامة مع الزملاء (مظاهر، أسباب، آثار، حلول).</div>
+<h4>السؤال</h4>
+<p>• ما المقصود بالمناقشة في السياق اللغوي والتربوي؟</p>
+<p>• اذكر اثنين من آداب المناقشة الجيدة.</p>
+<p>• ما المقصود بالموضوعية في المناقشة؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة، المعاينة، المتابعة.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض الدرس، تنفيذ الأنشطة، المناقشة الجماعية (إن فُعِّلت)، الإكمال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس + 10 نقاط للنشاط التعاوني (discussion)
+</div>
+<p style="margin-top:10px">تتبع تلقائي + 10 نقاط إضافية للنشاط التعاوني (trackCollaborativeCompletion).</p>
+</div>
+<div class="section-content" id="s2l2-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: مناقشة قضية</p>
+<h4>ما الهدف منه</h4>
+<p>تثبيت مهارات المناقشة قبل الكتابة. النموذج: 'مناقشة قضية العبث بالممتلكات العامة'.</p>
+<h4>تعليمات النشاط</h4>
+<p>مراجعة الخطوات، قراءة النموذج، سؤال المساعد.</p>
+<h4>السؤال</h4>
+<p>هل فهمت آداب المناقشة وكيفية بناء الحجة؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة، إعداد النموذج والأسئلة.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة والتفاعل مع المساعد.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر.</p>
+</div>
+<div class="section-content" id="s2l2-eval">
+<h4>عنوانه</h4>
+<p>تقييم المناقشة: مناقشة قضية</p>
+<h4>ما الهدف منه</h4>
+<p>قياس مهارة النقاش الكتابي مع التركيز على الحجة واحترام الرأي الآخر.</p>
+<h4>تعليمات النشاط</h4>
+<p>ناقش قضية اجتماعية بوضوح وموضوعية، وادعم رأيك بالحجج والأدلة، وراعِ آداب الحوار.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اختر قضية اجتماعية تهمك، واكتب مقالة تناقش فيها هذه القضية ملتزمًا بآداب المناقشة والتركيز على الحجة والبرهان.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير (5 معايير بمستويات من 4: وضوح العرض، الأسباب والآثار، الحجج، الموضوعية، سلامة اللغة).</p>
+<h4>ما دور الطالب</h4>
+<p>كتابة مقالة نقاشية والإرسال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم
+</div>
+<p style="margin-top:10px">تقييم AI يركز على قوة الحجة والاحترام + تقييم المعلم. يُسجَّل في student_tracking.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>وضوح العرض (4) | الأسباب والآثار (4) | الحجج (4) | الموضوعية (4) | سلامة اللغة (4) — المجموع: 20</div>
+</div>
+</div>
+<div class="lesson-card" id="s2l3">
+<div class="lesson-header">
+<div class="lesson-num">3</div>
+<div><h3>كيفية كتابة التقرير</h3><div class="lesson-ref">semester1Topics.ts — report-writing</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s2l3','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s2l3','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s2l3','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s2l3-lesson">
+<h4>عنوانه</h4>
+<p>الدرس الثالث: كيفية كتابة التقرير</p>
+<h4>ما الهدف منه</h4>
+<p>تعليم عناصر التقرير وخطوات إعداده الخمس: تحديد الهدف ← جمع المعلومات ← تنظيم الهيكل ← كتابة المسودة ← المراجعة.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>بطاقة الملاحظة: </strong>اجمع معلومات أساسية عن حدث (اسم، مكان، زمان، مشاركين، هدف).</div>
+<div class="activity-item"><strong>ترتيب التقرير: </strong>رتّب معلومات التقرير في مقدمة وعرض وخاتمة.</div>
+<div class="activity-item"><strong>فحص التقرير: </strong>راجع وتأكد من وجود المكان والزمان والهدف، احذف الجمل الشخصية الزائدة، راجع علامات الترقيم.</div>
+<div class="activity-item" style="border-right-color:#8e44ad"><strong>نشاط تفاعلي: </strong>تركيب التقرير: رتّب أجزاء التقرير (عنوان، مقدمة، منهج، نتائج، توصيات، خاتمة) ثم اكتبه كاملًا.</div>
+<h4>السؤال</h4>
+<p>• اذكر صفتين من صفات التقرير الجيد.</p>
+<p>• ما الفرق بين الإعداد والإنجاز؟</p>
+<p>• لماذا الموضوعية مهمة في التقارير؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة، تضمين فيديو، المعاينة.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض الدرس، تنفيذ الأنشطة، تركيب التقرير (نشاط تفاعلي).</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس
+</div>
+<p style="margin-top:10px">تتبع تلقائي.</p>
+</div>
+<div class="section-content" id="s2l3-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: كيفية كتابة التقرير</p>
+<h4>ما الهدف منه</h4>
+<p>مراجعة عناصر التقرير مع نموذج 'تقرير عن قلعة نزوى وحصنها'.</p>
+<h4>تعليمات النشاط</h4>
+<p>مراجعة الخطوات، قراءة النموذج، سؤال المساعد.</p>
+<h4>السؤال</h4>
+<p>هل فهمت عناصر التقرير وهيكله؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة والتفاعل.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر.</p>
+</div>
+<div class="section-content" id="s2l3-eval">
+<h4>عنوانه</h4>
+<p>تقييم التقرير: كيفية كتابة التقرير</p>
+<h4>ما الهدف منه</h4>
+<p>قياس مهارة كتابة التقرير المنظم.</p>
+<h4>تعليمات النشاط</h4>
+<p>اكتب تقريرًا موجزًا ومنظمًا يصف حدثًا أو نشاطًا، مع مقدمة وعرض وخاتمة وتوصيات واضحة.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اختر موضوعًا مناسبًا من المقترحات أو من واقعك اليومي، واكتب تقريرًا منظمًا يحتوي على عنوان ومقدمة وعرض وخاتمة.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير (5 معايير: عناصر التقرير، تحديد الهدف، عرض المعلومات، التسلسل، السلامة اللغوية).</p>
+<h4>ما دور الطالب</h4>
+<p>كتابة تقرير والإرسال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم
+</div>
+<p style="margin-top:10px">تقييم AI يركز على هيكل التقرير والموضوعية + تقييم المعلم.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>عناصر التقرير (2) | تحديد الهدف (2) | عرض المعلومات (2) | التسلسل (2) | السلامة اللغوية (2) — المجموع: 10</div>
+</div>
+</div>
+<div class="lesson-card" id="s2l4">
+<div class="lesson-header">
+<div class="lesson-num">4</div>
+<div><h3>التعبير الحر</h3><div class="lesson-ref">semester1Topics.ts — free-expression</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s2l4','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s2l4','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s2l4','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s2l4-lesson">
+<h4>عنوانه</h4>
+<p>الدرس الرابع: التعبير الحر</p>
+<h4>ما الهدف منه</h4>
+<p>تعليم الكتابة الحرة عبر 5 خطوات: اختيار الموضوع ← العصف الذهني ← التنظيم ← الكتابة ← المراجعة.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>بنك الأفكار: </strong>اكتب 5 كلمات مرتبطة بالموضوع ثم اختر كلمتين يمكن تحويلهما إلى أفكار وحدد الفكرة الأقوى.</div>
+<div class="activity-item"><strong>نمّ الفكرة: </strong>حوّل فكرة قصيرة إلى فقرة تعبيرية (رأي + مثال + جملة تلخيص).</div>
+<div class="activity-item"><strong>صوت الكاتب: </strong>أضف لمسة شخصية تجعل التعبير يعبر عن رأيك ومشاعرك (أرى أن... + شعور مناسب).</div>
+<div class="activity-item" style="border-right-color:#8e44ad"><strong>نشاط تفاعلي: </strong>بناء تعبير حر: اختر محفزًا من الأنواع المختلفة ثم اكتب تعبيرًا حرًا يعكس رأيك أو وصفك.</div>
+<h4>السؤال</h4>
+<p>• ما المقصود بالتعبير الحر؟</p>
+<p>• لماذا تنظيم الأفكار مهم؟</p>
+<p>• اذكر فائدة المراجعة بعد الكتابة.</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض وتنفيذ الأنشطة + النشاط التفاعلي.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس
+</div>
+<p style="margin-top:10px">تتبع تلقائي.</p>
+</div>
+<div class="section-content" id="s2l4-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: التعبير الحر</p>
+<h4>ما الهدف منه</h4>
+<p>مراحل الكتابة الحرة مع نموذج 'يوم غيّر نظرتي إلى نفسي'.</p>
+<h4>تعليمات النشاط</h4>
+<p>مراجعة، قراءة النموذج، سؤال المساعد.</p>
+<h4>السؤال</h4>
+<p>هل فهمت خطوات بناء التعبير الحر؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة والتفاعل.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر.</p>
+</div>
+<div class="section-content" id="s2l4-eval">
+<h4>عنوانه</h4>
+<p>تقييم الكتابة: التعبير الحر</p>
+<h4>ما الهدف منه</h4>
+<p>قياس مهارة الكتابة الحرة المتسلسلة.</p>
+<h4>تعليمات النشاط</h4>
+<p>اكتب نصًا حرًا واضح الأفكار ومتسلسلًا، مع العناية بأسلوبك الشخصي وسلامة اللغة.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اختر موضوعًا حرًا من اهتماماتك أو من المقترحات، واكتب تعبيرًا متكاملًا يعبّر عن أفكارك ومشاعرك بصدق.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير (5 معايير: عناصر التعبير، الصور الجمالية، تسلسل الأفكار، أدوات الربط، السلامة اللغوية).</p>
+<h4>ما دور الطالب</h4>
+<p>كتابة تعبير حر والإرسال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم
+</div>
+<p style="margin-top:10px">تقييم AI + تقييم المعلم.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>عناصر التعبير (2) | الصور الجمالية (2) | تسلسل الأفكار (2) | أدوات الربط (2) | السلامة اللغوية (2) — المجموع: 10</div>
+</div>
+</div>
+<div class="lesson-card" id="s2l5">
+<div class="lesson-header">
+<div class="lesson-num">5</div>
+<div><h3>النص الحواري</h3><div class="lesson-ref">semester1Topics.ts — dialogue-text</div></div>
+</div>
+<div class="sections-tabs">
+<button class="tab-btn active-l" onclick="showSection('s2l5','lesson')">الدرس</button>
+<button class="tab-btn" onclick="showSection('s2l5','review')">المراجعة</button>
+<button class="tab-btn" onclick="showSection('s2l5','eval')">التقييم</button>
+</div>
+<div class="section-content active" id="s2l5-lesson">
+<h4>عنوانه</h4>
+<p>الدرس الخامس: النص الحواري</p>
+<h4>ما الهدف منه</h4>
+<p>تعليم كتابة الحوار عبر 5 خطوات: تحديد المتحاورين ← تحديد الموضوع ← بناء البنية ← كتابة الجمل ← إنهاء الحوار.</p>
+<h4>تعليمات النشاط</h4>
+<div class="activity-item"><strong>بطاقة الشخصيات: </strong>حدّد شخصيات الحوار وهدف كل شخصية ونبرة الكلام المناسبة.</div>
+<div class="activity-item"><strong>تبادل الكلام: </strong>اكتب حوارًا قصيرًا يحافظ على السؤال والجواب وتسلسل الفكرة (6 مداخلات على الأقل).</div>
+<div class="activity-item"><strong>طبيعية الحوار: </strong>راجع الحوار وأضف علامات الترقيم وتعبيرات مناسبة للشخصيات.</div>
+<div class="activity-item" style="border-right-color:#8e44ad"><strong>نشاط تفاعلي: </strong>حوار ثنائي: اكتب حوارًا مع زميل حول موضوع محدد (PeerDialogueActivity).</div>
+<div class="activity-item" style="border-right-color:#27ae60"><strong>نشاط تعاوني: </strong>نشاط حواري تعاوني: كتابة حوار بين شخصين أو أكثر (trackCollaborativeCompletion - dialogue).</div>
+<h4>السؤال</h4>
+<p>• ما العناصر الأساسية لبنية النص الحواري؟</p>
+<p>• لماذا ينبغي قصر الحوار على موضوع واحد؟</p>
+<p>• اذكر سمة من سمات النص الحواري الجيد.</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة، تضمين فيديو.</p>
+<h4>ما دور الطالب</h4>
+<p>استعراض وتنفيذ الأنشطة والحوار الثنائي.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 20 نقطة عند إكمال الدرس + 10 نقاط للنشاط التعاوني (dialogue)
+</div>
+<p style="margin-top:10px">تتبع تلقائي + 10 نقاط إضافية للنشاط التعاوني (dialogue).</p>
+</div>
+<div class="section-content" id="s2l5-review">
+<h4>عنوانه</h4>
+<p>مراجعة الدرس: النص الحواري</p>
+<h4>ما الهدف منه</h4>
+<p>مراجعة بناء الحوار مع نموذج 'حوار حول أهمية القراءة'.</p>
+<h4>تعليمات النشاط</h4>
+<p>مراجعة، قراءة النموذج، سؤال المساعد.</p>
+<h4>السؤال</h4>
+<p>هل فهمت بنية النص الحواري وطريقة كتابته؟</p>
+<h4>ما دور المعلم</h4>
+<p>التحكم في الإتاحة.</p>
+<h4>ما دور الطالب</h4>
+<p>المراجعة والتفاعل.</p>
+<h4>كيف يتم التقييم</h4>
+<p>لا تقييم مباشر.</p>
+</div>
+<div class="section-content" id="s2l5-eval">
+<h4>عنوانه</h4>
+<p>تقييم الحوار: النص الحواري</p>
+<h4>ما الهدف منه</h4>
+<p>قياس مهارة كتابة حوار طبيعي ومتسلسل.</p>
+<h4>تعليمات النشاط</h4>
+<p>اكتب حوارًا طبيعيًا ومتسلسلًا بين شخصين أو أكثر، مع وضوح الأدوار والأسلوب المناسب للسياق.</p>
+<h4>السؤال</h4>
+<div class="highlight-box"><strong>اكتب نصًا حواريًا بين شخصيتين أو أكثر حول موقف معين، ملتزمًا ببنية النص الحواري وطريقة الكلام المناسبة لكل شخصية.</strong></div>
+<h4>ما دور المعلم</h4>
+<p>تحديد المهمة والمعايير (5 معايير: شكل الحوار، وضوح الأفكار، التسلسل، الإقناع، سلامة اللغة).</p>
+<h4>ما دور الطالب</h4>
+<p>كتابة حوار والإرسال.</p>
+<h4>كيف يتم التقييم</h4>
+<div class="points-box">
+<strong>النقاط:</strong> 10 نقاط عند تسليم التقييم
+</div>
+<p style="margin-top:10px">تقييم AI يركز على طبيعية الحوار + تقييم المعلم.</p>
+<div class="highlight-box warning"><strong>معايير التقييم (Rubric):</strong><br>شكل الحوار (2) | وضوح الأفكار (2) | التسلسل (2) | الإقناع (2) | سلامة اللغة (2) — المجموع: 10</div>
+</div>
+</div>
+</div>
+<div class="highlight-box" style="margin-top:50px">
+<strong>ملاحظات مهمة حول القياس والتقييم:</strong>
+<ul style="margin-top:10px">
+<li>كل درس يُحتسب فيه <strong>30 نقطة أساسية</strong> (20 للدرس + 10 للتقييم) + نقاط النشاط التعاوني إن وُجد</li>
+<li>تقييم AI يعمل تلقائيًا عبر <code>aiEvaluationService.ts</code> (نموذج gpt-5.4-mini) وفق معايير rubrics.ts</li>
+<li>المعلم يستطيع تعديل تقييم AI يدويًا من <code>SubmissionReview.tsx</code> باختيار مستوى لكل معيار</li>
+<li>النشاط التعاوني (المناقشة أو الحوار) يُحتسب 10 نقاط إضافية عبر <code>trackCollaborativeCompletion</code></li>
+<li>النقاط تُحسب تلقائيًا من بيانات التتبع في <code>student_tracking</code> (Supabase) عبر <code>calculatePointsFromTracking</code></li>
+<li>لوحة المعلم (<code>TeacherPanel.tsx</code>) تتحكم في إتاحة كل قسم من أقسام كل درس بشكل مستقل</li>
+<li>صفحة مراجعة التسليم (<code>SubmissionReview.tsx</code>) مشتركة: الطالب يرى تقييمه والمعلم يُقيّم</li>
+</ul>
+</div>
+</div>
+<script>
+function showSection(id,type){
+var parent=document.getElementById(id);
+var tabs=parent.querySelectorAll('.tab-btn');
+var contents=parent.querySelectorAll('.section-content');
+contents.forEach(function(c){c.classList.remove('active')});
+var map={lesson:0,review:1,eval:2};
+var idx=map[type];
+tabs.forEach(function(t,i){t.classList.remove('active-l','active-r','active-e');if(i===idx){var cls=type==='lesson'?'active-l':type==='review'?'active-r':'active-e';t.classList.add(cls)}});
+parent.querySelector('#'+id+'-'+type).classList.add('active');
+}
+</script>
+</body>
+</html>

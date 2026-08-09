@@ -7,6 +7,7 @@ import {
   LessonVisibility,
   buildLessonVisibilityFromRows,
   getLessonVisibility,
+  isSectionActive,
 } from "../../../utils/lessonSettings";
 import { logAdminNotification } from "../../../utils/adminNotifications";
 import { emitAchievementToast } from "../../../utils/achievementToast";
@@ -453,7 +454,7 @@ export default function Semester2ActivityShell({
     );
   }
 
-  if (!(lessonVisibility[topic.id]?.activity ?? true)) {
+  if (!isSectionActive(lessonVisibility, topic.id, "activity", true)) {
     return (
       <div className="topic-page" dir="rtl">
         <div className="not-found-container">

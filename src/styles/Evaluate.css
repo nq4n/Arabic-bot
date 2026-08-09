@@ -23,8 +23,7 @@
   font-size: clamp(1.9rem, 2.2vw + 0.9rem, 2.7rem);
   font-weight: 900;
   color: var(--primary-color);
-  letter-spacing: 0.2px;
-  line-height: 1.15;
+  line-height: 1.3;
 }
 
 .evaluate-header p {
@@ -244,12 +243,22 @@
 /* Page Actions */
 .page-actions {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 2rem;
   border-top: 2px dashed var(--border-color);
+}
+
+.page-actions:has(.button:only-child) {
+  justify-content: center;
+}
+
+@media (max-width: 700px) {
+  .page-actions {
+    justify-content: center;
+  }
 }
 
 .cta-button {
@@ -261,6 +270,8 @@
   width: fit-content;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: 0.5rem;
 }
 

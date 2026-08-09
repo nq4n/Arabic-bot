@@ -2,6 +2,7 @@
 import { supabase } from "../../supabaseClient";
 import Papa from "papaparse";
 import type { ParseResult } from "papaparse";
+import * as XLSX from "xlsx";
 import { topics, topicsBySemester } from "../../data/topics";
 import { SkeletonSection } from "../../components/SkeletonBlocks";
 import {
@@ -14,6 +15,7 @@ import {
 import "../../styles/global.css";
 import "../../styles/Navbar.css";
 import "../../styles/TeacherPanel.css";
+import { usePreview } from "../../hooks/PreviewContext";
 import { User } from "@supabase/supabase-js";
 
 type UserRole = "student" | "teacher" | "admin" | null;
@@ -52,7 +54,10 @@ const getDisplayName = (
   fallback = "—"
 ) => profile?.full_name || profile?.username || profile?.email || fallback;
 
+const DEFAULT_TEMPORARY_PASSWORD = "123456789";
+
 export default function TeacherPanel() {
+  const { enablePreview } = usePreview();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>(null);
   const [users, setUsers] = useState<UserWithStats[]>([]);
@@ -79,6 +84,8 @@ export default function TeacherPanel() {
   const [userToDelete, setUserToDelete] = useState<UserWithStats | null>(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [resettingPasswordUserId, setResettingPasswordUserId] = useState<string | null>(null);
+  const [userActionMessage, setUserActionMessage] = useState<string | null>(null);
 
 
   const loadData = useCallback(async () => {
@@ -211,71 +218,94 @@ export default function TeacherPanel() {
     setUploadSuccess(null);
     setFormError(null);
 
+    const processRows = async (rows: CsvRow[]) => {
+      let createdCount = 0;
+      let errorList: string[] = [];
+
+      for (const user of rows) {
+        const email = String(user.email ?? "").trim();
+        const role = String(user.role ?? "").trim() as UserRole;
+        const password = String(user.password ?? "").trim();
+        const full_name = String(user.full_name ?? "").trim();
+        const grade = String(user.grade ?? "").trim();
+
+        if (!email || !role || !password) {
+          console.warn("Skipping incomplete row:", user);
+          continue;
+        }
+
+        try {
+          const body: {
+            email: string;
+            password: string;
+            role: UserRole;
+            addedBy?: string;
+            full_name?: string;
+            grade?: string;
+          } = { email, password, role };
+
+          if (full_name) {
+            body.full_name = full_name;
+          }
+          if (grade) {
+            body.grade = grade;
+          }
+
+          if (currentUserRole === "teacher" && role === "student" && currentUser?.id) {
+            body.addedBy = currentUser.id;
+          }
+
+          const { data: createData, error } = await supabase.functions.invoke("create-user", {
+            body,
+          });
+
+          if (error) {
+            errorList.push(`${email}: ${error.message}`);
+          } else if (!createData?.success) {
+            const reason = (createData as any)?.error || "فشل الإنشاء لسبب غير معروف";
+            errorList.push(`${email}: ${reason}`);
+          } else {
+            createdCount++;
+          }
+        } catch (e: any) {
+          errorList.push(`${email}: ${e.message}`);
+        }
+      }
+
+      setUploading(false);
+      if (createdCount > 0) {
+        setUploadSuccess(`تم إنشاء ${createdCount} مستخدم بنجاح.`);
+      }
+      if (errorList.length > 0) {
+        setUploadError(`فشل في إنشاء بعض المستخدمين: ${errorList.join(", ")}`);
+      }
+      if (createdCount > 0) {
+        setTimeout(() => loadData(), 1500);
+      }
+    };
+
+    const fileName = file.name.toLowerCase();
+
+    if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json<CsvRow>(sheet, { defval: "" });
+        await processRows(rows);
+      } catch (err: any) {
+        setUploadError(`حدث خطأ أثناء قراءة ملف Excel: ${err.message}`);
+        setUploading(false);
+      }
+      return;
+    }
+
     Papa.parse<CsvRow>(file, {
       header: true,
       skipEmptyLines: true,
       complete: async (results: ParseResult<CsvRow>) => {
-        const usersToCreate = results.data;
-        let createdCount = 0;
-        let errorList: string[] = [];
-
-        for (const user of usersToCreate) {
-          const { email, role, password, full_name, grade } = user;
-          if (!email || !role || !password) {
-            console.warn("Skipping incomplete row in CSV:", user);
-            continue;
-          }
-
-          try {
-            const body: {
-              email: string;
-              password: string;
-              role: UserRole;
-              addedBy?: string;
-              full_name?: string;
-              grade?: string; // Add grade here
-            } = { email, password, role };
-
-            if (full_name) {
-              body.full_name = full_name;
-            }
-            if (grade) { // Add grade to body if present
-              body.grade = grade;
-            }
-
-            if (currentUserRole === "teacher" && role === "student" && currentUser?.id) {
-              body.addedBy = currentUser.id;
-            }
-
-            const { data: createData, error } = await supabase.functions.invoke("create-user", {
-              body,
-            });
-
-            if (error) {
-              errorList.push(`${email}: ${error.message}`);
-            } else if (!createData?.success) {
-              const reason = (createData as any)?.error || "فشل الإنشاء لسبب غير معروف";
-              errorList.push(`${email}: ${reason}`);
-            } else {
-              createdCount++;
-            }
-          } catch (e: any) {
-            errorList.push(`${email}: ${e.message}`);
-          }
-
-        }
-
-        setUploading(false);
-        if (createdCount > 0) {
-          setUploadSuccess(`تم إنشاء ${createdCount} مستخدم بنجاح.`);
-        }
-        if (errorList.length > 0) {
-          setUploadError(`فشل في إنشاء بعض المستخدمين: ${errorList.join(", ")}`);
-        }
-
-        if (createdCount > 0) {
-          setTimeout(() => loadData(), 1500);
-        }
+        await processRows(results.data);
       },
       error: (err: any) => {
         setUploadError(`حدث خطأ أثناء تحليل الملف: ${err.message}`);
@@ -452,21 +482,113 @@ export default function TeacherPanel() {
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ must_change_password: nextValue })
-        .eq("id", userId);
+    setFormError(null);
+    setUserActionMessage(null);
 
-      if (error) throw error;
+    if (nextValue) {
+      const targetUser = users.find((u) => u.id === userId) || null;
+      const displayName = getDisplayName(targetUser, "هذا المستخدم");
+      const confirmed = window.confirm(
+        `سيتم إعادة كلمة مرور ${displayName} إلى كلمة المرور المؤقتة (${DEFAULT_TEMPORARY_PASSWORD})، وسيُطلب منه تعيين كلمة مرور جديدة عند الدخول. هل تريد المتابعة؟`
+      );
+
+      if (!confirmed) return;
+
+      setResettingPasswordUserId(userId);
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          throw new Error("انتهت الجلسة. سجل الدخول مرة أخرى.");
+        }
+
+        const { data: responseBody, error } = await supabase.functions.invoke(
+          "reset-user-password",
+          {
+            body: {
+              userId,
+              temporaryPassword: DEFAULT_TEMPORARY_PASSWORD,
+            },
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          }
+        );
+
+        if (error) {
+          throw new Error(`تعذّر الاتصال بوظيفة السيرفر: ${error.message}`);
+        }
+
+        if (!responseBody?.success) {
+          throw new Error(
+            `تعذّر إعادة تعيين كلمة المرور: ${responseBody?.error ?? "سبب غير معروف"}`
+          );
+        }
+
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === userId ? { ...u, must_change_password: true } : u
+          )
+        );
+        setUserActionMessage(
+          `تمت إعادة كلمة مرور ${displayName} إلى كلمة المرور المؤقتة (${DEFAULT_TEMPORARY_PASSWORD}).`
+        );
+      } catch (err: any) {
+        setFormError(err.message);
+      } finally {
+        setResettingPasswordUserId(null);
+      }
+
+      return;
+    }
+
+    setResettingPasswordUserId(userId);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error("انتهت الجلسة. سجل الدخول مرة أخرى.");
+      }
+
+      const { data: responseBody, error } = await supabase.functions.invoke(
+        "reset-user-password",
+        {
+          body: {
+            userId,
+            action: "disable",
+          },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      if (error) {
+        throw new Error(`تعذّر الاتصال بوظيفة السيرفر: ${error.message}`);
+      }
+
+      if (!responseBody?.success) {
+        throw new Error(
+          `تعذّر تحديث الإعداد: ${responseBody?.error ?? "سبب غير معروف"}`
+        );
+      }
 
       setUsers((prev) =>
         prev.map((u) =>
-          u.id === userId ? { ...u, must_change_password: nextValue } : u
+          u.id === userId ? { ...u, must_change_password: false } : u
         )
       );
+      setUserActionMessage("تم تعطيل طلب تغيير كلمة المرور لهذا المستخدم.");
     } catch (err: any) {
       setFormError(`تعذر تحديث الإعداد: ${err.message}`);
+    } finally {
+      setResettingPasswordUserId(null);
     }
   };
 
@@ -518,6 +640,23 @@ export default function TeacherPanel() {
           <h1>لوحة إدارة المستخدمين</h1>
         </header>
       </div>
+
+      <div className="preview-toggle-card card">
+        <div className="preview-toggle-info">
+          <i className="fas fa-eye"></i>
+          <div>
+            <strong>معاينة الموقع كطالب</strong>
+            <p>
+              فعّل هذه الميزة لاستعراض الموقع كما يراه الطالب مع جميع الأقسام مفعّلة.
+            </p>
+          </div>
+        </div>
+        <button type="button" className="button button-primary" onClick={() => { enablePreview(); window.location.href = "/"; }}>
+          <i className="fas fa-eye"></i>
+          معاينة كطالب
+        </button>
+      </div>
+
       <p style={{ marginBottom: "1.5rem", color: "#4b5563" }}>
         من هنا يمكن للمعلم/المسؤول متابعة نشاط الطلاب، إضافة مستخدمين جدد، وتعديل الصلاحيات.
       </p>
@@ -609,8 +748,10 @@ export default function TeacherPanel() {
               color: "var(--text-muted)",
             }}
           >
-            ارفع ملف CSV يحتوي على الأعمدة:{" "}
+            ارفع ملف CSV أو Excel يحتوي على الأعمدة:{" "}
             <code>email</code>, <code>role</code>, <code>password</code>, <code>full_name</code>.
+            <br />
+            الصف الأول يجب أن يكون عناوين الأعمدة.
           </p>
           <p
             style={{
@@ -631,8 +772,13 @@ export default function TeacherPanel() {
               {uploadSuccess}
             </p>
           )}
-          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-            <input type="file" accept=".csv" onChange={handleFileChange} />
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+            <div className={`file-input-wrapper${file ? " has-file" : ""}`}>
+              <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChange} id="users-file-input" />
+              <span className="file-input-button">
+                {file ? `📎 ${file.name}` : "📁 اختيار ملف"}
+              </span>
+            </div>
             <button
               onClick={handleFileUpload}
               className="button button-compact"
@@ -640,6 +786,14 @@ export default function TeacherPanel() {
             >
               {uploading ? "جاري الرفع..." : "رفع وإنشاء"}
             </button>
+            <a
+              href="/users-template.xlsx"
+              download
+              className="button button-compact"
+              style={{ textDecoration: "none" }}
+            >
+              تحميل قالب Excel
+            </a>
           </div>
         </section>
 
@@ -700,6 +854,7 @@ export default function TeacherPanel() {
               {currentUserRole === "admin" ? (
                 <select
                   id="newRole"
+                  className="role-select"
                   value={newRole || "student"}
                   onChange={(e) => setNewRole(e.target.value as UserRole)}
                 >
@@ -710,9 +865,10 @@ export default function TeacherPanel() {
               ) : (
                 <select
                   id="newRole"
+                  className="role-select"
                   value={"student"}
                   onChange={(e) => setNewRole(e.target.value as UserRole)}
-                  disabled // Teachers can only add students
+                  disabled
                 >
                   <option value="student">طالب</option>
                 </select>
@@ -760,6 +916,11 @@ export default function TeacherPanel() {
             </div>
           )}
         </div>
+        {userActionMessage && (
+          <p style={{ color: "green", marginBottom: "0.75rem" }}>
+            {userActionMessage}
+          </p>
+        )}
 
         {loading ? (
           <SkeletonSection lines={5} showTitle={false} />
@@ -822,6 +983,12 @@ export default function TeacherPanel() {
                           <button
                             type="button"
                             className="button button-compact"
+                            disabled={!!resettingPasswordUserId}
+                            title={
+                              u.must_change_password
+                                ? "تعطيل طلب تغيير كلمة المرور"
+                                : `إعادة كلمة المرور إلى ${DEFAULT_TEMPORARY_PASSWORD} وطلب تغييرها`
+                            }
                             onClick={() =>
                               handleToggleMustChangePassword(
                                 u.id,
@@ -829,7 +996,11 @@ export default function TeacherPanel() {
                               )
                             }
                           >
-                            {u.must_change_password ? "تعطيل" : "تفعيل"}
+                            {resettingPasswordUserId === u.id
+                              ? "جارٍ..."
+                              : u.must_change_password
+                                ? "تعطيل"
+                                : "تفعيل وإعادة التعيين"}
                           </button>
                         )}
                       </div>

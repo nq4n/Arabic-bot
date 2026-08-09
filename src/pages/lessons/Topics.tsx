@@ -107,7 +107,35 @@ export default function Topics() {
         visibilityQuery.is("teacher_id", null);
       }
 
-      const { data: visibilityRows, error: visibilityError } = await visibilityQuery;
+      const [
+        visibilityResult,
+        rewardsResult,
+        submissionsResult,
+        tracking,
+        activityResult,
+        collaborativeResult,
+      ] = await Promise.all([
+        visibilityQuery,
+        supabase
+          .from("point_rewards")
+          .select("title, min_points")
+          .order("min_points", { ascending: true }),
+        supabase
+          .from("submissions")
+          .select("topic_title, teacher_response")
+          .eq("student_id", session.user.id),
+        getStudentTracking(session.user.id),
+        supabase
+          .from('activity_submissions')
+          .select('topic_id, activity_id')
+          .eq('student_id', session.user.id),
+        supabase
+          .from('collaborative_activity_completions')
+          .select('topic_id, activity_kind')
+          .eq('student_id', session.user.id),
+      ]);
+
+      const { data: visibilityRows, error: visibilityError } = visibilityResult;
 
       if (visibilityError) {
         console.error("Error fetching lesson visibility:", visibilityError);
@@ -116,17 +144,19 @@ export default function Topics() {
         setLessonVisibility(next);
       }
 
-      const { data: rewardsData } = await supabase
-        .from("point_rewards")
-        .select("title, min_points")
-        .order("min_points", { ascending: true });
+      setRewards(rewardsResult.data || []);
 
-      setRewards(rewardsData || []);
+      if (submissionsResult.error) {
+        console.error("Error fetching submissions:", submissionsResult.error);
+      }
+      if (activityResult.error) {
+        console.error("Error fetching activity submissions:", activityResult.error);
+      }
+      if (collaborativeResult.error) {
+        console.error("Error fetching collaborative completions:", collaborativeResult.error);
+      }
 
-      const { data } = await supabase
-        .from("submissions")
-        .select("topic_title, teacher_response")
-        .eq("student_id", session.user.id);
+      const submissionsData = submissionsResult.data || [];
 
       const statusMap: Record<string, { hasSubmission: boolean; hasRating: boolean }> = {};
       const titleToId = topics.reduce<Record<string, string>>((acc, topic) => {
@@ -134,7 +164,7 @@ export default function Topics() {
         return acc;
       }, {});
 
-      (data || []).forEach((submission) => {
+      submissionsData.forEach((submission) => {
         const topicId = titleToId[submission.topic_title];
         if (!topicId) return;
         statusMap[topicId] = statusMap[topicId] || {
@@ -149,8 +179,6 @@ export default function Topics() {
 
       setSubmissionStatus(statusMap);
 
-      const tracking = await getStudentTracking(session.user.id);
-
       const nextProgress = buildEmptyProgress(topicIds);
       if (tracking?.lessons) {
         topicIds.forEach((id) => {
@@ -162,32 +190,14 @@ export default function Topics() {
 
       setProgressMap(nextProgress);
 
-      // Fetch activity submissions as fallback (in case activities aren't in tracking_data)
-      const { data: activityData } = await supabase
-        .from('activity_submissions')
-        .select('topic_id, activity_id')
-        .eq('student_id', session.user.id);
-
-      // Fetch collaborative completions as fallback
-      const { data: collaborativeData } = await supabase
-        .from('collaborative_activity_completions')
-        .select('topic_id, activity_kind')
-        .eq('student_id', session.user.id);
-
-      // Fetch submissions for evaluations
-      const { data: submissionsData } = await supabase
-        .from('submissions')
-        .select('topic_title')
-        .eq('student_id', session.user.id);
-
       // Calculate points using same method as teacher panel (with fallbacks)
       const points = calculatePointsFromData({
         lessons: tracking?.lessons,
         activities: tracking?.activities,
         evaluations: tracking?.evaluations,
         collaborative: tracking?.collaborative,
-        activitySubmissions: activityData || [],
-        collaborativeCompletions: collaborativeData || [],
+        activitySubmissions: activityResult.data || [],
+        collaborativeCompletions: collaborativeResult.data || [],
         submissions: submissionsData || [],
       });
 

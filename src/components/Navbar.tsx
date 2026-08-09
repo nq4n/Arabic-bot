@@ -12,6 +12,8 @@ type UserRole = "student" | "teacher" | "admin" | null;
 interface NavbarProps {
   session: Session | null;
   userRole: UserRole;
+  isPreview?: boolean;
+  onExitPreview?: () => void;
 }
 
 // --- SVG Icons --- //
@@ -49,7 +51,7 @@ const LogoutIcon = () => (
   </svg>
 );
 
-export default function Navbar({ session, userRole }: NavbarProps) {
+export default function Navbar({ session, userRole, isPreview, onExitPreview }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
@@ -68,6 +70,7 @@ export default function Navbar({ session, userRole }: NavbarProps) {
     Object.keys(localStorage)
       .filter((key) => key.startsWith("sb-"))
       .forEach((key) => localStorage.removeItem(key));
+    try { localStorage.removeItem("teacher_preview_mode"); } catch {}
     navigate("/login", { replace: true });
   };
 
@@ -166,6 +169,17 @@ export default function Navbar({ session, userRole }: NavbarProps) {
         <div className="navbar-links">{session && renderLinks()}</div>
 
         <div className="navbar-actions">
+          {isPreview && (
+            <button
+              type="button"
+              className="preview-exit-btn"
+              onClick={onExitPreview}
+              title="إنهاء المعاينة"
+            >
+              <i className="fas fa-eye-slash"></i>
+              إنهاء المعاينة
+            </button>
+          )}
           <button onClick={toggleTheme} className="theme-toggle">
             {theme === "light" ? "🌙" : "☀️"}
           </button>

@@ -26,7 +26,7 @@ export default function Login() {
 
     const trimmedIdentifier = identifier.trim();
     if (!trimmedIdentifier) {
-      setError("الرجاء إدخال البريد الإلكتروني أو اسم المستخدم.");
+      setError("الرجاء إدخالاسم المستخدم.");
       setLoading(false);
       return;
     }
@@ -62,7 +62,7 @@ export default function Login() {
     setLoading(false);
 
     if (signInError) {
-      setError("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+      setError("أسم المسخدم أو كلمة المرور غير صحيحة.");
     }
     // On success, the onAuthStateChange in App.tsx will handle the rest.
   };
@@ -74,7 +74,7 @@ export default function Login() {
       </div>
 
       <div className="login-intro">
-        <h1 style={{fontFamily: "title",fontSize: "200px",margin: "0",lineHeight: "0.5",padding: "0" }}>مداد</h1>
+        <h1 style={{fontFamily: "title",fontSize: "6rem",margin: "0",lineHeight: "1",padding: "0" }}>مداد</h1>
         <div className="login-welcome">
           <h2>مرحبًا بكم في منصّة مداد</h2>
           <p>

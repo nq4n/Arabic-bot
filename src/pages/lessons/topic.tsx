@@ -5,6 +5,7 @@ import {
   LessonVisibility,
   getLessonProgress,
   markLessonCompleted,
+  isSectionActive,
 } from "../../utils/lessonSettings";
 import { supabase } from "../../supabaseClient";
 import "../../styles/Topic.css";
@@ -38,7 +39,8 @@ export default function Topic() {
     return defaults;
   });
 
-  const [lessonStarted, setLessonStarted] = useState(false);
+  const [lessonStarted] = useState(true);
+  const [activeSection, setActiveSection] = useState("goals");
   const [session, setSession] = useState<Session | null>(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [isVisibilityLoading, setIsVisibilityLoading] = useState(true);
@@ -207,26 +209,13 @@ export default function Topic() {
         <header className="topic-main-header page-header">
           <SkeletonHeader titleWidthClass="skeleton-w-40" subtitleWidthClass="skeleton-w-70" />
         </header>
-        {topic.lesson.goals && topic.lesson.goals.length > 0 && (
+{topic.lesson.goals && topic.lesson.goals.length > 0 && (
           <section className="card goals-card lesson-entry-card">
-            <h2 className="section-title">
-              <i className="fas fa-bullseye icon"></i> أهداف الدرس
-            </h2>
-            <p className="goals-intro">في نهاية الدرس يُتوقَّع من الطالب أن يكون قادراً على أن:</p>
-            <ul className="goals-list  direction-rtl">
-              {topic.lesson.goals.map((goal, index) => (
-                <li key={index}><span className="goal-number">{index + 1}</span>. <strong>{goal}</strong></li>
-              ))}
-            </ul>
-            <button
-              className="button button-primary cta-button"
-              onClick={() => {
-                document.querySelector('.intro-card')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              <i className="fas fa-arrow-down"></i>
-              ابدأ الدرس
-            </button>
+            <div className="skeleton-list">
+              <div className="skeleton skeleton-line skeleton-w-50" />
+              <div className="skeleton skeleton-line skeleton-w-80" />
+              <div className="skeleton skeleton-line skeleton-w-70" />
+            </div>
           </section>
         )}
         <div className="topic-content-wrapper">
@@ -243,15 +232,67 @@ export default function Topic() {
     );
   }
 
-  const isLessonActive = lessonVisibility[topic.id]?.lesson ?? false;
-  const isVideoActive = lessonVisibility[topic.id]?.video ?? true;
-  const isReviewActive = lessonVisibility[topic.id]?.review ?? false;
-  const isActivityActive = lessonVisibility[topic.id]?.activity ?? false;
+  const isLessonActive = isSectionActive(lessonVisibility, topic.id, "lesson", false);
+  const isVideoActive = isSectionActive(lessonVisibility, topic.id, "video", true);
+  const isReviewActive = isSectionActive(lessonVisibility, topic.id, "review", false);
+  const isActivityActive = isSectionActive(lessonVisibility, topic.id, "activity", false);
 
   const isDiscussingIssue = topic.id === "discussing-issue";
   const isDialogueText = topic.id === "dialogue-text";
 
   const hasInteractiveActivity = Boolean(topic.interactiveActivity);
+
+  const activityItems = topic.activities?.list ?? [];
+  const hasActivityItems = activityItems.length > 0;
+
+  const hasActivityContent =
+    hasActivityItems || hasInteractiveActivity || isDiscussingIssue || isDialogueText;
+
+  const sections: { id: string; label: string; icon: string; available: boolean }[] = [
+    {
+      id: "goals",
+      label: "أهداف الدرس",
+      icon: "fas fa-bullseye",
+      available: Boolean(topic.lesson.goals && topic.lesson.goals.length > 0),
+    },
+    { id: "intro", label: "مقدمة الدرس", icon: "fas fa-book-open", available: true },
+    { id: "steps", label: "خطوات الدرس", icon: "fas fa-shoe-prints", available: true },
+    { id: "video", label: "فيديو توضيحي", icon: "fas fa-video", available: isVideoActive },
+    {
+      id: "activity",
+      label: topic.activities.header,
+      icon: "fas fa-play",
+      available: hasActivityContent,
+    },
+  ];
+
+  const visibleSections = sections.filter((section) => section.available);
+
+  // Fallback: if the current active section isn't available (e.g. topic has no goals),
+  // render the first available section instead.
+  const effectiveSection = visibleSections.some((section) => section.id === activeSection)
+    ? activeSection
+    : (visibleSections[0]?.id ?? "intro");
+
+  const goTo = (sectionId: string) => {
+    if (visibleSections.some((section) => section.id === sectionId)) {
+      setActiveSection(sectionId);
+    }
+  };
+
+  const goNext = () => {
+    const index = visibleSections.findIndex((section) => section.id === effectiveSection);
+    if (index < visibleSections.length - 1) {
+      setActiveSection(visibleSections[index + 1].id);
+    }
+  };
+
+  const goPrev = () => {
+    const index = visibleSections.findIndex((section) => section.id === effectiveSection);
+    if (index > 0) {
+      setActiveSection(visibleSections[index - 1].id);
+    }
+  };
 
   const activityStartPath = `/activity/${topic.id}/tutorial`;
 
@@ -260,8 +301,6 @@ export default function Topic() {
     : isDialogueText
       ? "فتح صفحة الحوار"
       : "فتح صفحة النشاط";
-  const activityItems = topic.activities?.list ?? [];
-  const hasActivityItems = activityItems.length > 0;
 
   if (!isLessonActive) {
     return (
@@ -304,47 +343,83 @@ export default function Topic() {
         <p className="page-subtitle">{topic.description}</p>
       </header>
 
-      {!lessonStarted && topic.lesson.goals && topic.lesson.goals.length > 0 ? (
-        <section className="card goals-card lesson-entry-card">
-          <h2 className="section-title">
-            <i className="fas fa-bullseye icon"></i> أهداف الدرس
-          </h2>
-          <p className="goals-intro">في نهاية الدرس يُتوقَّع من الطالب أن يكون قادراً على أن:</p>
-          <ul className="goals-list">
-            {topic.lesson.goals.map((goal, index) => (
-              <li key={index}><span className="goal-number">{index + 1}</span>. <strong>{goal}</strong></li>
+{lessonStarted && (
+        <div className="topic-stepper">
+          <nav className="topic-stepper-nav" aria-label="أقسام الدرس">
+            {visibleSections.map((section, index) => (
+              <button
+                key={section.id}
+                type="button"
+                className={`topic-stepper-btn ${effectiveSection === section.id ? "is-active" : ""}`}
+                onClick={() => goTo(section.id)}
+                aria-current={effectiveSection === section.id}
+              >
+                <span className="topic-stepper-badge">{index + 1}</span>
+                <i className={section.icon}></i>
+                <span className="topic-stepper-label">{section.label}</span>
+              </button>
             ))}
-          </ul>
-          <button
-            className="button button-primary cta-button"
-            onClick={() => setLessonStarted(true)}
-          >
-            <i className="fas fa-arrow-down"></i>
-            ابدأ الدرس
-          </button>
-        </section>
-      ) : null}
+          </nav>
 
-      {lessonStarted && (
-        <div className="topic-content-wrapper">
-          <div className="vertical-stack">
-            <section className="topic-section card intro-card sequential-section">
-              <h2 className="section-title">
-                <i className="fas fa-book-open icon"></i> مقدمة الدرس
-              </h2>
-              <p className="intro-paragraph">{topic.lesson.introduction.tahdid}</p>
-              <p className="intro-paragraph">{topic.lesson.introduction.importance}</p>
-            </section>
+          <div className="topic-stepper-content">
+            {effectiveSection === "goals" && (
+              <section className="card topic-section">
+                <h2 className="section-title">
+                  <i className="fas fa-bullseye icon"></i> أهداف الدرس
+                </h2>
+                <p className="goals-intro">في نهاية الدرس يُتوقَّع من الطالب أن يكون قادراً على أن:</p>
+                <ul className="goals-list">
+                  {topic.lesson.goals?.map((goal, index) => (
+                    <li key={index}><span className="goal-number">{index + 1}</span>. <strong>{goal}</strong></li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
-            {isVideoActive && (
-              <section className="topic-section card video-section sequential-section">
+            {effectiveSection === "intro" && (
+              <section className="card topic-section">
+                <h2 className="section-title">
+                  <i className="fas fa-book-open icon"></i> مقدمة الدرس
+                </h2>
+                <p className="intro-paragraph">{topic.lesson.introduction.tahdid}</p>
+                <p className="intro-paragraph">{topic.lesson.introduction.importance}</p>
+              </section>
+            )}
+
+            {effectiveSection === "steps" && (
+              <section className="card topic-section">
+                <h2 className="section-title">
+                  <i className="fas fa-shoe-prints icon"></i> خطوات الدرس
+                </h2>
+                <div className="steps-grid">
+                  {topic.lesson.steps.map((step) => (
+                    <div key={step.step} className="step-card">
+                      <div className="step-header">
+                        <i className={`${step.icon} step-icon`}></i>
+                        <span className="step-number">الخطوة {step.step}</span>
+                      </div>
+                      <h3 className="step-title">{step.title}</h3>
+                      <p>{step.description}</p>
+                      {step.options && (
+                        <ul className="options-list">
+                          {step.options.map((option, index) => (
+                            <li key={index}>{option}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {effectiveSection === "video" && (
+              <section className="card topic-section video-section">
                 <h2 className="section-title">
                   <i className="fas fa-video icon"></i> فيديو توضيحي
                 </h2>
-                {/* Video section: display embedded video if URL is provided, otherwise show placeholder */}
                 {topic.lesson.videoUrl ? (
                   <div className="video-wrapper" style={{ width: '100%', marginBottom: '1rem' }}>
-                    {/* Use iframe to support external video URLs (e.g., YouTube). Adjust attributes as needed. */}
                     <iframe
                       src={topic.lesson.videoUrl}
                       title="فيديو الدرس"
@@ -363,38 +438,11 @@ export default function Topic() {
                 )}
               </section>
             )}
-          </div>
 
-          <div className="vertical-stack">
-            <section className="topic-section card sequential-section">
-              <h2 className="section-title">
-                <i className="fas fa-shoe-prints icon"></i> خطوات الدرس
-              </h2>
-              <div className="steps-grid">
-                {topic.lesson.steps.map((step) => (
-                  <div key={step.step} className="step-card">
-                    <div className="step-header">
-                      <i className={`${step.icon} step-icon`}></i>
-                      <span className="step-number">الخطوة {step.step}</span>
-                    </div>
-                    <h3 className="step-title">{step.title}</h3>
-                    <p>{step.description}</p>
-                    {step.options && (
-                      <ul className="options-list">
-                        {step.options.map((option, index) => (
-                          <li key={index}>{option}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {(hasActivityItems || hasInteractiveActivity || isDiscussingIssue || isDialogueText) && (
-              <section className="topic-section card sequential-section">
+            {effectiveSection === "activity" && (
+              <section className="card topic-section">
                 <h2 className="section-title">
-                  <i className="fas fa-play icon"></i> {topic.activities.header}
+                  <i className="fas fa-play icon"></i> النشاط التطبيقي
                 </h2>
 
                 <p className="section-description">
@@ -428,7 +476,7 @@ export default function Topic() {
 
                 {!isActivityActive && <p className="muted-note">قسم الأنشطة غير متاح حاليًا.</p>}
 
-                {(hasActivityItems || hasInteractiveActivity || isDiscussingIssue || isDialogueText) && (
+                {hasActivityContent && (
                   <div className="activity-cta">
                     <button
                       type="button"
@@ -446,22 +494,43 @@ export default function Topic() {
               </section>
             )}
           </div>
-        </div>
-      )}
 
-      {lessonStarted && (
-        <div className="page-actions">
-          <button
-            className="button button-primary cta-button"
-            onClick={handleCompleteLesson}
-            disabled={!isReviewActive || isConfirming}
-            aria-disabled={!isReviewActive || isConfirming}
-          >
-            <i className="fas fa-arrow-left"></i>
-            {isConfirming ? "جاري الحفظ..." : "الانتقال إلى مراجعة الدرس"}
-          </button>
+          <div className="topic-stepper-controls">
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={goPrev}
+              disabled={effectiveSection === visibleSections[0]?.id}
+              aria-disabled={effectiveSection === visibleSections[0]?.id}
+            >
+              <i className="fas fa-arrow-right"></i>
+              السابق
+            </button>
+            <button
+              type="button"
+              className="button button-primary cta-button"
+              onClick={goNext}
+              disabled={effectiveSection === visibleSections[visibleSections.length - 1]?.id}
+              aria-disabled={effectiveSection === visibleSections[visibleSections.length - 1]?.id}
+            >
+              التالي
+              <i className="fas fa-arrow-left"></i>
+            </button>
+          </div>
 
-          {!isReviewActive && <p className="muted-note">قسم المراجعة غير متاح حاليًا.</p>}
+          <div className="page-actions">
+            <button
+              className="button button-primary cta-button"
+              onClick={handleCompleteLesson}
+              disabled={!isReviewActive || isConfirming}
+              aria-disabled={!isReviewActive || isConfirming}
+            >
+              <i className="fas fa-arrow-left"></i>
+              {isConfirming ? "جاري الحفظ..." : "الانتقال إلى مراجعة الدرس"}
+            </button>
+
+            {!isReviewActive && <p className="muted-note">قسم المراجعة غير متاح حاليًا.</p>}
+          </div>
         </div>
       )}
     </div>

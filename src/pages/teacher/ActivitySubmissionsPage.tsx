@@ -84,12 +84,6 @@ export default function ActivitySubmissionsPage() {
     setFormError(null);
 
     try {
-      // Fetch Rewards using read-only logic
-      const { data: rewardsData } = await supabase
-        .from("point_rewards")
-        .select("title, min_points")
-        .order("min_points", { ascending: false });
-
       let profilesQuery = supabase
         .from("profiles")
         .select("id, username, full_name, email, role, must_change_password, added_by_teacher_id")
@@ -101,16 +95,32 @@ export default function ActivitySubmissionsPage() {
           .eq("added_by_teacher_id", currentUser.id);
       }
 
-      const { data: profiles, error: profilesError } = await profilesQuery;
+      const [rewardsResult, profilesResult] = await Promise.all([
+        supabase
+          .from("point_rewards")
+          .select("title, min_points")
+          .order("min_points", { ascending: false }),
+        profilesQuery,
+      ]);
+
+      const { data: profiles, error: profilesError } = profilesResult;
 
       if (profilesError) throw profilesError;
+      if (rewardsResult.error) throw rewardsResult.error;
+
+      const rewardsData = rewardsResult.data || [];
 
       const studentIds = ((profiles as Profile[]) || [])
         .filter((p) => p.role === "student")
         .map((p) => p.id);
 
       let submissions: Submission[] = [];
-      if (studentIds.length > 0 || currentUserRole !== "teacher") {
+      let activityData: ActivitySubmission[] = [];
+      let completionData: CollaborativeCompletion[] = [];
+      let tempTrackingData: StudentTrackingEntry[] = [];
+
+      const shouldLoadStudentData = studentIds.length > 0 || currentUserRole !== "teacher";
+      if (shouldLoadStudentData) {
         let submissionsQuery = supabase
           .from("submissions")
           .select("id, student_id, topic_title"); // Ensure topic_id is selected
@@ -119,13 +129,8 @@ export default function ActivitySubmissionsPage() {
           submissionsQuery = submissionsQuery.in("student_id", studentIds);
         }
 
-        const { data, error: submissionsError } = await submissionsQuery;
-        if (submissionsError) throw submissionsError;
-        submissions = (data || []) as Submission[];
-      }
+        const submissionsPromise = submissionsQuery;
 
-      let activityData: ActivitySubmission[] = [];
-      if (studentIds.length > 0 || currentUserRole !== "teacher") {
         let activityQuery = supabase
           .from("activity_submissions")
           .select("id, student_id, topic_id, activity_id, response_text, created_at")
@@ -135,13 +140,8 @@ export default function ActivitySubmissionsPage() {
           activityQuery = activityQuery.in("student_id", studentIds);
         }
 
-        const { data, error: activityError } = await activityQuery;
-        if (activityError) throw activityError;
-        activityData = (data || []) as ActivitySubmission[];
-      }
+        const activityPromise = activityQuery;
 
-      let completionData: CollaborativeCompletion[] = [];
-      if (studentIds.length > 0 || currentUserRole !== "teacher") {
         let completionQuery = supabase
           .from("collaborative_activity_completions")
           .select("id, student_id, topic_id, activity_kind, completed_at")
@@ -151,13 +151,8 @@ export default function ActivitySubmissionsPage() {
           completionQuery = completionQuery.in("student_id", studentIds);
         }
 
-        const { data, error: completionError } = await completionQuery;
-        if (completionError) throw completionError;
-        completionData = (data || []) as CollaborativeCompletion[];
-      }
+        const completionPromise = completionQuery;
 
-      let tempTrackingData: StudentTrackingEntry[] = [];
-      if (studentIds.length > 0 || currentUserRole !== "teacher") {
         let trackingQuery = supabase
           .from("student_tracking")
           .select("id, student_id, student_name, tracking_data, created_at, updated_at");
@@ -166,9 +161,29 @@ export default function ActivitySubmissionsPage() {
           trackingQuery = trackingQuery.in("student_id", studentIds);
         }
 
-        const { data, error: trackingError } = await trackingQuery;
-        if (trackingError) throw trackingError;
-        tempTrackingData = (data || []) as StudentTrackingEntry[];
+        const trackingPromise = trackingQuery;
+
+        const [
+          submissionsResult,
+          activityResult,
+          completionResult,
+          trackingResult,
+        ] = await Promise.all([
+          submissionsPromise,
+          activityPromise,
+          completionPromise,
+          trackingPromise,
+        ]);
+
+        if (submissionsResult.error) throw submissionsResult.error;
+        if (activityResult.error) throw activityResult.error;
+        if (completionResult.error) throw completionResult.error;
+        if (trackingResult.error) throw trackingResult.error;
+
+        submissions = (submissionsResult.data || []) as Submission[];
+        activityData = (activityResult.data || []) as ActivitySubmission[];
+        completionData = (completionResult.data || []) as CollaborativeCompletion[];
+        tempTrackingData = (trackingResult.data || []) as StudentTrackingEntry[];
       }
 
       const subs = (submissions || []) as Submission[];
@@ -210,7 +225,7 @@ export default function ActivitySubmissionsPage() {
         });
 
         // Determine Level
-        const level = (rewardsData || []).find((r: any) => r.min_points <= points) || { title: "مبتدئ" };
+        const level = rewardsData.find((r: any) => r.min_points <= points) || { title: "مبتدئ" };
 
         return {
           rank: 0,
@@ -260,23 +275,6 @@ export default function ActivitySubmissionsPage() {
     };
     fetchUser();
   }, []);
-
-  const handleDeleteCompletion = async (completionId: number) => {
-    try {
-      const { error } = await supabase
-        .from("collaborative_activity_completions")
-        .delete()
-        .eq("id", completionId);
-
-      if (error) throw error;
-
-      setCollaborativeCompletions((prev) =>
-        prev.filter((item) => item.id !== completionId)
-      );
-    } catch (err: any) {
-      setFormError(`تعذر حذف السجل: ${err.message}`);
-    }
-  };
 
   const handleViewCollaborativeDetails = async (topicId: string, studentId: string, kind: string) => {
     try {
@@ -362,7 +360,6 @@ export default function ActivitySubmissionsPage() {
         collaborativeCompletions={collaborativeCompletions}
         leaderboard={leaderboard}
         studentTrackingData={studentTrackingData}
-        onDeleteCompletion={handleDeleteCompletion}
         onViewCollaborativeDetails={handleViewCollaborativeDetails}
         getDisplayName={getDisplayName}
       />

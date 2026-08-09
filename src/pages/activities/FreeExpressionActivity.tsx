@@ -7,6 +7,7 @@ import {
   LessonVisibility,
   buildLessonVisibilityFromRows,
   getLessonVisibility,
+  isSectionActive,
 } from "../../utils/lessonSettings";
 import { logAdminNotification } from "../../utils/adminNotifications";
 import { emitAchievementToast } from "../../utils/achievementToast";
@@ -405,7 +406,7 @@ export default function FreeExpressionActivity() {
     );
   }
 
-  const isActivityActive = lessonVisibility[topic.id]?.activity ?? true;
+  const isActivityActive = isSectionActive(lessonVisibility, topic.id, "activity", true);
   if (!isActivityActive) {
     return (
       <div className="free-expression-page" dir="rtl">

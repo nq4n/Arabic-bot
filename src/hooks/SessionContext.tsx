@@ -31,6 +31,28 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchProfileForSession = async (nextSession: Session | null) => {
+      if (!nextSession) {
+        setProfile(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', nextSession.user.id)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+      if (data) {
+        setProfile(data as Profile);
+      } else {
+        setProfile(null);
+      }
+    };
+
     const fetchSessionAndProfile = async () => {
       try {
         setLoading(true);
@@ -48,22 +70,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
         setSession(session);
 
-        if (session) {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          if (error) {
-            throw error;
-          }
-          if (data) {
-            setProfile(data as Profile);
-          }
-        } else {
-          setProfile(null);
-        }
+        await fetchProfileForSession(session);
       } catch (error: any) {
         // Suppress "Failed to fetch" noise when offline or on network error
         if (error.message === 'TypeError: Failed to fetch' || !window.navigator.onLine) {
@@ -82,13 +89,25 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      // When auth state changes, refetch profile
-      if (session) {
-        fetchSessionAndProfile();
-      } else {
+      if (!session) {
         setProfile(null);
         setLoading(false);
+        return;
       }
+
+      setLoading(true);
+      void fetchProfileForSession(session)
+        .catch((error: any) => {
+          if (error.message === 'TypeError: Failed to fetch' || !window.navigator.onLine) {
+            // Stay silent or handle offline state logic here if needed
+          } else {
+            console.error('Error fetching auth-change profile:', error);
+          }
+          setProfile(null);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     });
 
     return () => {

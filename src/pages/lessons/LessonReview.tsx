@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { topics } from "../../data/topics";
-import { LessonVisibility, markLessonCompleted } from "../../utils/lessonSettings";
+import { LessonVisibility, markLessonCompleted, isSectionActive } from "../../utils/lessonSettings";
 import "../../styles/LessonReview.css";
 import { supabase } from "../../supabaseClient";
 import Chat from '../../components/Chat';
@@ -29,6 +29,7 @@ export default function LessonReview() {
     return defaults;
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState("summary");
 
   useEffect(() => {
     const loadLessonVisibilitySettings = async () => {
@@ -107,8 +108,8 @@ export default function LessonReview() {
     return <div className="review-page">الموضوع غير موجود</div>;
   }
 
-  const isReviewActive = lessonVisibility[topic.id]?.review ?? true;
-  const isEvaluationActive = lessonVisibility[topic.id]?.evaluation ?? true;
+  const isReviewActive = isSectionActive(lessonVisibility, topic.id, "review", true);
+  const isEvaluationActive = isSectionActive(lessonVisibility, topic.id, "evaluation", true);
 
   if (isLoading) {
     return (
@@ -187,6 +188,25 @@ export default function LessonReview() {
     navigate(`/evaluate/${topic.id}`);
   };
 
+  const reviewSections = [
+    { id: "summary", label: "ملخص الخطوات", icon: "fas fa-list-check" },
+    { id: "model", label: topic.writingModel.header, icon: "fas fa-file-invoice" },
+    { id: "assistant", label: "المساعد الذكي", icon: "fas fa-comments" },
+  ];
+
+  const effectiveReview = reviewSections.some((s) => s.id === activeSection)
+    ? activeSection
+    : reviewSections[0].id;
+
+  const goReviewPrev = () => {
+    const index = reviewSections.findIndex((s) => s.id === effectiveReview);
+    if (index > 0) setActiveSection(reviewSections[index - 1].id);
+  };
+  const goReviewNext = () => {
+    const index = reviewSections.findIndex((s) => s.id === effectiveReview);
+    if (index < reviewSections.length - 1) setActiveSection(reviewSections[index + 1].id);
+  };
+
   return (
     <div className="review-page" dir="rtl">
       <header className="review-header page-header">
@@ -194,35 +214,75 @@ export default function LessonReview() {
         <p className="page-subtitle">قبل أن تبدأ الكتابة، دعنا نراجع أهم النقاط ونتفاعل مع المساعد الذكي.</p>
       </header>
 
-      <div className="review-grid">
-        {/* Left Column: Summary and Model */}
-        <div className="review-column">
-          <section className="review-section card">
-            <h2 className="section-title"><i className="fas fa-list-check icon"></i> ملخص الخطوات</h2>
-            <ul className="summary-list">
-              {topic.lesson.steps.map(step => (
-                <li key={step.step}>
-                  <i className={`${step.icon} step-icon`}></i>
-                  <strong>{step.title}:</strong> {step.description}
-                </li>
-              ))}
-            </ul>
-          </section>
+      <div className="topic-stepper">
+        <nav className="topic-stepper-nav" aria-label="أقسام المراجعة">
+          {reviewSections.map((section, index) => (
+            <button
+              key={section.id}
+              type="button"
+              className={`topic-stepper-btn ${effectiveReview === section.id ? "is-active" : ""}`}
+              onClick={() => setActiveSection(section.id)}
+              aria-current={effectiveReview === section.id}
+            >
+              <span className="topic-stepper-badge">{index + 1}</span>
+              <i className={section.icon}></i>
+              <span className="topic-stepper-label">{section.label}</span>
+            </button>
+          ))}
+        </nav>
 
-          <section className="review-section card">
-            <h2 className="section-title"><i className="fas fa-file-invoice icon"></i> {topic.writingModel.header}</h2>
-            <p className="model-content">{topic.writingModel.content}</p>
-          </section>
+        <div className="topic-stepper-content">
+          {effectiveReview === "summary" && (
+            <section className="review-section card topic-section">
+              <h2 className="section-title"><i className="fas fa-list-check icon"></i> ملخص الخطوات</h2>
+              <ul className="summary-list">
+                {topic.lesson.steps.map(step => (
+                  <li key={step.step}>
+                    <i className={`${step.icon} step-icon`}></i>
+                    <strong>{step.title}:</strong> {step.description}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {effectiveReview === "model" && (
+            <section className="review-section card topic-section">
+              <h2 className="section-title"><i className="fas fa-file-invoice icon"></i> {topic.writingModel.header}</h2>
+              <p className="model-content">{topic.writingModel.content}</p>
+            </section>
+          )}
+
+          {effectiveReview === "assistant" && (
+            <section className="review-section card topic-section">
+              <h2 className="section-title"><i className="fas fa-comments icon"></i> المساعد الذكي</h2>
+              <p>لديك سؤال؟ أو تحتاج لمناقشة فكرة؟ تحدث مع المساعد الذكي الآن.</p>
+              <Chat topicContent={topicContent} />
+            </section>
+          )}
         </div>
 
-        {/* Right Column: AI Assistant */}
-        <div className="review-column">
-          <section className="review-section card sticky-card">
-            <h2 className="section-title"><i className="fas fa-comments icon"></i> المساعد الذكي</h2>
-            <p>لديك سؤال؟ أو تحتاج لمناقشة فكرة؟ تحدث مع المساعد الذكي الآن.</p>
-            {/* 2. Pass the assembled content to the Chat component */}
-            <Chat topicContent={topicContent} />
-          </section>
+        <div className="topic-stepper-controls">
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={goReviewPrev}
+            disabled={effectiveReview === reviewSections[0].id}
+            aria-disabled={effectiveReview === reviewSections[0].id}
+          >
+            <i className="fas fa-arrow-right"></i>
+            السابق
+          </button>
+          <button
+            type="button"
+            className="button button-primary cta-button"
+            onClick={goReviewNext}
+            disabled={effectiveReview === reviewSections[reviewSections.length - 1].id}
+            aria-disabled={effectiveReview === reviewSections[reviewSections.length - 1].id}
+          >
+            التالي
+            <i className="fas fa-arrow-left"></i>
+          </button>
         </div>
       </div>
 

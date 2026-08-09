@@ -92,3 +92,4 @@ webpack-stats.json
 .env.test.local
 .env.production.
 .continue/agents/new-config-1.yaml
+/docs

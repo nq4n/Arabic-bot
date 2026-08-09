@@ -10,7 +10,7 @@
 }
 
 .report-assembly-header {
-  max-width: 960px;
+  max-width: 1300px;
   margin: 0 auto 2rem;
   display: grid;
   gap: 0.5rem;
@@ -546,6 +546,16 @@
   gap: 0.5rem;
 }
 
+@media (max-width: 640px) {
+  .scene-actions {
+    justify-content: center;
+  }
+
+  .report-actions {
+    justify-content: center;
+  }
+}
+
 .scene-steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -889,9 +899,15 @@
 
 .report-submit-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .report-submit-actions {
+    justify-content: center;
+  }
 }
 
 .report-prompts {

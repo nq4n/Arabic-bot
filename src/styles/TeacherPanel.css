@@ -5,6 +5,44 @@
   margin-bottom: 2rem;
 }
 
+.preview-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.preview-toggle-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1 1 240px;
+}
+
+.preview-toggle-info > i {
+  font-size: 1.4rem;
+  color: var(--primary-color);
+}
+
+.preview-toggle-info p {
+  margin: 0.25rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .preview-toggle-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 @media (min-width: 768px) {
   .teacher-cards-container {
     grid-template-columns: 1fr 1fr; /* Two columns on medium screens and up */
@@ -218,4 +256,279 @@ input:checked ~ .toggle-label {
   font-size: 1rem;
   color: var(--text-muted);
   margin-bottom: 1.5rem;
+}
+
+/* ============================
+   FILE INPUT & SELECT STYLING
+   ============================ */
+.file-input-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.file-input-wrapper input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.file-input-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.file-input-wrapper:hover .file-input-button {
+  border-color: var(--primary);
+  color: var(--primary);
+  background-color: color-mix(in srgb, var(--primary) 5%, transparent);
+}
+
+.file-input-wrapper.has-file .file-input-button {
+  border-style: solid;
+  border-color: var(--primary);
+  color: var(--primary);
+  background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.role-select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235b6470' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 12px center;
+  padding-left: 32px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.role-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.role-select option {
+  font-family: inherit;
+  padding: 8px;
+}
+
+/* ============================
+   STUDENT TRACKING VISUAL VIEW
+   ============================ */
+.tracking-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.tracking-visual-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed var(--border-color-light);
+}
+
+.tracking-points-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 84px;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  box-shadow: 0 10px 22px var(--primary-shadow);
+}
+
+.tracking-points-value {
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.tracking-points-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.9;
+  margin-top: 0.15rem;
+}
+
+.tracking-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.tracking-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.tracking-stat-icon {
+  font-size: 1.4rem;
+  color: var(--primary);
+  opacity: 0.85;
+}
+
+.tracking-stat-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.tracking-stat-value {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--text-main);
+  line-height: 1;
+}
+
+.tracking-stat-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.tracking-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tracking-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.tracking-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tracking-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+}
+
+.tracking-pill i {
+  font-size: 0.72rem;
+}
+
+.tracking-pill-lesson {
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  color: var(--primary);
+}
+
+.tracking-pill-activity {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--accent);
+}
+
+.tracking-pill-evaluation {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--text-main);
+}
+
+.tracking-pill-collab {
+  background: color-mix(in srgb, var(--primary-hover) 12%, transparent);
+  border-color: color-mix(in srgb, var(--primary-hover) 30%, transparent);
+  color: var(--primary-hover);
+}
+
+.tracking-score {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+
+.tracking-activity-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.tracking-topic-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-sm);
+}
+
+.tracking-topic-name {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-main);
+  min-width: 160px;
+}
+
+/* Dark mode select arrow */
+[data-theme='dark'] .role-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b7c2d3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+[data-theme='dark'] .role-select option {
+  background: var(--bg-card);
+  color: var(--text-main);
 }

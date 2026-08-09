@@ -120,7 +120,6 @@
   flex-direction: column;
   background: var(--bg-card);
   position: relative;
-  height: 600px; /* Fixed height for consistency or dynamic */
   height: calc(100vh - var(--nav-h) - 4rem);
 }
 

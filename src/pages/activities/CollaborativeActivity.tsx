@@ -7,6 +7,7 @@ import {
   LessonVisibility,
   buildLessonVisibilityFromRows,
   getLessonVisibility,
+  isSectionActive,
 } from "../../utils/lessonSettings";
 import CollaborativeChat from "../../components/CollaborativeChat";
 import { SkeletonHeader, SkeletonSection } from "../../components/SkeletonBlocks";
@@ -281,7 +282,7 @@ export default function CollaborativeActivity() {
     );
   }
 
-  const isActivityActive = lessonVisibility[topic.id]?.activity ?? true;
+  const isActivityActive = isSectionActive(lessonVisibility, topic.id, "activity", true);
   if (!isActivityActive) {
     return (
       <div className="topic-page" dir="rtl">

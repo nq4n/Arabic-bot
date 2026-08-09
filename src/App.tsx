@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
   useLocation,
+  useNavigate,
   useParams,
 } from "react-router-dom";
-import { Session } from "@supabase/supabase-js";
-import { supabase } from "./supabaseClient";
 import { ThemeProvider } from "./hooks/ThemeContext";
-import { SessionProvider } from "./hooks/SessionContext";
+import { useSession } from "./hooks/SessionContext";
+import { PreviewProvider, usePreview } from "./hooks/PreviewContext";
+import { isPreviewMode, setPreviewMode as persistPreviewMode } from "./utils/lessonSettings";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -18,24 +19,24 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AchievementToast from "./components/AchievementToast";
 import SkeletonPage from "./components/SkeletonPage";
 
-// Pages
-import Topics from "./pages/lessons/Topics";
-import Topic from "./pages/lessons/topic";
-import LessonReview from "./pages/lessons/LessonReview";
-import Evaluate from "./pages/lessons/Evaluate";
-import Login from "./pages/auth/Login";
-import TeacherPanel from "./pages/teacher/TeacherPanel";
-import MySubmissions from "./pages/student/MySubmissions";
-import Submissions from "./pages/teacher/Submissions";
-import ActivitySubmissionsPage from "./pages/teacher/ActivitySubmissionsPage";
-import SubmissionReview from "./pages/teacher/SubmissionReview";
-import StudentProgress from "./pages/teacher/StudentProgress";
-import AboutUs from "./pages/shared/AboutUs";
 import FirstLoginChangePassword from "./components/FirstLoginChangePassword";
-import ChatCenter from "./pages/shared/ChatCenter";
-import Profile from "./pages/student/Profile";
-import LandscapeDescriptionTutorial from "./pages/activities/LandscapeDescriptionTutorial";
-import Activity from "./pages/activities/Activity";
+
+const Topics = lazy(() => import("./pages/lessons/Topics"));
+const Topic = lazy(() => import("./pages/lessons/topic"));
+const LessonReview = lazy(() => import("./pages/lessons/LessonReview"));
+const Evaluate = lazy(() => import("./pages/lessons/Evaluate"));
+const Login = lazy(() => import("./pages/auth/Login"));
+const TeacherPanel = lazy(() => import("./pages/teacher/TeacherPanel"));
+const MySubmissions = lazy(() => import("./pages/student/MySubmissions"));
+const Submissions = lazy(() => import("./pages/teacher/Submissions"));
+const ActivitySubmissionsPage = lazy(() => import("./pages/teacher/ActivitySubmissionsPage"));
+const SubmissionReview = lazy(() => import("./pages/teacher/SubmissionReview"));
+const StudentProgress = lazy(() => import("./pages/teacher/StudentProgress"));
+const AboutUs = lazy(() => import("./pages/shared/AboutUs"));
+const ChatCenter = lazy(() => import("./pages/shared/ChatCenter"));
+const Profile = lazy(() => import("./pages/student/Profile"));
+const LandscapeDescriptionTutorial = lazy(() => import("./pages/activities/LandscapeDescriptionTutorial"));
+const Activity = lazy(() => import("./pages/activities/Activity"));
 
 export type UserRole = "student" | "teacher" | "admin" | null;
 
@@ -50,15 +51,39 @@ function LegacyActivityRouteRedirect() {
 }
 
 const AppContent = () => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [isSessionLoading, setIsSessionLoading] = useState(true);
-  const [userRole, setUserRole] = useState<UserRole>(null);
-  const [isRoleLoading, setIsRoleLoading] = useState(true);
-  const [showChangePassword, setShowChangePassword] = useState(false);
+  const {
+    session,
+    profile,
+    loading: isSessionLoading,
+    userRole,
+  } = useSession();
+  const { isPreview } = usePreview();
+  // Routing must follow the persisted flag (synchronous) so that exiting
+  // preview immediately grants access to teacher routes — relying on the React
+  // state alone would lag one render and bounce the teacher back into preview.
+  const previewActive = isPreviewMode();
+  const [passwordChangeDismissed, setPasswordChangeDismissed] = useState(false);
   const [isOnline, setIsOnline] = useState(window.navigator.onLine);
 
   const location = useLocation();
+  const reactNavigate = useNavigate();
   const isLoginPage = location.pathname === "/login";
+
+  const urlParams = new URLSearchParams(location.search);
+  const wantsExit = urlParams.get("exit-preview") === "1";
+  useEffect(() => {
+    if (wantsExit) {
+      persistPreviewMode(false);
+      const cleanUrl = location.pathname;
+      reactNavigate(cleanUrl, { replace: true });
+    }
+  }, [wantsExit, location.pathname, reactNavigate]);
+
+  // In preview mode a teacher/admin browses the site as a student, so treat the
+  // role as "student" for navigation/routing. Even when not signed in we must
+  // not re-route through teacher pages while preview is being toggled.
+  const effectiveRole: UserRole = previewActive ? "student" : userRole;
+  const routingRole: UserRole = previewActive ? "student" : userRole;
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -67,79 +92,28 @@ const AppContent = () => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsSessionLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
     return () => {
-      subscription.unsubscribe();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
   useEffect(() => {
-    if (isSessionLoading) return;
-
-    const fetchUserProfile = async () => {
-      if (!session) {
-        setUserRole(null);
-        setShowChangePassword(false);
-        setIsRoleLoading(false);
-        return;
-      }
-
-      // Skip fetch if offline to avoid ERR_INTERNET_DISCONNECTED logs
-      if (!window.navigator.onLine) {
-        setIsRoleLoading(false);
-        return;
-      }
-
-      setIsRoleLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("role, must_change_password")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        if (error) {
-          // Suppress "Failed to fetch" noise when offline
-          if (error.message === 'TypeError: Failed to fetch' || !window.navigator.onLine) {
-            // Quietly fail
-          } else {
-            console.error("Error fetching user profile:", error);
-          }
-          setUserRole(null);
-          setShowChangePassword(false);
-        } else if (data) {
-          setUserRole(data.role as UserRole);
-          setShowChangePassword(data.must_change_password);
-        }
-      } catch (err: any) {
-        if (err.message !== 'TypeError: Failed to fetch') {
-          console.error("Unexpected error in fetchUserProfile:", err);
-        }
-      } finally {
-        setIsRoleLoading(false);
-      }
-    };
-
-    fetchUserProfile();
-  }, [session, isSessionLoading]);
+    setPasswordChangeDismissed(false);
+  }, [session?.user.id]);
 
   const handlePasswordChanged = () => {
-    setShowChangePassword(false);
+    setPasswordChangeDismissed(true);
   };
 
   if (isSessionLoading) {
     return <SkeletonPage />;
   }
+
+  const showChangePassword = Boolean(
+    session && profile?.must_change_password && !passwordChangeDismissed
+  );
+  const isRoleLoading = isSessionLoading;
 
   if (showChangePassword && session) {
     return (
@@ -151,14 +125,24 @@ const AppContent = () => {
 
   const isAuthenticated = !!session;
   const defaultPath =
-    userRole === "admin" || userRole === "teacher" ? "/teacher" : "/";
+    effectiveRole === "admin" || effectiveRole === "teacher" ? "/teacher" : "/";
 
   return (
     <div
       key={location.pathname}
       className={`App fade-in-page ${isLoginPage ? "login-view" : ""}`}
     >
-      {!isLoginPage && <Navbar session={session} userRole={userRole} />}
+      {!isLoginPage && (
+        <Navbar
+          session={session}
+          userRole={routingRole}
+          isPreview={isPreview}
+          onExitPreview={() => {
+            persistPreviewMode(false);
+            window.location.href = "/teacher";
+          }}
+        />
+      )}
       {!isOnline && (
         <div className="offline-banner">
           <i className="fas fa-wifi-slash"></i>
@@ -167,7 +151,8 @@ const AppContent = () => {
       )}
       <AchievementToast />
 
-      <main>
+      <main className={isPreview ? "preview-active-main" : ""}>
+        <Suspense fallback={<SkeletonPage />}>
         <Routes>
           <Route
             path="/login"
@@ -179,11 +164,12 @@ const AppContent = () => {
             path="/"
             element={
               <ProtectedRoute
-                userRole={userRole}
+                userRole={routingRole}
                 isRoleLoading={isRoleLoading} // Pass the loading state
                 requiredRole={["student", "admin", "teacher"]}
               >
-                {userRole === "admin" || userRole === "teacher" ? (
+                {!isPreview &&
+                (userRole === "admin" || userRole === "teacher") ? (
                   <Navigate to="/teacher" replace />
                 ) : (
                   <Topics />
@@ -194,7 +180,7 @@ const AppContent = () => {
           <Route
             path="/topic/:topicId"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <Topic />
               </ProtectedRoute>
             }
@@ -202,7 +188,7 @@ const AppContent = () => {
           <Route
             path="/lesson-review/:topicId"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <LessonReview />
               </ProtectedRoute>
             }
@@ -210,7 +196,7 @@ const AppContent = () => {
           <Route
             path="/collaborative-activity/:topicId"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <LegacyActivityRouteRedirect />
               </ProtectedRoute>
             }
@@ -218,7 +204,7 @@ const AppContent = () => {
           <Route
             path="/peer-dialogue/:topicId"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <LegacyActivityRouteRedirect />
               </ProtectedRoute>
             }
@@ -226,7 +212,7 @@ const AppContent = () => {
           <Route
             path="/report-assembly/:topicId"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <LegacyActivityRouteRedirect />
               </ProtectedRoute>
             }
@@ -234,7 +220,7 @@ const AppContent = () => {
           <Route
             path="/activity/:topicId/tutorial"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <LandscapeDescriptionTutorial />
               </ProtectedRoute>
             }
@@ -242,7 +228,7 @@ const AppContent = () => {
           <Route
             path="/activity/:topicId"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <LandscapeDescriptionTutorial />
               </ProtectedRoute>
             }
@@ -250,7 +236,7 @@ const AppContent = () => {
           <Route
             path="/activity/:topicId/task"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <Activity />
               </ProtectedRoute>
             }
@@ -258,7 +244,7 @@ const AppContent = () => {
           <Route
             path="/evaluate/:topicId"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <Evaluate />
               </ProtectedRoute>
             }
@@ -266,7 +252,7 @@ const AppContent = () => {
           <Route
             path="/my-submissions"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student"]}>
                 <MySubmissions />
               </ProtectedRoute>
             }
@@ -274,7 +260,7 @@ const AppContent = () => {
           <Route
             path="/submission/:submissionId"
             element={
-              <ProtectedRoute userRole={userRole} isRoleLoading={isRoleLoading} requiredRole={["student", "teacher", "admin"]}>
+              <ProtectedRoute userRole={routingRole} isRoleLoading={isRoleLoading} requiredRole={["student", "teacher", "admin"]}>
                 <SubmissionReview />
               </ProtectedRoute>
             }
@@ -283,7 +269,7 @@ const AppContent = () => {
             path="/teacher"
             element={
               <ProtectedRoute
-                userRole={userRole}
+                userRole={routingRole}
                 isRoleLoading={isRoleLoading}
                 requiredRole={["teacher", "admin"]}
               >
@@ -295,7 +281,7 @@ const AppContent = () => {
             path="/activity-submissions"
             element={
               <ProtectedRoute
-                userRole={userRole}
+                userRole={routingRole}
                 isRoleLoading={isRoleLoading}
                 requiredRole={["teacher", "admin"]}
               >
@@ -307,7 +293,7 @@ const AppContent = () => {
             path="/submissions"
             element={
               <ProtectedRoute
-                userRole={userRole}
+                userRole={routingRole}
                 isRoleLoading={isRoleLoading}
                 requiredRole={["teacher", "admin"]}
               >
@@ -319,7 +305,7 @@ const AppContent = () => {
             path="/student-progress"
             element={
               <ProtectedRoute
-                userRole={userRole}
+                userRole={routingRole}
                 isRoleLoading={isRoleLoading}
                 requiredRole={["student", "teacher", "admin"]}
               >
@@ -331,7 +317,7 @@ const AppContent = () => {
             path="/about"
             element={
               <ProtectedRoute
-                userRole={userRole}
+                userRole={routingRole}
                 isRoleLoading={isRoleLoading}
                 requiredRole={["student", "teacher", "admin"]}
               >
@@ -343,7 +329,7 @@ const AppContent = () => {
             path="/chats"
             element={
               <ProtectedRoute
-                userRole={userRole}
+                userRole={routingRole}
                 isRoleLoading={isRoleLoading}
                 requiredRole={["student", "teacher", "admin"]}
               >
@@ -355,7 +341,7 @@ const AppContent = () => {
             path="/profile"
             element={
               <ProtectedRoute
-                userRole={userRole}
+                userRole={routingRole}
                 isRoleLoading={isRoleLoading}
                 requiredRole={["student", "teacher", "admin"]}
               >
@@ -374,6 +360,7 @@ const AppContent = () => {
             }
           />
         </Routes>
+        </Suspense>
       </main>
 
       {!isLoginPage && <Footer />}
@@ -384,11 +371,11 @@ const AppContent = () => {
 function App() {
   return (
     <ThemeProvider>
-      <SessionProvider>
+      <PreviewProvider>
         <Router>
           <AppContent />
         </Router>
-      </SessionProvider>
+      </PreviewProvider>
     </ThemeProvider>
   );
 }

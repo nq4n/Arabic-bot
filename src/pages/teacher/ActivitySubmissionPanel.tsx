@@ -60,7 +60,6 @@ type Props = {
   collaborativeCompletions: CollaborativeCompletion[];
   leaderboard: LeaderboardEntry[];
   studentTrackingData: StudentTrackingEntry[]; // New prop
-  onDeleteCompletion: (completionId: number) => void;
   onViewCollaborativeDetails: (topicId: string, studentId: string, kind: string) => Promise<any[] | null>;
   getDisplayName: (
     profile:
@@ -78,7 +77,6 @@ export default function TeacherActivityReports({
   collaborativeCompletions,
   leaderboard,
   studentTrackingData = [], // Provide a default empty array
-  onDeleteCompletion,
   onViewCollaborativeDetails,
   getDisplayName,
 }: Props) {
@@ -240,7 +238,7 @@ export default function TeacherActivityReports({
       <section className="card lesson-visibility-card">
         <div className="lesson-visibility-header">
           <h2>سجل إنهاء الأنشطة التعاونية</h2>
-          <p>يمكن حذف السجل لإعادة فتح النشاط للطالب.</p>
+          <p>سجل الأنشطة التعاونية التي أنهى الطلاب.</p>
         </div>
 
         {loading ? (
@@ -270,16 +268,8 @@ export default function TeacherActivityReports({
                     type="button"
                     className="button button-compact button-secondary"
                     onClick={() => handleViewCollab(completion)}
-                    style={{ marginLeft: '0.5rem' }}
                   >
                     عرض التفاصيل
-                  </button>
-                  <button
-                    type="button"
-                    className="button button-compact button-destructive"
-                    onClick={() => onDeleteCompletion(completion.id)}
-                  >
-                    حذف
                   </button>
                 </div>
               </div>
@@ -352,40 +342,176 @@ export default function TeacherActivityReports({
                 الرجاء تحديد طالب لعرض بيانات التتبع الخاصة به.
               </p>
             ) : (
-              filteredTrackingData
-                .map((tracking) => (
-                  <div key={tracking.id} className="card tracking-item" style={{ display: 'flex', flexDirection: 'column', padding: '1rem' }}>
-                    <div style={{ marginBottom: '0.5rem' }}>
-                      <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem', color: 'var(--primary)' }}>
-                        {getDisplayName(
-                          users.find((u) => u.id === tracking.student_id) || null,
-                          tracking.student_name
-                        )}
-                      </h3>
-                      <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                        تم الإنشاء: {new Date(tracking.created_at).toLocaleDateString("ar")}
-                      </p>
-                      <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                        آخر تحديث: {new Date(tracking.updated_at).toLocaleDateString("ar")}
-                      </p>
+              filteredTrackingData.map((tracking) => {
+                const data = tracking.tracking_data || {};
+                const lessons: Record<string, { completed: boolean }> = data.lessons || {};
+                const activities: Record<string, { completedIds: number[] }> = data.activities || {};
+                const evaluations: Record<string, { score: number }> = data.evaluations || {};
+                const collaborative: Record<string, { discussion?: boolean; dialogue?: boolean }> = data.collaborative || {};
+                const totalPoints = data.points?.total ?? 0;
+
+                const lessonsCompleted = Object.values(lessons).filter((l) => l?.completed).length;
+                const activitiesCompleted = Object.values(activities).reduce(
+                  (sum, a) => sum + (a?.completedIds?.length || 0),
+                  0
+                );
+                const evaluationsCount = Object.keys(evaluations).length;
+                const collaborativeCount = Object.values(collaborative).reduce(
+                  (sum, c) => sum + (c?.discussion ? 1 : 0) + (c?.dialogue ? 1 : 0),
+                  0
+                );
+
+                const activityTopicEntries = Object.entries(activities).filter(
+                  ([, val]) => (val?.completedIds?.length || 0) > 0
+                );
+                const collaborativeTopicEntries = Object.entries(collaborative).filter(
+                  ([, val]) => val?.discussion || val?.dialogue
+                );
+
+                const getTopicTitle = (topicId: string) =>
+                  topics.find((t) => t.id === topicId)?.title || topicId;
+
+                const getActivityTitle = (topicId: string, activityId: number) => {
+                  const topic = topics.find((t) => t.id === topicId);
+                  const activity = topic?.activities?.list?.find((a) => a.activity === activityId);
+                  return activity?.title || `نشاط ${activityId}`;
+                };
+
+                return (
+                  <div key={tracking.id} className="tracking-visual full-width" style={{ gridColumn: '1 / -1' }}>
+                    <div className="tracking-visual-header">
+                      <div>
+                        <h3 style={{ margin: 0, color: 'var(--primary)' }}>
+                          {getDisplayName(
+                            users.find((u) => u.id === tracking.student_id) || null,
+                            tracking.student_name
+                          )}
+                        </h3>
+                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                          آخر تحديث: {new Date(tracking.updated_at).toLocaleString("ar")}
+                        </p>
+                      </div>
+                      <div className="tracking-points-badge">
+                        <span className="tracking-points-value">{totalPoints}</span>
+                        <span className="tracking-points-label">نقطة</span>
+                      </div>
                     </div>
-                    <div style={{ flexGrow: 1 }}>
-                      <strong>بيانات التتبع:</strong>
-                      <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', backgroundColor: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: 'var(--border-radius)', fontSize: '0.85rem' }}>
-                        <code>{JSON.stringify(tracking.tracking_data, null, 2)}</code>
-                      </pre>
+
+                    <div className="tracking-stats-grid">
+                      <div className="tracking-stat">
+                        <i className="fas fa-book-open tracking-stat-icon"></i>
+                        <div className="tracking-stat-meta">
+                          <span className="tracking-stat-value">{lessonsCompleted}</span>
+                          <span className="tracking-stat-label">دروس مكتملة</span>
+                        </div>
+                      </div>
+                      <div className="tracking-stat">
+                        <i className="fas fa-tasks tracking-stat-icon"></i>
+                        <div className="tracking-stat-meta">
+                          <span className="tracking-stat-value">{activitiesCompleted}</span>
+                          <span className="tracking-stat-label">أنشطة منجزة</span>
+                        </div>
+                      </div>
+                      <div className="tracking-stat">
+                        <i className="fas fa-pen-nib tracking-stat-icon"></i>
+                        <div className="tracking-stat-meta">
+                          <span className="tracking-stat-value">{evaluationsCount}</span>
+                          <span className="tracking-stat-label">تقييمات</span>
+                        </div>
+                      </div>
+                      <div className="tracking-stat">
+                        <i className="fas fa-users tracking-stat-icon"></i>
+                        <div className="tracking-stat-meta">
+                          <span className="tracking-stat-value">{collaborativeCount}</span>
+                          <span className="tracking-stat-label">أنشطة تعاونية</span>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ marginTop: 'auto', textAlign: 'right' }}>
-                      <button
-                        type="button"
-                        className="button button-compact button-secondary"
-                        onClick={() => setSelectedStudentId(null)}
-                      >
-                        إلغاء التحديد
-                      </button>
-                    </div>
+
+                    {lessonsCompleted > 0 && (
+                      <div className="tracking-section">
+                        <div className="tracking-section-title">
+                          <i className="fas fa-check-circle"></i> الدروس المكتملة
+                        </div>
+                        <div className="tracking-pills">
+                          {Object.entries(lessons)
+                            .filter(([, l]) => l?.completed)
+                            .map(([topicId]) => (
+                              <span key={topicId} className="tracking-pill tracking-pill-lesson">
+                                <i className="fas fa-check"></i> {getTopicTitle(topicId)}
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {activityTopicEntries.length > 0 && (
+                      <div className="tracking-section">
+                        <div className="tracking-section-title">
+                          <i className="fas fa-tasks"></i> الأنشطة المنجزة
+                        </div>
+                        <div className="tracking-activity-group">
+                          {activityTopicEntries.map(([topicId, val]) => (
+                            <div key={topicId} className="tracking-topic-row">
+                              <span className="tracking-topic-name">{getTopicTitle(topicId)}</span>
+                              <div className="tracking-pills">
+                                {(val?.completedIds || []).map((activityId) => (
+                                  <span key={activityId} className="tracking-pill tracking-pill-activity">
+                                    <i className="fas fa-star"></i> {getActivityTitle(topicId, activityId)}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {evaluationsCount > 0 && (
+                      <div className="tracking-section">
+                        <div className="tracking-section-title">
+                          <i className="fas fa-pen-nib"></i> التقييمات الكتابية
+                        </div>
+                        <div className="tracking-pills">
+                          {Object.entries(evaluations).map(([topicId, evalData]) => (
+                            <span key={topicId} className="tracking-pill tracking-pill-evaluation">
+                              <i className="fas fa-check"></i> {getTopicTitle(topicId)}
+                              <span className="tracking-score">{evalData?.score ?? ""}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {collaborativeTopicEntries.length > 0 && (
+                      <div className="tracking-section">
+                        <div className="tracking-section-title">
+                          <i className="fas fa-users"></i> الأنشطة التعاونية
+                        </div>
+                        <div className="tracking-activity-group">
+                          {collaborativeTopicEntries.map(([topicId, val]) => (
+                            <div key={topicId} className="tracking-topic-row">
+                              <span className="tracking-topic-name">{getTopicTitle(topicId)}</span>
+                              <div className="tracking-pills">
+                                {val?.discussion && (
+                                  <span className="tracking-pill tracking-pill-collab">
+                                    <i className="fas fa-comments"></i> مناقشة جماعية
+                                  </span>
+                                )}
+                                {val?.dialogue && (
+                                  <span className="tracking-pill tracking-pill-collab">
+                                    <i className="fas fa-comments"></i> حوار ثنائي
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))
+                );
+              })
             )}
             {/* If no tracking data for the selected student */}
             {selectedStudentId && !studentTrackingData.some(t => t.student_id === selectedStudentId) && (
