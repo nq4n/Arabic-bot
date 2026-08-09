@@ -139,7 +139,7 @@ const AppContent = () => {
           isPreview={isPreview}
           onExitPreview={() => {
             persistPreviewMode(false);
-            window.location.href = "/teacher";
+            window.location.href = "/";
           }}
         />
       )}
