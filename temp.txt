@@ -1,0 +1,4 @@
+import fs from 'fs';
+
+// Since we just want to run it, let's read the file and do some regex magic,
+// or we can just use simple regex in Python.
