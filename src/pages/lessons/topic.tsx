@@ -450,45 +450,101 @@ export default function Topic() {
                     ? "هذا النشاط جماعي. شارك بأفكارك مع زملائك في غرفة النقاش."
                     : isDialogueText
                       ? "هذا النشاط شراكة ثنائية. اختر شريكًا وابدأ الحوار النصي."
-                      : "ابدأ النشاط وأكمل جميع المراحل."}
+                      : "يتضمن هذا الدرس أنشطة صفّية يطبّقها المعلم مع الطلبة، ونشاطًا تفاعليًا في صفحة مخصصة."}
                 </p>
 
                 {hasActivityItems && (
-                  <ul className="activities-list lesson-activities-list">
-                    {activityItems.map((activity) => (
-                      <li key={`${topic.id}-activity-${activity.activity}`}>
-                        <div className="activity-item lesson-activity-item">
-                          <div className="activity-item-header">
-                            <span className="activity-number">{activity.activity}</span>
-                            <i className={`${activity.icon} activity-icon`} aria-hidden="true"></i>
-                            <div>
-                              {activity.title && (
-                                <h3 className="activity-title">{activity.title}</h3>
-                              )}
-                              <p className="activity-text">{activity.description}</p>
+                  <div className="noninteractive-activities">
+                    <h3 className="activity-subsection-title">
+                      <i className="fas fa-chalkboard-teacher" aria-hidden="true"></i>
+                      أنشطة صفّية (غير تفاعلية)
+                    </h3>
+                    <p className="activity-subsection-hint">
+                      يعرضها المعلم ويطبّقها مع الطلبة أثناء الحصة، ولا تحتاج إلى فتح صفحة أخرى.
+                    </p>
+                    <ul className="activities-list lesson-activities-list">
+                      {activityItems.map((activity) => (
+                        <li key={`${topic.id}-activity-${activity.activity}`}>
+                          <div className="activity-item lesson-activity-item">
+                            <div className="activity-item-header">
+                              <span className="activity-number">{activity.activity}</span>
+                              <i className={`${activity.icon} activity-icon`} aria-hidden="true"></i>
+                              <div>
+                                {activity.title && (
+                                  <h3 className="activity-title">{activity.title}</h3>
+                                )}
+                                <p className="activity-text">{activity.description}</p>
+                              </div>
                             </div>
+
+                            {activity.sourceText && (
+                              <div className="activity-source-text">
+                                <span className="activity-detail-label">النص التدريبي</span>
+                                <p>{activity.sourceText}</p>
+                              </div>
+                            )}
+
+                            {activity.objective && (
+                              <p className="activity-detail">
+                                <strong>الهدف:</strong> {activity.objective}
+                              </p>
+                            )}
+
+                            {activity.instructions && activity.instructions.length > 0 && (
+                              <div className="activity-detail">
+                                <strong>خطوات التنفيذ:</strong>
+                                <ol className="activity-steps">
+                                  {activity.instructions.map((step, index) => (
+                                    <li key={`${topic.id}-activity-${activity.activity}-step-${index}`}>
+                                      {step}
+                                    </li>
+                                  ))}
+                                </ol>
+                              </div>
+                            )}
+
+                            {activity.output && (
+                              <p className="activity-detail">
+                                <strong>المطلوب:</strong> {activity.output}
+                              </p>
+                            )}
+
+                            {activity.example && (
+                              <p className="activity-detail">
+                                <strong>مثال:</strong> {activity.example}
+                              </p>
+                            )}
                           </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
 
                 {!isActivityActive && <p className="muted-note">قسم الأنشطة غير متاح حاليًا.</p>}
 
                 {hasActivityContent && (
-                  <div className="activity-cta">
-                    <button
-                      type="button"
-                      className="button button-primary"
-                      onClick={() => navigate(activityStartPath)}
-                      disabled={!isActivityActive}
-                      aria-disabled={!isActivityActive}
-                      title={!isActivityActive ? "النشاط غير متاح حاليًا" : undefined}
-                    >
-                      <i className="fas fa-play"></i>
-                      {activityButtonLabel}
-                    </button>
+                  <div className="interactive-activity-block">
+                    <h3 className="activity-subsection-title">
+                      <i className="fas fa-gamepad" aria-hidden="true"></i>
+                      النشاط التفاعلي
+                    </h3>
+                    <p className="activity-subsection-hint">
+                      يفتح في صفحة مخصّصة يتفاعل معها الطالب خطوة بخطوة.
+                    </p>
+                    <div className="activity-cta">
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={() => navigate(activityStartPath)}
+                        disabled={!isActivityActive}
+                        aria-disabled={!isActivityActive}
+                        title={!isActivityActive ? "النشاط غير متاح حاليًا" : undefined}
+                      >
+                        <i className="fas fa-play"></i>
+                        {activityButtonLabel}
+                      </button>
+                    </div>
                   </div>
                 )}
               </section>

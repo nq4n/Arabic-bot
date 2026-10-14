@@ -54,6 +54,9 @@ export default function Evaluate() {
   const [isLoading, setIsLoading] = useState(true);
   const [timeTracker, setTimeTracker] = useState<SessionTimeTracker | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  // When the student already has a submission for this topic, we load it so they can
+  // revise and re-evaluate (the evaluation is no longer a one-time action).
+  const [existingSubmissionId, setExistingSubmissionId] = useState<number | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -144,6 +147,37 @@ export default function Evaluate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, topic, topicIds]);
 
+  // Load the student's latest submission for this topic (if any) so they can edit
+  // their previous writing and re-evaluate it.
+  useEffect(() => {
+    const loadExistingSubmission = async () => {
+      if (!session || !topic) return;
+
+      const { data: existing, error } = await supabase
+        .from("submissions")
+        .select("id, submission_data")
+        .eq("student_id", session.user.id)
+        .eq("topic_title", topic.title)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error loading existing submission:", error);
+        return;
+      }
+
+      if (existing) {
+        setExistingSubmissionId(existing.id);
+        const saved = (existing.submission_data || {}) as WritingValues;
+        setWritingValues((prev) => ({ ...prev, ...saved }));
+      }
+    };
+
+    loadExistingSubmission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, topic]);
+
   const handleInputChange = (id: string, value: string) => {
     setWritingValues((prev) => ({ ...prev, [id]: value }));
   };
@@ -190,22 +224,51 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
 
       setIsConfirming(true);
 
-      const { data: newSubmission, error: submissionError } = await supabase
-        .from("submissions")
-        .insert({
-          student_id: session.user.id,
-          topic_title: topic.title,
-          submission_data: writingValues,
-          ai_response: aiResult,
-          ai_grade: aiResult.score,
-        })
-        .select("id")
-        .maybeSingle();
+      const isEditing = existingSubmissionId !== null;
+      let submissionId: number | null = existingSubmissionId;
 
-      if (submissionError) {
-        throw submissionError;
+      if (isEditing) {
+        // Revise the existing submission. The teacher evaluation (if any) is cleared
+        // so the teacher re-reviews the updated text.
+        const { error: updateError } = await supabase
+          .from("submissions")
+          .update({
+            submission_data: writingValues,
+            ai_response: aiResult,
+            ai_grade: aiResult.score,
+            teacher_response: null,
+            teacher_grade: null,
+          })
+          .eq("id", existingSubmissionId);
+
+        if (updateError) {
+          throw updateError;
+        }
+      } else {
+        const { data: newSubmission, error: submissionError } = await supabase
+          .from("submissions")
+          .insert({
+            student_id: session.user.id,
+            topic_title: topic.title,
+            submission_data: writingValues,
+            ai_response: aiResult,
+            ai_grade: aiResult.score,
+          })
+          .select("id")
+          .maybeSingle();
+
+        if (submissionError) {
+          throw submissionError;
+        }
+
+        submissionId = newSubmission?.id ?? null;
+        if (submissionId !== null) {
+          setExistingSubmissionId(submissionId);
+        }
       }
 
+      // Update tracking with the latest score. Evaluations are keyed by topic, so this
+      // keeps the latest score without granting points more than once per topic.
       await autoConfirmTracking({
         studentId: session.user.id,
         topicId: topic.id,
@@ -215,23 +278,40 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           topicTitle: topic.title,
           timestamp: new Date().toISOString(),
           score: aiResult.score,
+          revised: isEditing,
         },
       });
 
-      await logAdminNotification({
-        recipientId: session.user.id,
-        actorId: session.user.id,
-        actorRole: "student",
-        message: `تم تسليم كتابة لدرس "${topic.title}" وحصلت على 10 نقاط.`,
-        category: "points",
-      });
+      if (isEditing) {
+        await logAdminNotification({
+          recipientId: session.user.id,
+          actorId: session.user.id,
+          actorRole: "student",
+          message: `تم تعديل كتابة درس "${topic.title}" وإعادة تقييمها.`,
+          category: "points",
+        });
 
-      emitAchievementToast({
-        title: "تم احتساب النقاط",
-        message: "تم منحك 10 نقاط لإكمال التقييم.",
-        points: 10,
-        tone: "success",
-      });
+        emitAchievementToast({
+          title: "تم تحديث تسليمك",
+          message: "تم حفظ التعديلات وإعادة تقييم كتابتك.",
+          tone: "info",
+        });
+      } else {
+        await logAdminNotification({
+          recipientId: session.user.id,
+          actorId: session.user.id,
+          actorRole: "student",
+          message: `تم تسليم كتابة لدرس "${topic.title}" وحصلت على 10 نقاط.`,
+          category: "points",
+        });
+
+        emitAchievementToast({
+          title: "تم احتساب النقاط",
+          message: "تم منحك 10 نقاط لإكمال التقييم.",
+          points: 10,
+          tone: "success",
+        });
+      }
 
       if (typeof aiResult.score === "number" && aiResult.score >= 85) {
         emitAchievementToast({
@@ -248,8 +328,8 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
       setIsEvaluating(false);
       setIsConfirming(false);
 
-      if (newSubmission) {
-        navigate(`/submission/${newSubmission.id}`);
+      if (submissionId !== null) {
+        navigate(`/submission/${submissionId}`);
       }
     } catch (error: any) {
       console.error("Evaluation/Confirmation process failed:", error);
@@ -329,6 +409,12 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           {evaluationTitle}: {topic.title}
         </h1>
         <p>املأ الأقسام أدناه واحصل على تقييم فوري بناءً على المعايير الموضحة.</p>
+        {existingSubmissionId !== null && (
+          <p className="text-note" style={{ marginTop: "0.5rem" }}>
+            <i className="fas fa-pen-to-square"></i>{" "}
+            أنت تعدّل تسليماً سابقاً — حسّن كتابتك ثم أعد التقييم. يمكنك التعديل وإعادة التقييم أكثر من مرة.
+          </p>
+        )}
       </header>
 
       <div className="evaluate-content-wrapper">
@@ -372,7 +458,13 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
               disabled={isEvaluating || isConfirming}
               className="button button-primary cta-button"
             >
-              {isEvaluating ? "...جاري التقييم" : isConfirming ? "...جاري الحفظ" : "قيّم النص الآن"}
+              {isEvaluating
+                ? "...جاري التقييم"
+                : isConfirming
+                  ? "...جاري الحفظ"
+                  : existingSubmissionId !== null
+                    ? "حدّث التقييم"
+                    : "قيّم النص الآن"}
             </button>
           </div>
         </div>

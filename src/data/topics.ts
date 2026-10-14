@@ -27,6 +27,8 @@ export type Activity = {
   instructions?: string[];
   output?: string;
   example?: string;
+  // النص الذي يتدرب عليه الطالب داخل النشاط غير التفاعلي (يعرضه المعلم في الحصة)
+  sourceText?: string;
 };
 
 export type SceneChoice = {

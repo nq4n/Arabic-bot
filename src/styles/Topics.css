@@ -411,3 +411,112 @@
   background: rgba(212, 162, 59, 0.15);
   border-radius: 8px;
 }
+
+/* ===== مرشد الأداء: تحليل مبسّط بدون ذكاء اصطناعي ===== */
+.performance-insight-panel {
+  margin-top: 1rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-primary, #fff);
+  border-top: 4px solid var(--primary-color);
+}
+
+.performance-insight-panel.tone-excellent { border-top-color: #16a34a; }
+.performance-insight-panel.tone-good { border-top-color: #0f766e; }
+.performance-insight-panel.tone-ok { border-top-color: #d4a23b; }
+.performance-insight-panel.tone-start { border-top-color: #64748b; }
+
+.performance-insight-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.performance-insight-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.performance-insight-header h3 i { color: var(--primary-color); }
+
+.performance-insight-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  background: rgba(15, 118, 110, 0.1);
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.performance-insight-note {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.performance-insight-headline {
+  margin: 0.5rem 0 0.75rem;
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+.performance-insight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.performance-insight-col {
+  background: rgba(15, 23, 42, 0.03);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+
+.performance-insight-col h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.performance-insight-col.strengths h4 i { color: #16a34a; }
+.performance-insight-col.improvements h4 i { color: #d4a23b; }
+
+.performance-insight-col ul {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.performance-insight-col li {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.performance-insight-next {
+  margin: 0.8rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--border-color);
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
+.performance-insight-next i {
+  color: var(--primary-color);
+  margin-inline-end: 0.35rem;
+}
+
+@media (max-width: 640px) {
+  .performance-insight-grid {
+    grid-template-columns: 1fr;
+  }
+}

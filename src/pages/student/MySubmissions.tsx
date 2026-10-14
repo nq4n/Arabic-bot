@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { SkeletonSection } from '../../components/SkeletonBlocks';
+import { topics } from '../../data/topics';
 import '../../styles/MySubmissions.css';
+
+// Resolve a lesson's id from its stored title so we can route back to its editor.
+const getTopicIdByTitle = (title: string): string | undefined =>
+  topics.find((t) => t.title === title)?.id;
 
 type Submission = {
   id: number;
@@ -194,12 +199,27 @@ export default function MySubmissions() {
                       <td>{sub.ai_grade !== null ? `${sub.ai_grade}/100` : '-'}</td>
                       <td>{teacherScore !== null ? `${teacherScore}/100` : 'لم يُقيّم بعد'}</td>
                       <td>
-                        <button
-                          className='button button-small'
-                          onClick={() => navigate(`/submission/${sub.id}`)}
-                        >
-                          عرض التفاصيل
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button
+                            className='button button-small'
+                            onClick={() => navigate(`/submission/${sub.id}`)}
+                          >
+                            عرض التفاصيل
+                          </button>
+                          {(() => {
+                            const topicId = getTopicIdByTitle(sub.topic_title);
+                            if (!topicId) return null;
+                            return (
+                              <button
+                                className='button button-small button-secondary'
+                                onClick={() => navigate(`/evaluate/${topicId}`)}
+                                title='عدّل كتابتك وأعد التقييم'
+                              >
+                                تعديل الكتابة
+                              </button>
+                            );
+                          })()}
+                        </div>
                       </td>
                     </tr>
                   );

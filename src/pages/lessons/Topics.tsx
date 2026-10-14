@@ -4,6 +4,7 @@ import { topics, topicsBySemester } from "../../data/topics";
 import { supabase } from "../../supabaseClient";
 import { getStudentTracking } from "../../utils/studentTracking";
 import { calculatePointsFromData } from "../../utils/pointCalculation";
+import { analyzePerformance } from "../../utils/performanceInsights";
 import {
   LessonVisibility,
   buildLessonVisibilityFromRows,
@@ -61,6 +62,8 @@ export default function Topics() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [rewards, setRewards] = useState<{ title: string; min_points: number }[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
+  const [activitiesCount, setActivitiesCount] = useState(0);
+  const [evaluationsCount, setEvaluationsCount] = useState(0);
 
   const [profileName, setProfileName] = useState<string | null>(null);
 
@@ -203,6 +206,20 @@ export default function Topics() {
 
       setTotalPoints(points);
 
+      const trackedActivities = tracking?.activities;
+      const activitiesDone = trackedActivities
+        ? Object.values(trackedActivities).reduce(
+            (sum: number, act) => sum + (act?.completedIds?.length || 0),
+            0
+          )
+        : (activityResult.data || []).length;
+      setActivitiesCount(activitiesDone);
+
+      const trackedEvaluations = tracking?.evaluations;
+      setEvaluationsCount(
+        trackedEvaluations ? Object.keys(trackedEvaluations).length : 0
+      );
+
       setIsLoading(false);
     };
 
@@ -253,6 +270,28 @@ export default function Topics() {
     const progress = totalPoints - currentLevel.min_points;
     return Math.min(100, Math.max(0, (progress / range) * 100));
   }, [currentLevel, nextLevel, totalPoints]);
+
+  // تحليل أداء مبسّط بدون ذكاء اصطناعي (قواعد ثابتة)
+  const performanceInsight = useMemo(
+    () =>
+      analyzePerformance({
+        totalTopics: topics.length,
+        completedLessons: completedLessonsCount,
+        activitiesDone: activitiesCount,
+        evaluationsDone: evaluationsCount,
+        submissionsCount,
+        ratingsCount,
+        totalPoints,
+      }),
+    [
+      completedLessonsCount,
+      activitiesCount,
+      evaluationsCount,
+      submissionsCount,
+      ratingsCount,
+      totalPoints,
+    ]
+  );
 
   const renderTopicCard = (topic: (typeof topics)[number]) => {
     const lessonCompleted = progressMap[topic.id]?.lessonCompleted ?? false;
@@ -396,6 +435,52 @@ export default function Topics() {
                   <button className="button" onClick={() => navigate("/student-progress")}>عرض لوحة النقاط</button>
                 </div>
               </div>
+
+              {isAuthenticated && (
+                <div
+                  className={`performance-insight-panel tone-${performanceInsight.levelTone}`}
+                >
+                  <div className="performance-insight-header">
+                    <h3>
+                      <i className="fas fa-robot" aria-hidden="true"></i>
+                      مرشد الأداء
+                    </h3>
+                    <span className="performance-insight-badge">
+                      {performanceInsight.level}
+                    </span>
+                  </div>
+                  <p className="performance-insight-note">
+                    تحليل تلقائي بسيط لأدائك (بدون ذكاء اصطناعي)، مبني على تقدّمك في الدروس والأنشطة.
+                  </p>
+                  <p className="performance-insight-headline">
+                    {performanceInsight.headline}
+                  </p>
+
+                  <div className="performance-insight-grid">
+                    <div className="performance-insight-col strengths">
+                      <h4><i className="fas fa-circle-check" aria-hidden="true"></i> نقاط قوّتك</h4>
+                      <ul>
+                        {performanceInsight.strengths.map((item, index) => (
+                          <li key={`strength-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="performance-insight-col improvements">
+                      <h4><i className="fas fa-lightbulb" aria-hidden="true"></i> لتتحسّن أكثر</h4>
+                      <ul>
+                        {performanceInsight.improvements.map((item, index) => (
+                          <li key={`improve-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <p className="performance-insight-next">
+                    <i className="fas fa-arrow-right" aria-hidden="true"></i>
+                    <strong>خطوتك التالية:</strong> {performanceInsight.nextStep}
+                  </p>
+                </div>
+              )}
             </div>
           </>
         )}
