@@ -356,7 +356,7 @@ ${studentSubmission}
         "X-Title": "Arabic Writing Platform",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5.4-mini",
+        model: import.meta.env.VITE_EVAL_MODEL || "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },

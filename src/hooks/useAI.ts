@@ -4,12 +4,17 @@ import { useState } from 'react';
 const API_KEY = import.meta.env.VITE_REVIEW_API_KEY;
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
+// Primary paid model (strong + cheap, good Arabic + reliable). Configurable via .env.
+const ASSISTANT_MODEL = import.meta.env.VITE_ASSISTANT_MODEL || 'google/gemini-2.5-flash';
+
+// Tried in order; first to respond wins. Paid model first, free models kept only as
+// emergency fallback if the paid one errors out.
 const FREE_MODELS = [
-  'nvidia/nemotron-nano-12b-v2-vl:free',
-  'google/gemma-4-26b-a4b-it:free',
-  'deepseek/deepseek-chat:free',
-  'meta-llama/llama-3.1-8b-instruct:free',
+  ASSISTANT_MODEL,
   'anthropic/claude-3-haiku:free',
+  'deepseek/deepseek-chat:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'meta-llama/llama-3.1-8b-instruct:free',
 ];
 
 // This is the internal format for storing conversation history, based on Gemini's structure.
