@@ -14,24 +14,35 @@ const ThemeToggle = () => {
 
 const GENERIC_ERROR = "تعذر تسجيل الدخول، حاول مرة أخرى.";
 
+// الطالب يدخل باسم المستخدم فقط، والمعلم/المسؤول باسم المستخدم أو البريد
+// مع كلمة المرور. المفتاح في أعلى البطاقة يحدد الفئة.
+type AccountType = "student" | "staff";
+
 export default function Login() {
+  const [accountType, setAccountType] = useState<AccountType>("student");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  // الطلاب يدخلون باسم المستخدم فقط. حقل كلمة المرور يظهر فقط للمعلمين
-  // والمسؤولين، أو إذا تعذر الوصول إلى وظيفة الدخول بدون كلمة مرور.
-  const [needsPassword, setNeedsPassword] = useState(false);
+  // يظهر حقل كلمة المرور في وضع الطالب فقط إذا تعذر الوصول إلى وظيفة
+  // الدخول بدون كلمة مرور، حتى لا يُحجب أحد عن الدخول.
+  const [fallbackPassword, setFallbackPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const resetToIdentifierStep = () => {
-    setNeedsPassword(false);
+  const passwordRequired = accountType === "staff" || fallbackPassword;
+
+  const handleAccountTypeChange = (next: AccountType) => {
+    if (next === accountType) return;
+    setAccountType(next);
     setPassword("");
     setShowPassword(false);
+    setFallbackPassword(false);
     setError(null);
+    setNotice(null);
   };
 
-  // يُستخدم لمسار المعلم/المسؤول فقط: تحويل اسم المستخدم إلى بريد إلكتروني
+  // يُستخدم لمسار المعلم/المسؤول: تحويل اسم المستخدم إلى بريد إلكتروني
   // قبل تسجيل الدخول بكلمة المرور.
   const resolveEmail = async (value: string): Promise<string | null> => {
     if (value.includes("@")) return value;
@@ -74,11 +85,12 @@ export default function Login() {
       { body: { identifier: trimmedIdentifier } }
     );
 
-    // الوظيفة غير متاحة (لم تُنشر بعد أو انقطاع بالشبكة): نعود لمسار
-    // كلمة المرور حتى لا يُحجب أحد عن الدخول.
+    // الوظيفة غير متاحة (لم تُنشر بعد أو انقطاع بالشبكة): نطلب كلمة المرور
+    // كخطة بديلة.
     if (invokeError) {
       console.error("student-login invoke error:", invokeError);
-      setNeedsPassword(true);
+      setFallbackPassword(true);
+      setNotice("تعذّر الدخول باسم المستخدم فقط، الرجاء إدخال كلمة المرور.");
       return;
     }
 
@@ -94,8 +106,10 @@ export default function Login() {
       return;
     }
 
+    // الحساب ليس حساب طالب: ننقل المفتاح إلى "معلم" ونطلب كلمة المرور.
     if (response.requiresPassword) {
-      setNeedsPassword(true);
+      setAccountType("staff");
+      setNotice("هذا الحساب حساب معلم أو مسؤول، أدخل كلمة المرور للمتابعة.");
       return;
     }
 
@@ -119,6 +133,7 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
 
     const trimmedIdentifier = identifier.trim();
     if (!trimmedIdentifier) {
@@ -129,7 +144,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      if (needsPassword) {
+      if (passwordRequired) {
         await signInWithPasswordStep(trimmedIdentifier);
       } else {
         await signInWithUsernameOnly(trimmedIdentifier);
@@ -170,30 +185,61 @@ export default function Login() {
         <header className="login-header">
           <h2>تسجيل الدخول</h2>
           <p className="login-subtitle">
-            {needsPassword
-              ? "أدخل كلمة المرور للمتابعة إلى المنصّة."
-              : "أدخل اسم المستخدم للمتابعة إلى المنصّة."}
+            {accountType === "student"
+              ? "اختر فئتك ثم أدخل اسم المستخدم."
+              : "اختر فئتك ثم أدخل بياناتك."}
           </p>
         </header>
 
+        <div
+          className="login-role-switch"
+          role="group"
+          aria-label="فئة المستخدم"
+        >
+          <button
+            type="button"
+            className={`login-role-option${accountType === "student" ? " is-active" : ""}`}
+            aria-pressed={accountType === "student"}
+            onClick={() => handleAccountTypeChange("student")}
+            disabled={loading}
+          >
+            طالب
+          </button>
+          <button
+            type="button"
+            className={`login-role-option${accountType === "staff" ? " is-active" : ""}`}
+            aria-pressed={accountType === "staff"}
+            onClick={() => handleAccountTypeChange("staff")}
+            disabled={loading}
+          >
+            معلم
+          </button>
+        </div>
+
         {error && <p className="login-error">{error}</p>}
+        {!error && notice && <p className="login-notice">{notice}</p>}
 
         <form onSubmit={handleLogin} className="login-form">
           <div className="input-group">
-            <label htmlFor="identifier">اسم المستخدم</label>
+            <label htmlFor="identifier">
+              {accountType === "student"
+                ? "اسم المستخدم"
+                : "اسم المستخدم أو البريد الإلكتروني"}
+            </label>
             <input
               type="text"
               id="identifier"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="s123456"
+              placeholder={
+                accountType === "student" ? "s123456" : "t123456 / user@example.com"
+              }
               autoComplete="username"
-              disabled={needsPassword}
               required
             />
           </div>
 
-          {needsPassword && (
+          {passwordRequired && (
             <div className="input-group">
               <label htmlFor="password">كلمة المرور</label>
               <div className="password-wrapper">
@@ -204,7 +250,6 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  autoFocus
                   required
                 />
                 <button
@@ -219,20 +264,13 @@ export default function Login() {
             </div>
           )}
 
+          {accountType === "student" && !fallbackPassword && (
+            <p className="login-hint">الطالب يدخل باسم المستخدم فقط، دون كلمة مرور.</p>
+          )}
+
           <button type="submit" className="login-submit-btn" disabled={loading}>
             {loading ? "جاري الدخول..." : "الدخول إلى المنصّة"}
           </button>
-
-          {needsPassword && (
-            <button
-              type="button"
-              className="login-secondary-btn"
-              onClick={resetToIdentifierStep}
-              disabled={loading}
-            >
-              تغيير اسم المستخدم
-            </button>
-          )}
         </form>
 
         <footer className="login-footer-note">
