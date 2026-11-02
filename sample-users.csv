@@ -1,2 +1,3 @@
 ﻿email,role,password,full_name,grade
-student1333@example.com,student,Pass123!,Student One,Grade 9
+student1333@example.com,student,,Student One,Grade 9
+teacher1@example.com,teacher,Pass123!,Teacher One,
