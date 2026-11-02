@@ -138,6 +138,22 @@
   margin-top: 0.5rem;
 }
 
+.login-secondary-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.login-secondary-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .login-footer-note {
   margin-top: 1.5rem;
   font-size: 0.8rem;

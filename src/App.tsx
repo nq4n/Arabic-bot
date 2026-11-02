@@ -110,8 +110,13 @@ const AppContent = () => {
     return <SkeletonPage />;
   }
 
+  // الطلاب يدخلون باسم المستخدم فقط ولا يملكون كلمة مرور يغيّرونها،
+  // فشاشة تغيير كلمة المرور تخص المعلمين والمسؤولين فقط.
   const showChangePassword = Boolean(
-    session && profile?.must_change_password && !passwordChangeDismissed
+    session &&
+      profile?.must_change_password &&
+      profile?.role !== "student" &&
+      !passwordChangeDismissed
   );
   const isRoleLoading = isSessionLoading;
 

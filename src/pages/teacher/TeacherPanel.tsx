@@ -46,7 +46,8 @@ interface CsvRow {
   full_name?: string; // Added full_name
   grade?: string; // Added grade
   role: UserRole;
-  password: string;
+  // كلمة المرور مطلوبة للمعلمين/المسؤولين فقط؛ الطلاب يدخلون باسم المستخدم.
+  password?: string;
 }
 
 const getDisplayName = (
@@ -229,20 +230,30 @@ export default function TeacherPanel() {
         const full_name = String(user.full_name ?? "").trim();
         const grade = String(user.grade ?? "").trim();
 
-        if (!email || !role || !password) {
+        if (!email || !role) {
           console.warn("Skipping incomplete row:", user);
+          continue;
+        }
+
+        // الطلاب يدخلون باسم المستخدم فقط، فلا حاجة لعمود كلمة المرور لهم.
+        if (!password && role !== "student") {
+          errorList.push(`${email}: كلمة المرور مطلوبة للمعلمين والمسؤولين`);
           continue;
         }
 
         try {
           const body: {
             email: string;
-            password: string;
+            password?: string;
             role: UserRole;
             addedBy?: string;
             full_name?: string;
             grade?: string;
-          } = { email, password, role };
+          } = { email, role };
+
+          if (password) {
+            body.password = password;
+          }
 
           if (full_name) {
             body.full_name = full_name;
@@ -323,11 +334,16 @@ export default function TeacherPanel() {
     try {
       const body: any = {
         email: newEmail,
-        password: newPassword,
         role: newRole,
         full_name: newFullName,
         grade: newGrade, // Add grade here
       };
+
+      // الطالب لا يحتاج كلمة مرور: الوظيفة تولّد له واحدة عشوائية
+      // لا تُستخدم، ويدخل باسم المستخدم فقط.
+      if (newRole !== "student") {
+        body.password = newPassword;
+      }
 
       if (currentUserRole === "teacher" && newRole === "student") {
         body.addedBy = currentUser?.id;
@@ -749,9 +765,12 @@ export default function TeacherPanel() {
             }}
           >
             ارفع ملف CSV أو Excel يحتوي على الأعمدة:{" "}
-            <code>email</code>, <code>role</code>, <code>password</code>, <code>full_name</code>.
+            <code>email</code>, <code>role</code>, <code>full_name</code>, <code>grade</code>.
             <br />
             الصف الأول يجب أن يكون عناوين الأعمدة.
+            <br />
+            عمود <code>password</code> مطلوب للمعلمين والمسؤولين فقط؛ الطلاب
+            يدخلون باسم المستخدم فقط ويمكن ترك الحقل فارغاً.
           </p>
           <p
             style={{
@@ -875,16 +894,22 @@ export default function TeacherPanel() {
               )}
             </div>
 
-            <div className="input-group">
-              <label htmlFor="newPassword">كلمة المرور المبدئية</label>
-              <input
-                id="newPassword"
-                type="text"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-            </div>
+            {newRole === "student" ? (
+              <p style={{ margin: "0 0 0.75rem", color: "var(--text-muted)" }}>
+                الطالب يسجّل الدخول باسم المستخدم فقط، دون كلمة مرور.
+              </p>
+            ) : (
+              <div className="input-group">
+                <label htmlFor="newPassword">كلمة المرور المبدئية</label>
+                <input
+                  id="newPassword"
+                  type="text"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+            )}
 
             <button
               type="submit"
@@ -978,8 +1003,14 @@ export default function TeacherPanel() {
                     <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>{u.submissionsCount}</td>
                     <td style={{ borderBottom: "1px solid #f3f4f6", padding: "0.5rem" }}>
                       <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                        <span>{u.must_change_password ? "نعم" : "لا"}</span>
-                        {currentUserRole === "admin" && (
+                        <span>
+                          {u.role === "student"
+                            ? "بدون كلمة مرور"
+                            : u.must_change_password
+                              ? "نعم"
+                              : "لا"}
+                        </span>
+                        {currentUserRole === "admin" && u.role !== "student" && (
                           <button
                             type="button"
                             className="button button-compact"
