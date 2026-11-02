@@ -23,14 +23,12 @@ export default function Login() {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const resetToIdentifierStep = () => {
     setNeedsPassword(false);
     setPassword("");
     setShowPassword(false);
     setError(null);
-    setNotice(null);
   };
 
   // يُستخدم لمسار المعلم/المسؤول فقط: تحويل اسم المستخدم إلى بريد إلكتروني
@@ -81,7 +79,6 @@ export default function Login() {
     if (invokeError) {
       console.error("student-login invoke error:", invokeError);
       setNeedsPassword(true);
-      setNotice("الرجاء إدخال كلمة المرور للمتابعة.");
       return;
     }
 
@@ -99,7 +96,6 @@ export default function Login() {
 
     if (response.requiresPassword) {
       setNeedsPassword(true);
-      setNotice("هذا الحساب يحتاج كلمة مرور للدخول.");
       return;
     }
 
@@ -181,7 +177,6 @@ export default function Login() {
         </header>
 
         {error && <p className="login-error">{error}</p>}
-        {!error && notice && <p className="login-subtitle">{notice}</p>}
 
         <form onSubmit={handleLogin} className="login-form">
           <div className="input-group">
