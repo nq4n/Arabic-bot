@@ -138,6 +138,68 @@
   margin-top: 0.5rem;
 }
 
+/* مفتاح اختيار الفئة: طالب / معلم */
+.login-role-switch {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  margin-bottom: 1.25rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+}
+
+.login-role-option {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-role-option:hover:not(.is-active):not(:disabled) {
+  color: var(--text-main);
+}
+
+.login-role-option:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.login-role-option.is-active {
+  background: var(--primary);
+  color: var(--primary-icon);
+  box-shadow: var(--shadow-small);
+}
+
+.login-role-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.login-notice {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.login-hint {
+  margin: -0.25rem 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .login-footer-note {
   margin-top: 1.5rem;
   font-size: 0.8rem;

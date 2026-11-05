@@ -12,77 +12,60 @@ const ThemeToggle = () => {
   );
 };
 
+const GENERIC_ERROR = "تعذر تسجيل الدخول، حاول مرة أخرى.";
+
+// الطالب يدخل باسم المستخدم فقط، والمعلم/المسؤول باسم المستخدم أو البريد
+// مع كلمة المرور. المفتاح في أعلى البطاقة يحدد الفئة.
+type AccountType = "student" | "staff";
+
 export default function Login() {
+  const [accountType, setAccountType] = useState<AccountType>("student");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  // يظهر حقل كلمة المرور في وضع الطالب فقط إذا تعذر الوصول إلى وظيفة
+  // الدخول بدون كلمة مرور، حتى لا يُحجب أحد عن الدخول.
+  const [fallbackPassword, setFallbackPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
+  const passwordRequired = accountType === "staff" || fallbackPassword;
+
+  const handleAccountTypeChange = (next: AccountType) => {
+    if (next === accountType) return;
+    setAccountType(next);
+    setPassword("");
+    setShowPassword(false);
+    setFallbackPassword(false);
     setError(null);
+    setNotice(null);
+  };
 
-    const trimmedIdentifier = identifier.trim();
-    if (!trimmedIdentifier) {
-      setError("الرجاء إدخالاسم المستخدم.");
-      setLoading(false);
-      return;
+  // يُستخدم لمسار المعلم/المسؤول: تحويل اسم المستخدم إلى بريد إلكتروني
+  // قبل تسجيل الدخول بكلمة المرور.
+  const resolveEmail = async (value: string): Promise<string | null> => {
+    if (value.includes("@")) return value;
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("email")
+      .ilike("username", value)
+      .maybeSingle();
+
+    if (profileError || !profile?.email) {
+      return null;
     }
 
-    // الطلاب: تسجيل الدخول باسم المستخدم فقط (بدون كلمة مرور).
-    // إذا لم تُدخل كلمة مرور، نطلب رمز دخول لمرة واحدة من السيرفر ثم نثبّت الجلسة.
-    if (!password) {
-      const { data, error: fnError } = await supabase.functions.invoke(
-        "student-login",
-        { body: { username: trimmedIdentifier } }
-      );
+    return profile.email;
+  };
 
-      if (fnError || !data?.success || !data?.token_hash) {
-        setLoading(false);
-        setError(
-          (data as { error?: string } | null)?.error ??
-            "تعذّر تسجيل الدخول. تأكد من اسم المستخدم."
-        );
-        return;
-      }
+  const signInWithPasswordStep = async (trimmedIdentifier: string) => {
+    const loginEmail = await resolveEmail(trimmedIdentifier);
 
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash: data.token_hash as string,
-        type: "magiclink",
-      });
-
-      setLoading(false);
-
-      if (verifyError) {
-        setError("تعذّر تسجيل الدخول. حاول مرة أخرى.");
-      }
-      // On success, onAuthStateChange in App.tsx handles the rest.
+    if (!loginEmail) {
+      setError("اسم المستخدم أو كلمة المرور غير صحيحة.");
       return;
-    }
-
-    let loginEmail = trimmedIdentifier;
-    if (!trimmedIdentifier.includes("@")) {
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("email")
-        .ilike("username", trimmedIdentifier)
-        .maybeSingle();
-
-      if (profileError) {
-        setError("تعذر العثور على الحساب، حاول مرة أخرى.");
-        setLoading(false);
-        return;
-      }
-
-      if (!profile?.email) {
-        setError("اسم المستخدم غير مرتبط ببريد إلكتروني.");
-        setLoading(false);
-        return;
-      }
-
-      loginEmail = profile.email;
     }
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -90,12 +73,88 @@ export default function Login() {
       password,
     });
 
-    setLoading(false);
-
     if (signInError) {
-      setError("أسم المسخدم أو كلمة المرور غير صحيحة.");
+      setError("اسم المستخدم أو كلمة المرور غير صحيحة.");
     }
     // On success, the onAuthStateChange in App.tsx will handle the rest.
+  };
+
+  const signInWithUsernameOnly = async (trimmedIdentifier: string) => {
+    const { data, error: invokeError } = await supabase.functions.invoke(
+      "student-login",
+      { body: { identifier: trimmedIdentifier } }
+    );
+
+    // الوظيفة غير متاحة (لم تُنشر بعد أو انقطاع بالشبكة): نطلب كلمة المرور
+    // كخطة بديلة.
+    if (invokeError) {
+      console.error("student-login invoke error:", invokeError);
+      setFallbackPassword(true);
+      setNotice("تعذّر الدخول باسم المستخدم فقط، الرجاء إدخال كلمة المرور.");
+      return;
+    }
+
+    const response = data as {
+      success?: boolean;
+      requiresPassword?: boolean;
+      tokenHash?: string;
+      error?: string;
+    } | null;
+
+    if (!response?.success) {
+      setError(response?.error ?? GENERIC_ERROR);
+      return;
+    }
+
+    // الحساب ليس حساب طالب: ننقل المفتاح إلى "معلم" ونطلب كلمة المرور.
+    if (response.requiresPassword) {
+      setAccountType("staff");
+      setNotice("هذا الحساب حساب معلم أو مسؤول، أدخل كلمة المرور للمتابعة.");
+      return;
+    }
+
+    if (!response.tokenHash) {
+      setError(GENERIC_ERROR);
+      return;
+    }
+
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      token_hash: response.tokenHash,
+      type: "magiclink",
+    });
+
+    if (verifyError) {
+      console.error("student-login verifyOtp error:", verifyError);
+      setError(GENERIC_ERROR);
+    }
+    // On success, the onAuthStateChange in App.tsx will handle the rest.
+  };
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    setNotice(null);
+
+    const trimmedIdentifier = identifier.trim();
+    if (!trimmedIdentifier) {
+      setError("الرجاء إدخال اسم المستخدم.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      if (passwordRequired) {
+        await signInWithPasswordStep(trimmedIdentifier);
+      } else {
+        await signInWithUsernameOnly(trimmedIdentifier);
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(GENERIC_ERROR);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -126,47 +185,88 @@ export default function Login() {
         <header className="login-header">
           <h2>تسجيل الدخول</h2>
           <p className="login-subtitle">
-            الطلاب: أدخل اسم المستخدم فقط. المعلّمون: اسم المستخدم وكلمة المرور.
+            {accountType === "student"
+              ? "اختر فئتك ثم أدخل اسم المستخدم."
+              : "اختر فئتك ثم أدخل بياناتك."}
           </p>
         </header>
 
+        <div
+          className="login-role-switch"
+          role="group"
+          aria-label="فئة المستخدم"
+        >
+          <button
+            type="button"
+            className={`login-role-option${accountType === "student" ? " is-active" : ""}`}
+            aria-pressed={accountType === "student"}
+            onClick={() => handleAccountTypeChange("student")}
+            disabled={loading}
+          >
+            طالب
+          </button>
+          <button
+            type="button"
+            className={`login-role-option${accountType === "staff" ? " is-active" : ""}`}
+            aria-pressed={accountType === "staff"}
+            onClick={() => handleAccountTypeChange("staff")}
+            disabled={loading}
+          >
+            معلم
+          </button>
+        </div>
+
         {error && <p className="login-error">{error}</p>}
+        {!error && notice && <p className="login-notice">{notice}</p>}
 
         <form onSubmit={handleLogin} className="login-form">
           <div className="input-group">
-            <label htmlFor="email">البريد الإلكتروني</label>
+            <label htmlFor="identifier">
+              {accountType === "student"
+                ? "اسم المستخدم"
+                : "اسم المستخدم أو البريد الإلكتروني"}
+            </label>
             <input
               type="text"
-              id="email"
+              id="identifier"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="user@example.com / s123456"
+              placeholder={
+                accountType === "student" ? "s123456" : "t123456 / user@example.com"
+              }
               autoComplete="username"
               required
             />
           </div>
 
-          <div className="input-group">
-            <label htmlFor="password">كلمة المرور (للمعلّمين)</label>
-            <div className="password-wrapper">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
-              >
-                {showPassword ? "👁️‍🗨️" : "👁️"}
-              </button>
+          {passwordRequired && (
+            <div className="input-group">
+              <label htmlFor="password">كلمة المرور</label>
+              <div className="password-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                >
+                  {showPassword ? "👁️‍🗨️" : "👁️"}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+
+          {accountType === "student" && !fallbackPassword && (
+            <p className="login-hint">الطالب يدخل باسم المستخدم فقط، دون كلمة مرور.</p>
+          )}
 
           <button type="submit" className="login-submit-btn" disabled={loading}>
             {loading ? "جاري الدخول..." : "الدخول إلى المنصّة"}
@@ -182,4 +282,3 @@ export default function Login() {
     </div>
   );
 }
-

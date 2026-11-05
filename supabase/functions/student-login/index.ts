@@ -1,13 +1,21 @@
 // supabase/functions/student-login/index.ts
-// Passwordless login for students: given a username, return a one-time token
-// the browser exchanges for a session. Only works for role === "student".
+//
+// تسجيل دخول الطلاب باسم المستخدم فقط (بدون كلمة مرور).
+//
+// الفكرة: العميل يرسل اسم المستخدم فقط. هذه الوظيفة تستخدم service_role
+// للتحقق من وجود الحساب ومن أن صلاحيته "student"، ثم تنشئ رمز دخول
+// لمرة واحدة (magic link token) وتعيد الـ hashed_token للعميل.
+// العميل يستدعي supabase.auth.verifyOtp({ token_hash, type: "magiclink" })
+// فيحصل على جلسة Supabase حقيقية، فتبقى كل سياسات RLS والصلاحيات كما هي.
+//
+// المعلمون والمسؤولون لا يمرون من هذا المسار: الوظيفة تعيد
+// requiresPassword: true ليُظهر العميل حقل كلمة المرور.
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// service_role: نحتاج صلاحية admin لتوليد رابط الدخول
 const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: {
     autoRefreshToken: false,
@@ -17,13 +25,14 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const json = (body: unknown) =>
+const jsonResponse = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
-    status: 200,
+    status,
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 
@@ -31,52 +40,78 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders, status: 200 });
   }
+
   if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: corsHeaders,
+    });
   }
 
   try {
-    const { username } = await req.json();
+    const payload = await req.json().catch(() => ({}));
+    const identifier = String(payload?.identifier ?? payload?.username ?? "")
+      .trim();
 
-    const trimmed = String(username ?? "").trim();
-    if (!trimmed) {
-      return json({ success: false, error: "اسم المستخدم مطلوب" });
+    if (!identifier) {
+      return jsonResponse({
+        success: false,
+        error: "الرجاء إدخال اسم المستخدم.",
+      });
     }
 
-    // 1) ابحث عن الطالب عبر اسم المستخدم (طلاب فقط)
+    // البحث عن الحساب باسم المستخدم أو بالبريد الإلكتروني.
+    const column = identifier.includes("@") ? "email" : "username";
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("email, role")
-      .ilike("username", trimmed)
+      .select("id, email, role")
+      .ilike(column, identifier)
       .maybeSingle();
 
     if (profileError) {
-      console.error("profile lookup error:", profileError);
-      return json({ success: false, error: "تعذّر العثور على الحساب" });
+      console.error("student-login profile lookup error:", profileError);
+      return jsonResponse({
+        success: false,
+        error: "تعذر العثور على الحساب، حاول مرة أخرى.",
+      });
     }
 
-    // رسالة عامة حتى لا نكشف أي الأسماء موجودة
-    if (!profile?.email || profile.role !== "student") {
-      return json({ success: false, error: "اسم المستخدم غير صحيح" });
+    if (!profile?.email) {
+      return jsonResponse({
+        success: false,
+        error: "اسم المستخدم غير صحيح.",
+      });
     }
 
-    // 2) ولّد رمز دخول لمرة واحدة (بدون إرسال بريد)
-    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email: profile.email,
-    });
-
-    if (error || !data?.properties?.hashed_token) {
-      console.error("generateLink error:", error);
-      return json({ success: false, error: "تعذّر إنشاء جلسة الدخول" });
+    // المعلم/المسؤول يكمل بكلمة المرور.
+    if (profile.role !== "student") {
+      return jsonResponse({ success: true, requiresPassword: true });
     }
 
-    return json({
+    const { data: linkData, error: linkError } =
+      await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email: profile.email,
+      });
+
+    const tokenHash = linkData?.properties?.hashed_token;
+
+    if (linkError || !tokenHash) {
+      console.error("student-login generateLink error:", linkError);
+      return jsonResponse({
+        success: false,
+        error: "تعذر إتمام تسجيل الدخول، حاول مرة أخرى.",
+      });
+    }
+
+    return jsonResponse({
       success: true,
-      token_hash: data.properties.hashed_token,
+      requiresPassword: false,
+      email: profile.email,
+      tokenHash,
     });
   } catch (err) {
     console.error("Unexpected error in student-login function:", err);
-    return json({ success: false, error: "خطأ غير متوقع" });
+    return jsonResponse({ success: false, error: "حدث خطأ غير متوقع." });
   }
 });

@@ -32,12 +32,34 @@ serve(async (req) => {
   try {
     const { email, password, role, addedBy, full_name, grade } = await req.json();
 
-    if (!email || !password || !role) {
+    if (!email || !role) {
       return new Response(
-        JSON.stringify({ success: false, error: "email, password, role مطلوبة" }),
+        JSON.stringify({ success: false, error: "email, role مطلوبة" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    // الطلاب يدخلون باسم المستخدم فقط (بدون كلمة مرور)، لذلك نولّد لهم
+    // كلمة مرور عشوائية قوية لا تُعرض لأحد ولا تُستخدم في الدخول.
+    // المعلمون والمسؤولون ما زالوا بحاجة إلى كلمة مرور.
+    const isStudent = role === "student";
+
+    if (!password && !isStudent) {
+      return new Response(
+        JSON.stringify({ success: false, error: "كلمة المرور مطلوبة للمعلمين والمسؤولين" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const randomPassword = () => {
+      const bytes = new Uint8Array(32);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    };
+
+    const authPassword = password || randomPassword();
 
     // 1) إنشاء المستخدم في Auth باستخدام admin
     const randomDigits = (length: number) => {
@@ -78,7 +100,7 @@ serve(async (req) => {
 
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password,
+      password: authPassword,
       email_confirm: true, // لو حاب تفرض تأكيد إيميل خله false
       // No user_metadata here? Wait, previous code had it.
       // Checking previous code...
@@ -115,7 +137,8 @@ serve(async (req) => {
       email,
       username: generatedUsername,
       role,
-      must_change_password: true, // أو false حسب نظامك
+      // الطالب لا يملك كلمة مرور يغيّرها، فلا نطلب منه تغييرها.
+      must_change_password: !isStudent,
       full_name,
       grade, // Pass grade here
     };

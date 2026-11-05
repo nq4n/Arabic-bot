@@ -110,8 +110,8 @@ const AppContent = () => {
     return <SkeletonPage />;
   }
 
-  // Students sign in without a password, so the "set a new password" screen
-  // does not apply to them — only force it for teachers/admins.
+  // الطلاب يدخلون باسم المستخدم فقط ولا يملكون كلمة مرور يغيّرونها،
+  // فشاشة تغيير كلمة المرور تخص المعلمين والمسؤولين فقط.
   const showChangePassword = Boolean(
     session &&
       profile?.must_change_password &&

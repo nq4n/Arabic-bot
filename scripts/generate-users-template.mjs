@@ -7,8 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const headers = ["email", "role", "password", "full_name", "grade"];
 
+// الطلاب يسجّلون الدخول باسم المستخدم فقط، فيُترك عمود كلمة المرور فارغاً
+// لهم؛ وهو مطلوب للمعلمين والمسؤولين.
 const exampleRows = [
-  ["student1@example.com", "student", "Pass123!", "محمد أحمد", "الصف التاسع"],
+  ["student1@example.com", "student", "", "محمد أحمد", "الصف التاسع"],
   ["teacher1@example.com", "teacher", "Pass123!", "خالد سعيد", ""],
   ["", "", "", "", ""],
 ];
