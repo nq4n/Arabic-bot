@@ -31,6 +31,37 @@ export default function Login() {
       return;
     }
 
+    // الطلاب: تسجيل الدخول باسم المستخدم فقط (بدون كلمة مرور).
+    // إذا لم تُدخل كلمة مرور، نطلب رمز دخول لمرة واحدة من السيرفر ثم نثبّت الجلسة.
+    if (!password) {
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "student-login",
+        { body: { username: trimmedIdentifier } }
+      );
+
+      if (fnError || !data?.success || !data?.token_hash) {
+        setLoading(false);
+        setError(
+          (data as { error?: string } | null)?.error ??
+            "تعذّر تسجيل الدخول. تأكد من اسم المستخدم."
+        );
+        return;
+      }
+
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: data.token_hash as string,
+        type: "magiclink",
+      });
+
+      setLoading(false);
+
+      if (verifyError) {
+        setError("تعذّر تسجيل الدخول. حاول مرة أخرى.");
+      }
+      // On success, onAuthStateChange in App.tsx handles the rest.
+      return;
+    }
+
     let loginEmail = trimmedIdentifier;
     if (!trimmedIdentifier.includes("@")) {
       const { data: profile, error: profileError } = await supabase
@@ -94,7 +125,9 @@ export default function Login() {
       <div className="card login-card">
         <header className="login-header">
           <h2>تسجيل الدخول</h2>
-          <p className="login-subtitle">أدخل بياناتك للمتابعة إلى المنصّة.</p>
+          <p className="login-subtitle">
+            الطلاب: أدخل اسم المستخدم فقط. المعلّمون: اسم المستخدم وكلمة المرور.
+          </p>
         </header>
 
         {error && <p className="login-error">{error}</p>}
@@ -114,7 +147,7 @@ export default function Login() {
           </div>
 
           <div className="input-group">
-            <label htmlFor="password">كلمة المرور</label>
+            <label htmlFor="password">كلمة المرور (للمعلّمين)</label>
             <div className="password-wrapper">
               <input
                 type={showPassword ? "text" : "password"}
@@ -123,7 +156,6 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 autoComplete="current-password"
-                required
               />
               <button
                 type="button"

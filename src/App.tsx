@@ -110,8 +110,13 @@ const AppContent = () => {
     return <SkeletonPage />;
   }
 
+  // Students sign in without a password, so the "set a new password" screen
+  // does not apply to them — only force it for teachers/admins.
   const showChangePassword = Boolean(
-    session && profile?.must_change_password && !passwordChangeDismissed
+    session &&
+      profile?.must_change_password &&
+      profile?.role !== "student" &&
+      !passwordChangeDismissed
   );
   const isRoleLoading = isSessionLoading;
 

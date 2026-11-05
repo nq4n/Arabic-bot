@@ -1,5 +1,6 @@
 import type { WritingSection } from "../data/topics";
 import type { Rubric, RubricCriterion, RubricLevel } from "../data/rubrics";
+import { supabase } from "../supabaseClient";
 
 export type AIResponseType = {
   score: number;
@@ -274,37 +275,6 @@ const combineWritingValues = (
     .join("\n\n");
 };
 
-async function fetchWithRetry(
-  url: string,
-  options: RequestInit,
-  maxRetries: number = 5
-): Promise<Response> {
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const response = await fetch(url, options);
-
-    if (response.ok) {
-      return response;
-    }
-
-    if (response.status === 429) {
-      const retryAfter = response.headers.get("retry-after");
-      const delay = retryAfter
-        ? parseInt(retryAfter, 10) * 1000
-        : Math.min(Math.pow(2, attempt) * 2000, 30000);
-      console.log(`Rate limited. Retry after ${delay}ms...`);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      lastError = new Error("Rate limit exceeded");
-      continue;
-    }
-
-    return response;
-  }
-
-  throw lastError || new Error("Max retries exceeded");
-}
-
 export const getAIAnalysis = async (
   writingValues: { [key: string]: string },
   rubric: Rubric,
@@ -327,14 +297,6 @@ export const getAIAnalysis = async (
     );
   }
 
-  const apiKey = import.meta.env.VITE_REVIEW_API_KEY;
-  const API_URL = "https://openrouter.ai/api/v1/chat/completions";
-
-  if (!apiKey) {
-    console.error("Review API key is missing.");
-    throw new Error("VITE_REVIEW_API_KEY is not configured in your .env file.");
-  }
-
   const systemPrompt = buildSystemPrompt(rubric, context);
   const studentSubmission = combineWritingValues(writingValues, context?.writingSections);
   const userContent = `
@@ -347,37 +309,17 @@ ${studentSubmission}
   `.trim();
 
   try {
-    const response = await fetchWithRetry(API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:5173",
-        "X-Title": "Arabic Writing Platform",
-      },
-      body: JSON.stringify({
-        model: import.meta.env.VITE_EVAL_MODEL || "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
-        ],
-        temperature: 0.2,
-      }),
+    // Grading goes through the `ai-evaluate` edge function (key stays server-side).
+    const { data, error: fnError } = await supabase.functions.invoke("ai-evaluate", {
+      body: { systemPrompt, userContent, temperature: 0.2 },
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("API Error:", errorData);
+    if (fnError || !data?.success || data?.content == null) {
+      console.error("AI evaluate error:", fnError || data?.error);
       throw new Error("Failed to connect to AI service");
     }
 
-    const data = await response.json();
-
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error("Invalid response from AI service");
-    }
-
-    const messageContent = data.choices[0].message.content;
+    const messageContent = data.content;
 
     let content: AIResponseType;
     if (typeof messageContent === "string") {
