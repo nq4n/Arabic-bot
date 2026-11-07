@@ -77,6 +77,37 @@
   border-radius: var(--border-radius);
 }
 
+.writing-version-label {
+  margin: 1rem 0 0.75rem;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.writing-version-label--previous {
+  color: var(--color-text-muted, var(--color-text-main));
+}
+
+.writing-version-score {
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: var(--color-text-muted, var(--color-text-main));
+}
+
+.writing-revision-block {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px dashed var(--color-border);
+}
+
+.writing-section-display--previous p {
+  background-color: var(--color-background-alt);
+  opacity: 0.9;
+}
+
 .evaluation-task-note {
   background-color: var(--color-background-alt);
   border-right: 4px solid var(--color-primary-light);
