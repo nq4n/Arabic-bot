@@ -273,6 +273,31 @@ ${criterionIds}
   `.trim();
 };
 
+// Models occasionally wrap JSON in ```json ... ``` fences or add stray prose
+// despite being told not to. Strip fences and fall back to the first {...}
+// block so a well-formed answer isn't rejected as "invalid JSON".
+const parseLooseJSON = (raw: string): unknown => {
+  const trimmed = raw.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const withoutFence = trimmed
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+    try {
+      return JSON.parse(withoutFence);
+    } catch {
+      const start = withoutFence.indexOf("{");
+      const end = withoutFence.lastIndexOf("}");
+      if (start !== -1 && end > start) {
+        return JSON.parse(withoutFence.slice(start, end + 1));
+      }
+      throw new Error("No valid JSON found in AI response.");
+    }
+  }
+};
+
 const combineWritingValues = (
   writingValues: { [key: string]: string },
   sections?: WritingSection[]
@@ -327,7 +352,7 @@ ${studentSubmission}
     });
 
     if (fnError || !data?.success || data?.content == null) {
-      console.error("AI evaluate error:", fnError || data?.error);
+      console.error("AI evaluate error:", fnError || data?.error, data?.detail ?? "");
       throw new Error("Failed to connect to AI service");
     }
 
@@ -336,7 +361,7 @@ ${studentSubmission}
     let content: AIResponseType;
     if (typeof messageContent === "string") {
       try {
-        content = JSON.parse(messageContent);
+        content = parseLooseJSON(messageContent) as AIResponseType;
       } catch (e) {
         console.error("Failed to parse AI response content:", e);
         throw new Error("The AI returned an invalid JSON response.");
@@ -480,14 +505,14 @@ ${studentSubmission}
     });
 
     if (fnError || !data?.success || data?.content == null) {
-      console.error("AI error-location error:", fnError || data?.error);
+      console.error("AI error-location error:", fnError || data?.error, data?.detail ?? "");
       return [];
     }
 
     let parsed: unknown = data.content;
     if (typeof parsed === "string") {
       try {
-        parsed = JSON.parse(parsed);
+        parsed = parseLooseJSON(parsed);
       } catch (e) {
         console.error("Failed to parse AI error-location response:", e);
         return [];

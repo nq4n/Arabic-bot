@@ -9,8 +9,8 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const openRouterKey = Deno.env.get("OPENROUTER_API_KEY")!;
 
-const PRIMARY_MODEL = Deno.env.get("AI_MODEL") || "qwen/qwen3.8-omni-flash";
-const FALLBACK_MODEL = Deno.env.get("AI_FALLBACK_MODEL") || "qwen/qwen3.7-flash";
+const PRIMARY_MODEL = Deno.env.get("AI_MODEL") || "google/gemini-2.5-flash";
+const FALLBACK_MODEL = Deno.env.get("AI_FALLBACK_MODEL") || "google/gemini-2.0-flash-001";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
@@ -64,7 +64,10 @@ async function callOpenRouter(messages: unknown, temperature?: number) {
         continue; // retry same model
       }
 
-      lastError = `upstream ${res.status}`;
+      // Non-retryable (e.g. invalid model id, auth, no credits): capture the
+      // upstream body so the real reason shows up in logs.
+      const body = await res.text().catch(() => "");
+      lastError = `${model}: upstream ${res.status} ${body.slice(0, 300)}`.trim();
       break; // non-retryable: try next model
     }
   }
@@ -91,7 +94,8 @@ serve(async (req) => {
 
     const result = await callOpenRouter(messages);
     if ("error" in result) {
-      return json({ success: false, error: "تعذّر الاتصال بالمساعد. حاول مرة أخرى." });
+      console.error("ai-chat upstream failure:", result.error);
+      return json({ success: false, error: "تعذّر الاتصال بالمساعد. حاول مرة أخرى.", detail: result.error });
     }
 
     return json({ success: true, content: result.content });
