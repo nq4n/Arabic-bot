@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import type { AIResponseType } from '../../services/aiEvaluationService';
+import type { AIResponseType, AIErrorItem } from '../../services/aiEvaluationService';
 import { rubrics } from '../../data/rubrics';
 import type { RubricLevel } from '../../data/rubrics';
 import { topics, WritingSection } from '../../data/topics';
@@ -21,6 +21,7 @@ type Submission = {
   created_at: string;
   teacher_grade: number | null;
   revisions?: SubmissionRevision[] | null;
+  ai_errors?: AIErrorItem[] | null;
 };
 
 type SubmissionRevision = {
@@ -28,6 +29,19 @@ type SubmissionRevision = {
   ai_response?: AIResponseType | null;
   ai_grade?: number | null;
   created_at?: string;
+};
+
+const errorTypeClass = (type: string): string => {
+  switch (type) {
+    case 'إملائي':
+      return 'spelling';
+    case 'نحوي':
+      return 'grammar';
+    case 'ترقيم':
+      return 'punctuation';
+    default:
+      return 'style';
+  }
 };
 
 type TeacherResponseType = {
@@ -241,6 +255,7 @@ export default function SubmissionReview() {
   const aiResponse = submission.ai_response;
   const isTeacher = profile?.role === 'teacher' || profile?.role === 'admin';
   const hasRevisions = Array.isArray(submission.revisions) && submission.revisions.length > 0;
+  const aiErrors = Array.isArray(submission.ai_errors) ? submission.ai_errors : [];
 
   const evaluationTitle =
     topic?.evaluationTask.mode === 'discussion'
@@ -293,20 +308,34 @@ export default function SubmissionReview() {
           {rubric.criteria.map((criterion) => {
             const breakdownItem = aiResponse?.rubric_breakdown?.[criterion.id];
             const maxScore = criterion.levels.length > 0 ? criterion.levels[0].score : 0;
-
-            if (breakdownItem) {
-              return (
-                <div key={criterion.id} className="rubric-item-display">
-                  <strong>{criterion.name}:</strong> {breakdownItem.score}/{maxScore} -{' '}
-                  {breakdownItem.feedback}
-                </div>
-              );
-            }
+            const criterionErrors = aiErrors.filter((err) => err.criterion_id === criterion.id);
 
             return (
               <div key={criterion.id} className="rubric-item-display">
-                <strong>{criterion.name}:</strong>{' '}
-                <span className="muted-note">لا يوجد تقييم لهذا المعيار من الذكاء الاصطناعي</span>
+                {breakdownItem ? (
+                  <>
+                    <strong>{criterion.name}:</strong> {breakdownItem.score}/{maxScore} -{' '}
+                    {breakdownItem.feedback}
+                  </>
+                ) : (
+                  <>
+                    <strong>{criterion.name}:</strong>{' '}
+                    <span className="muted-note">لا يوجد تقييم لهذا المعيار من الذكاء الاصطناعي</span>
+                  </>
+                )}
+
+                {criterionErrors.length > 0 && (
+                  <ul className="ai-errors-list">
+                    {criterionErrors.map((err, index) => (
+                      <li key={`ai-error-${criterion.id}-${index}`} className="ai-error-item">
+                        <span className={`ai-error-type ai-error-type--${errorTypeClass(err.type)}`}>
+                          {err.type}
+                        </span>
+                        <span className="ai-error-quote">«{err.quote}»</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })}

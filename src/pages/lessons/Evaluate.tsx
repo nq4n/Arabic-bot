@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import { topics, WritingSection } from "../../data/topics";
 import { rubrics } from "../../data/rubrics";
-import { getAIAnalysis } from "../../services/aiEvaluationService";
+import { getAIAnalysis, getAIErrorLocations } from "../../services/aiEvaluationService";
 import { LessonVisibility, isSectionActive } from "../../utils/lessonSettings";
 import "../../styles/Evaluate.css";
 import { Session } from "@supabase/supabase-js";
@@ -232,15 +232,20 @@ ${topic.writingModel.content}
 ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجابة: ${question.answer}`).join("\n")}
       `.trim();
 
-      const aiResult = await getAIAnalysis(writingValues, rubric, {
-        topicTitle: topic.title,
-        evaluationTask: topic.evaluationTask.description,
-        evaluationMode: topic.evaluationTask.mode,
-        writingSections: topic.writingSections,
-        studentName: userProfile?.full_name,
-        studentGrade: userProfile?.grade,
-        lessonContext,
-      });
+      // Grade the text and locate its errors in parallel. Error locations are
+      // independent of the grade (no corrections) and never block grading if they fail.
+      const [aiResult, aiErrors] = await Promise.all([
+        getAIAnalysis(writingValues, rubric, {
+          topicTitle: topic.title,
+          evaluationTask: topic.evaluationTask.description,
+          evaluationMode: topic.evaluationTask.mode,
+          writingSections: topic.writingSections,
+          studentName: userProfile?.full_name,
+          studentGrade: userProfile?.grade,
+          lessonContext,
+        }),
+        getAIErrorLocations(writingValues, rubric, { writingSections: topic.writingSections }),
+      ]);
 
       setIsConfirming(true);
 
@@ -268,6 +273,7 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
             submission_data: writingValues,
             ai_response: aiResult,
             ai_grade: aiResult.score,
+            ai_errors: aiErrors,
             revisions: nextRevisions,
             teacher_response: null,
             teacher_grade: null,
@@ -288,6 +294,7 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
             submission_data: writingValues,
             ai_response: aiResult,
             ai_grade: aiResult.score,
+            ai_errors: aiErrors,
           })
           .select("id")
           .maybeSingle();
