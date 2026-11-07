@@ -16,9 +16,18 @@ type Submission = {
   topic_title: string;
   submission_data: { [key: string]: string };
   ai_response: AIResponseType;
+  ai_grade: number | null;
   teacher_response: TeacherResponseType | null;
   created_at: string;
   teacher_grade: number | null;
+  revisions?: SubmissionRevision[] | null;
+};
+
+type SubmissionRevision = {
+  submission_data: { [key: string]: string };
+  ai_response?: AIResponseType | null;
+  ai_grade?: number | null;
+  created_at?: string;
 };
 
 type TeacherResponseType = {
@@ -231,6 +240,7 @@ export default function SubmissionReview() {
 
   const aiResponse = submission.ai_response;
   const isTeacher = profile?.role === 'teacher' || profile?.role === 'admin';
+  const hasRevisions = Array.isArray(submission.revisions) && submission.revisions.length > 0;
 
   const evaluationTitle =
     topic?.evaluationTask.mode === 'discussion'
@@ -495,6 +505,15 @@ export default function SubmissionReview() {
             </div>
           )}
 
+          {hasRevisions && (
+            <h3 className="writing-version-label">
+              <i className="fas fa-pen-to-square"></i> النسخة المعدّلة (الأخيرة)
+              {typeof submission.ai_grade === 'number' && (
+                <span className="writing-version-score"> — تقييم الذكاء الاصطناعي: {submission.ai_grade}</span>
+              )}
+            </h3>
+          )}
+
           {Object.entries(submission.submission_data || {}).map(([key, value]) => (
             <div key={key} className="writing-section-display">
               <h4>
@@ -503,6 +522,29 @@ export default function SubmissionReview() {
               <p>{value}</p>
             </div>
           ))}
+
+          {hasRevisions &&
+            (submission.revisions ?? []).map((revision, index) => (
+              <div key={`revision-${index}`} className="writing-revision-block">
+                <h3 className="writing-version-label writing-version-label--previous">
+                  <i className="fas fa-clock-rotate-left"></i>{' '}
+                  {(submission.revisions?.length ?? 0) === 1
+                    ? 'النسخة الأولى (قبل التعديل)'
+                    : `نسخة سابقة ${index + 1}`}
+                  {typeof revision.ai_grade === 'number' && (
+                    <span className="writing-version-score"> — تقييم الذكاء الاصطناعي: {revision.ai_grade}</span>
+                  )}
+                </h3>
+                {Object.entries(revision.submission_data || {}).map(([key, value]) => (
+                  <div key={`revision-${index}-${key}`} className="writing-section-display writing-section-display--previous">
+                    <h4>
+                      {topic?.writingSections?.find((s: WritingSection) => s.id === key)?.title || 'النص الرئيسي'}
+                    </h4>
+                    <p>{value}</p>
+                  </div>
+                ))}
+              </div>
+            ))}
         </section>
 
         {renderAITab()}

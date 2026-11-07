@@ -55,8 +55,17 @@ export default function Evaluate() {
   const [timeTracker, setTimeTracker] = useState<SessionTimeTracker | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   // When the student already has a submission for this topic, we load it so they can
-  // revise and re-evaluate (the evaluation is no longer a one-time action).
+  // revise and re-evaluate. Revision is capped at one edit (two evaluations total):
+  // the first write is kept in `revisions` so the teacher can compare it to the edit.
   const [existingSubmissionId, setExistingSubmissionId] = useState<number | null>(null);
+  const [savedSnapshot, setSavedSnapshot] = useState<{
+    submission_data: WritingValues;
+    ai_response: unknown;
+    ai_grade: number | null;
+  } | null>(null);
+  const [revisions, setRevisions] = useState<unknown[]>([]);
+  // One past version stored → the current text is already the second (final) attempt.
+  const hasReachedAttemptLimit = revisions.length >= 1;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -155,7 +164,7 @@ export default function Evaluate() {
 
       const { data: existing, error } = await supabase
         .from("submissions")
-        .select("id, submission_data")
+        .select("id, submission_data, ai_response, ai_grade, revisions")
         .eq("student_id", session.user.id)
         .eq("topic_title", topic.title)
         .order("created_at", { ascending: false })
@@ -171,6 +180,12 @@ export default function Evaluate() {
         setExistingSubmissionId(existing.id);
         const saved = (existing.submission_data || {}) as WritingValues;
         setWritingValues((prev) => ({ ...prev, ...saved }));
+        setSavedSnapshot({
+          submission_data: saved,
+          ai_response: existing.ai_response ?? null,
+          ai_grade: existing.ai_grade ?? null,
+        });
+        setRevisions(Array.isArray(existing.revisions) ? existing.revisions : []);
       }
     };
 
@@ -195,6 +210,11 @@ export default function Evaluate() {
     const isTextProvided = Object.values(writingValues).some((value) => value.trim() !== "");
     if (!isTextProvided) {
       alert("الرجاء إدخال النص أولاً في قسم واحد على الأقل.");
+      return;
+    }
+
+    if (existingSubmissionId !== null && hasReachedAttemptLimit) {
+      alert("لقد استخدمت محاولتي التقييم لهذه المهمة (الكتابة الأولى ثم تعديل واحد). لم يعد التعديل متاحاً.");
       return;
     }
 
@@ -228,14 +248,27 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
       let submissionId: number | null = existingSubmissionId;
 
       if (isEditing) {
-        // Revise the existing submission. The teacher evaluation (if any) is cleared
-        // so the teacher re-reviews the updated text.
+        // Revise the existing submission. Snapshot the previously saved version into
+        // `revisions` first (so the teacher can compare the first write to the edit),
+        // then store the new text as the current version. The teacher evaluation (if
+        // any) is cleared so the teacher re-reviews the updated text.
+        const nextRevisions = [
+          ...revisions,
+          {
+            submission_data: savedSnapshot?.submission_data ?? {},
+            ai_response: savedSnapshot?.ai_response ?? null,
+            ai_grade: savedSnapshot?.ai_grade ?? null,
+            created_at: new Date().toISOString(),
+          },
+        ];
+
         const { error: updateError } = await supabase
           .from("submissions")
           .update({
             submission_data: writingValues,
             ai_response: aiResult,
             ai_grade: aiResult.score,
+            revisions: nextRevisions,
             teacher_response: null,
             teacher_grade: null,
           })
@@ -244,6 +277,8 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
         if (updateError) {
           throw updateError;
         }
+
+        setRevisions(nextRevisions);
       } else {
         const { data: newSubmission, error: submissionError } = await supabase
           .from("submissions")
@@ -409,10 +444,16 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           {evaluationTitle}: {topic.title}
         </h1>
         <p>املأ الأقسام أدناه واحصل على تقييم فوري بناءً على المعايير الموضحة.</p>
-        {existingSubmissionId !== null && (
+        {existingSubmissionId !== null && !hasReachedAttemptLimit && (
           <p className="text-note" style={{ marginTop: "0.5rem" }}>
             <i className="fas fa-pen-to-square"></i>{" "}
-            أنت تعدّل تسليماً سابقاً — حسّن كتابتك ثم أعد التقييم. يمكنك التعديل وإعادة التقييم أكثر من مرة.
+            أنت تعدّل كتابتك الأولى — حسّنها بناءً على تقييم الذكاء الاصطناعي ثم أعد التقييم. لديك محاولة تعديل واحدة فقط، وستُحفظ النسختان للمعلم.
+          </p>
+        )}
+        {existingSubmissionId !== null && hasReachedAttemptLimit && (
+          <p className="text-note" style={{ marginTop: "0.5rem" }}>
+            <i className="fas fa-circle-check"></i>{" "}
+            لقد استخدمت محاولتي التقييم لهذه المهمة (الكتابة الأولى ثم تعديل واحد). لم يعد التعديل متاحاً.
           </p>
         )}
       </header>
@@ -449,22 +490,24 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
                   value={writingValues[section.id] || ""}
                   onChange={(e) => handleInputChange(section.id, e.target.value)}
                   rows={section.id === "main" ? 15 : 5}
-                  disabled={isEvaluating}
+                  disabled={isEvaluating || hasReachedAttemptLimit}
                 ></textarea>
               </div>
             ))}
             <button
               onClick={handleEvaluate}
-              disabled={isEvaluating || isConfirming}
+              disabled={isEvaluating || isConfirming || hasReachedAttemptLimit}
               className="button button-primary cta-button"
             >
               {isEvaluating
                 ? "...جاري التقييم"
                 : isConfirming
                   ? "...جاري الحفظ"
-                  : existingSubmissionId !== null
-                    ? "حدّث التقييم"
-                    : "قيّم النص الآن"}
+                  : hasReachedAttemptLimit
+                    ? "انتهت محاولات التقييم"
+                    : existingSubmissionId !== null
+                      ? "حدّث التقييم"
+                      : "قيّم النص الآن"}
             </button>
           </div>
         </div>
