@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import type { AIResponseType } from '../../services/aiEvaluationService';
+import type { AIResponseType, AIErrorItem } from '../../services/aiEvaluationService';
 import { rubrics } from '../../data/rubrics';
 import type { RubricLevel } from '../../data/rubrics';
 import { topics, WritingSection } from '../../data/topics';
@@ -21,6 +21,7 @@ type Submission = {
   created_at: string;
   teacher_grade: number | null;
   revisions?: SubmissionRevision[] | null;
+  ai_errors?: AIErrorItem[] | null;
 };
 
 type SubmissionRevision = {
@@ -28,6 +29,19 @@ type SubmissionRevision = {
   ai_response?: AIResponseType | null;
   ai_grade?: number | null;
   created_at?: string;
+};
+
+const errorTypeClass = (type: string): string => {
+  switch (type) {
+    case 'إملائي':
+      return 'spelling';
+    case 'نحوي':
+      return 'grammar';
+    case 'ترقيم':
+      return 'punctuation';
+    default:
+      return 'style';
+  }
 };
 
 type TeacherResponseType = {
@@ -241,6 +255,7 @@ export default function SubmissionReview() {
   const aiResponse = submission.ai_response;
   const isTeacher = profile?.role === 'teacher' || profile?.role === 'admin';
   const hasRevisions = Array.isArray(submission.revisions) && submission.revisions.length > 0;
+  const aiErrors = Array.isArray(submission.ai_errors) ? submission.ai_errors : [];
 
   const evaluationTitle =
     topic?.evaluationTask.mode === 'discussion'
@@ -522,6 +537,32 @@ export default function SubmissionReview() {
               <p>{value}</p>
             </div>
           ))}
+
+          {aiErrors.length > 0 && (
+            <div className="ai-errors-block">
+              <h3 className="ai-errors-title">
+                <i className="fas fa-triangle-exclamation"></i> مواضع الأخطاء ({aiErrors.length})
+              </h3>
+              <p className="text-note">
+                حدّدها الذكاء الاصطناعي دون تصحيح — المقطع كما ورد في النص ونوع الخطأ فقط.
+              </p>
+              <ul className="ai-errors-list">
+                {aiErrors.map((err, index) => (
+                  <li key={`ai-error-${index}`} className="ai-error-item">
+                    <span className={`ai-error-type ai-error-type--${errorTypeClass(err.type)}`}>
+                      {err.type}
+                    </span>
+                    <span className="ai-error-quote">«{err.quote}»</span>
+                    {topic?.writingSections && topic.writingSections.length > 1 && (
+                      <span className="ai-error-section">
+                        {topic.writingSections.find((s: WritingSection) => s.id === err.section_id)?.title || ''}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {hasRevisions &&
             (submission.revisions ?? []).map((revision, index) => (

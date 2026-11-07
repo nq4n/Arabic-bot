@@ -14,6 +14,16 @@ export type AIResponseType = {
   };
 };
 
+export const AI_ERROR_TYPES = ["إملائي", "نحوي", "ترقيم", "أسلوبي"] as const;
+export type AIErrorType = (typeof AI_ERROR_TYPES)[number];
+
+// موضع خطأ في نص الطالب — تحديد فقط دون تصحيح.
+export type AIErrorItem = {
+  section_id: string;
+  quote: string;
+  type: AIErrorType;
+};
+
 const MIN_MEANINGFUL_WORDS_FOR_GRADE = 5;
 const SHORT_SUBMISSION_WORD_LIMIT = 15;
 const SHORT_SUBMISSION_MAX_RATIO = 0.25;
@@ -352,5 +362,124 @@ ${studentSubmission}
     throw new Error(
       "The AI evaluation process failed. Please check your connection or API key and try again."
     );
+  }
+};
+
+// -----------------------------------------------------------------------------
+// تحديد مواضع الأخطاء (دون تصحيح)
+// -----------------------------------------------------------------------------
+
+const buildErrorLocationPrompt = (sectionIds: string[]): string => {
+  return `
+أنت معلم لغة عربية خبير. مهمتك الوحيدة: تحديد مواضع الأخطاء في نص الطالب، دون تصحيحها ودون إعادة كتابتها.
+
+قواعد صارمة:
+- لا تقترح تصحيحًا، ولا تكتب الصيغة الصحيحة، ولا تشرح كيف يُصلَح الخطأ. فقط حدّد مكانه ونوعه.
+- لكل خطأ، انسخ المقطع الخاطئ حرفيًا كما ورد في نص الطالب تمامًا (نفس الحروف والتشكيل إن وُجد)، دون أي تعديل.
+- اجعل المقطع المنسوخ قصيرًا بقدر الإمكان (كلمة أو عبارة قصيرة) بحيث يكفي للعثور على موضع الخطأ.
+- نوع الخطأ يجب أن يكون واحدًا من: إملائي، نحوي، ترقيم، أسلوبي.
+- لا تُكرّر الخطأ نفسه، ولا تخترع أخطاء غير موجودة. إن كان النص سليمًا فأعِد قائمة فارغة.
+
+معرّفات الأقسام المتاحة: ${sectionIds.join("، ")}
+
+تنسيق الإخراج المطلوب (JSON صالح فقط، دون أي نص قبله أو بعده):
+{
+  "errors": [
+    { "section_id": "<أحد المعرّفات أعلاه>", "quote": "<المقطع الخاطئ منقول حرفيًا>", "type": "<إملائي|نحوي|ترقيم|أسلوبي>" }
+  ]
+}
+`.trim();
+};
+
+const normalizeErrorItems = (raw: unknown, sectionIds: string[]): AIErrorItem[] => {
+  const list = Array.isArray((raw as { errors?: unknown })?.errors)
+    ? (raw as { errors: unknown[] }).errors
+    : Array.isArray(raw)
+      ? (raw as unknown[])
+      : [];
+
+  const fallbackSection = sectionIds[0] ?? "main";
+  const seen = new Set<string>();
+  const items: AIErrorItem[] = [];
+
+  for (const entry of list) {
+    if (!entry || typeof entry !== "object") continue;
+    const e = entry as { section_id?: unknown; quote?: unknown; type?: unknown };
+
+    const quote = typeof e.quote === "string" ? e.quote.trim() : "";
+    if (!quote) continue;
+
+    const sectionId =
+      typeof e.section_id === "string" && sectionIds.includes(e.section_id)
+        ? e.section_id
+        : fallbackSection;
+
+    const type: AIErrorType =
+      typeof e.type === "string" && (AI_ERROR_TYPES as readonly string[]).includes(e.type.trim())
+        ? (e.type.trim() as AIErrorType)
+        : "أسلوبي";
+
+    const dedupeKey = `${sectionId}::${quote}::${type}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    items.push({ section_id: sectionId, quote, type });
+  }
+
+  return items;
+};
+
+// يحدّد مواضع الأخطاء في كتابة الطالب دون تصحيحها. مستقل تمامًا عن التقييم
+// والدرجة، فيمكن استدعاؤه بالتوازي مع التقييم أو لتعبئة التسليمات القديمة.
+export const getAIErrorLocations = async (
+  writingValues: { [key: string]: string },
+  context?: { writingSections?: WritingSection[] }
+): Promise<AIErrorItem[]> => {
+  const entries = Object.entries(writingValues).filter(([, value]) => value && value.trim());
+  if (entries.length === 0) return [];
+  if (!hasLetterContent(writingValues)) return [];
+
+  const sectionIds = entries.map(([key]) => key);
+  const systemPrompt = buildErrorLocationPrompt(sectionIds);
+
+  const studentSubmission = entries
+    .map(([key, value]) => {
+      const title = context?.writingSections?.find((section) => section.id === key)?.title;
+      const label = title ? `${title} (${key})` : key;
+      return `--- ${label} ---\n${value.trim()}`;
+    })
+    .join("\n\n");
+
+  const userContent = `
+حدّد مواضع الأخطاء في النص التالي فقط، دون تصحيح.
+
+نص الطالب:
+${studentSubmission}
+  `.trim();
+
+  try {
+    const { data, error: fnError } = await supabase.functions.invoke("ai-evaluate", {
+      body: { systemPrompt, userContent, temperature: 0.1 },
+    });
+
+    if (fnError || !data?.success || data?.content == null) {
+      console.error("AI error-location error:", fnError || data?.error);
+      return [];
+    }
+
+    let parsed: unknown = data.content;
+    if (typeof parsed === "string") {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch (e) {
+        console.error("Failed to parse AI error-location response:", e);
+        return [];
+      }
+    }
+
+    return normalizeErrorItems(parsed, sectionIds);
+  } catch (error) {
+    console.error("Failed to get AI error locations:", error);
+    return [];
   }
 };
