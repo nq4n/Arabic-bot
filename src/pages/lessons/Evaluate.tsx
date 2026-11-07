@@ -244,7 +244,7 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           studentGrade: userProfile?.grade,
           lessonContext,
         }),
-        getAIErrorLocations(writingValues, { writingSections: topic.writingSections }),
+        getAIErrorLocations(writingValues, rubric, { writingSections: topic.writingSections }),
       ]);
 
       setIsConfirming(true);

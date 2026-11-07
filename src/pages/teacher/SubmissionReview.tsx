@@ -308,20 +308,34 @@ export default function SubmissionReview() {
           {rubric.criteria.map((criterion) => {
             const breakdownItem = aiResponse?.rubric_breakdown?.[criterion.id];
             const maxScore = criterion.levels.length > 0 ? criterion.levels[0].score : 0;
-
-            if (breakdownItem) {
-              return (
-                <div key={criterion.id} className="rubric-item-display">
-                  <strong>{criterion.name}:</strong> {breakdownItem.score}/{maxScore} -{' '}
-                  {breakdownItem.feedback}
-                </div>
-              );
-            }
+            const criterionErrors = aiErrors.filter((err) => err.criterion_id === criterion.id);
 
             return (
               <div key={criterion.id} className="rubric-item-display">
-                <strong>{criterion.name}:</strong>{' '}
-                <span className="muted-note">لا يوجد تقييم لهذا المعيار من الذكاء الاصطناعي</span>
+                {breakdownItem ? (
+                  <>
+                    <strong>{criterion.name}:</strong> {breakdownItem.score}/{maxScore} -{' '}
+                    {breakdownItem.feedback}
+                  </>
+                ) : (
+                  <>
+                    <strong>{criterion.name}:</strong>{' '}
+                    <span className="muted-note">لا يوجد تقييم لهذا المعيار من الذكاء الاصطناعي</span>
+                  </>
+                )}
+
+                {criterionErrors.length > 0 && (
+                  <ul className="ai-errors-list">
+                    {criterionErrors.map((err, index) => (
+                      <li key={`ai-error-${criterion.id}-${index}`} className="ai-error-item">
+                        <span className={`ai-error-type ai-error-type--${errorTypeClass(err.type)}`}>
+                          {err.type}
+                        </span>
+                        <span className="ai-error-quote">«{err.quote}»</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })}
@@ -537,32 +551,6 @@ export default function SubmissionReview() {
               <p>{value}</p>
             </div>
           ))}
-
-          {aiErrors.length > 0 && (
-            <div className="ai-errors-block">
-              <h3 className="ai-errors-title">
-                <i className="fas fa-triangle-exclamation"></i> مواضع الأخطاء ({aiErrors.length})
-              </h3>
-              <p className="text-note">
-                حدّدها الذكاء الاصطناعي دون تصحيح — المقطع كما ورد في النص ونوع الخطأ فقط.
-              </p>
-              <ul className="ai-errors-list">
-                {aiErrors.map((err, index) => (
-                  <li key={`ai-error-${index}`} className="ai-error-item">
-                    <span className={`ai-error-type ai-error-type--${errorTypeClass(err.type)}`}>
-                      {err.type}
-                    </span>
-                    <span className="ai-error-quote">«{err.quote}»</span>
-                    {topic?.writingSections && topic.writingSections.length > 1 && (
-                      <span className="ai-error-section">
-                        {topic.writingSections.find((s: WritingSection) => s.id === err.section_id)?.title || ''}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           {hasRevisions &&
             (submission.revisions ?? []).map((revision, index) => (

@@ -129,16 +129,21 @@ export default function Submissions() {
     let updated = 0;
     for (const row of pending) {
       const topic = topics.find((t) => t.title === row.topic_title);
+      const rubricForTopic = topic ? rubrics.find((r) => r.topicId === topic.id) : undefined;
       try {
-        const errors = await getAIErrorLocations(
-          row.submission_data as Record<string, string>,
-          { writingSections: topic?.writingSections }
-        );
-        const { error: updateError } = await supabase
-          .from('submissions')
-          .update({ ai_errors: errors })
-          .eq('id', row.id);
-        if (!updateError) updated += 1;
+        // Errors are grouped by rubric criterion, so a submission needs a known rubric.
+        if (rubricForTopic) {
+          const errors = await getAIErrorLocations(
+            row.submission_data as Record<string, string>,
+            rubricForTopic,
+            { writingSections: topic?.writingSections }
+          );
+          const { error: updateError } = await supabase
+            .from('submissions')
+            .update({ ai_errors: errors })
+            .eq('id', row.id);
+          if (!updateError) updated += 1;
+        }
       } catch (e) {
         console.error('Backfill failed for submission', row.id, e);
       }
