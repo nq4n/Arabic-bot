@@ -5,6 +5,7 @@ import { rubrics } from '../../data/rubrics';
 import { topics } from '../../data/topics';
 import { SkeletonSection } from '../../components/SkeletonBlocks';
 import { getAIErrorLocations } from '../../services/aiEvaluationService';
+import StudentSelect from '../../components/StudentSelect';
 import '../../styles/Submissions.css';
 
 type BackfillState = {
@@ -17,6 +18,7 @@ type BackfillState = {
 
 type Submission = {
   id: number;
+  student_id: string | null;
   topic_title: string;
   created_at: string;
   ai_grade: number | null;
@@ -33,6 +35,7 @@ export default function Submissions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<string>('');
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [backfill, setBackfill] = useState<BackfillState>({
     running: false,
@@ -52,12 +55,13 @@ export default function Submissions() {
         const { data, error: fetchError } = await supabase
           .from('submissions')
           .select(`
-            id, 
-            topic_title, 
-            created_at, 
-            ai_grade, 
+            id,
+            student_id,
+            topic_title,
+            created_at,
+            ai_grade,
             teacher_response,
-            profiles ( full_name, username ) 
+            profiles ( full_name, username )
           `)
           .order('created_at', { ascending: false });
 
@@ -160,9 +164,18 @@ export default function Submissions() {
     });
   };
 
+  const studentOptions = Array.from(
+    new Map(
+      submissions
+        .filter((sub) => sub.student_id)
+        .map((sub) => [sub.student_id as string, getDisplayName(sub.profiles)])
+    ).entries()
+  ).map(([id, name]) => ({ id, name }));
+
   const filteredSubmissions = submissions.filter(sub => {
     const matchLesson = selectedLesson === '' || sub.topic_title === selectedLesson;
-    return matchLesson;
+    const matchStudent = selectedStudent === null || sub.student_id === selectedStudent;
+    return matchLesson && matchStudent;
   });
 
   const isPageLoading = loading;
@@ -203,7 +216,7 @@ export default function Submissions() {
           )}
 
           {/* فلتر الدرس والطالب */}
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <label htmlFor="lessonFilter">الدرس:</label>
               <select
@@ -217,6 +230,16 @@ export default function Submissions() {
                   <option key={topic.id} value={topic.title}>{topic.title}</option>
                 ))}
               </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <label>الطالب:</label>
+              <StudentSelect
+                options={studentOptions}
+                value={selectedStudent}
+                allOptionLabel="كل الطلبة"
+                placeholder="ابحث عن طالب بالاسم..."
+                onChange={setSelectedStudent}
+              />
             </div>
           </div>
 

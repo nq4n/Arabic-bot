@@ -45,6 +45,51 @@ const errorTypeClass = (type: string): string => {
   }
 };
 
+// Highlight each error's quoted segment inline within the student's text,
+// coloured by error type, with the type and note shown on hover.
+const renderHighlightedText = (text: string, errors: AIErrorItem[]): (string | JSX.Element)[] | string => {
+  if (!text || errors.length === 0) return text;
+
+  const ranges: { start: number; end: number; type: string; note?: string }[] = [];
+  for (const err of errors) {
+    const q = err.quote?.trim();
+    if (!q) continue;
+    let from = 0;
+    while (from <= text.length) {
+      const idx = text.indexOf(q, from);
+      if (idx === -1) break;
+      const end = idx + q.length;
+      const overlaps = ranges.some((r) => idx < r.end && end > r.start);
+      if (!overlaps) {
+        ranges.push({ start: idx, end, type: err.type, note: err.note });
+        break;
+      }
+      from = idx + 1;
+    }
+  }
+
+  if (ranges.length === 0) return text;
+  ranges.sort((a, b) => a.start - b.start);
+
+  const nodes: (string | JSX.Element)[] = [];
+  let cursor = 0;
+  ranges.forEach((r, i) => {
+    if (r.start > cursor) nodes.push(text.slice(cursor, r.start));
+    nodes.push(
+      <mark
+        key={`hl-${i}`}
+        className={`ai-highlight ai-highlight--${errorTypeClass(r.type)}`}
+        title={`${r.type}${r.note ? ' — ' + r.note : ''}`}
+      >
+        {text.slice(r.start, r.end)}
+      </mark>
+    );
+    cursor = r.end;
+  });
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return nodes;
+};
+
 type TeacherResponseType = {
   feedback: string;
   rubric_breakdown: { [key: string]: { score: number } };
@@ -388,6 +433,7 @@ export default function SubmissionReview() {
                           {err.type}
                         </span>
                         <span className="ai-error-quote">«{err.quote}»</span>
+                        {err.note && <span className="ai-error-note">{err.note}</span>}
                       </li>
                     ))}
                   </ul>
@@ -604,9 +650,15 @@ export default function SubmissionReview() {
               <h4>
                 {topic?.writingSections?.find((s: WritingSection) => s.id === key)?.title || 'النص الرئيسي'}
               </h4>
-              <p>{value}</p>
+              <p>{renderHighlightedText(value, aiErrors)}</p>
             </div>
           ))}
+
+          {aiErrors.length > 0 && (
+            <p className="text-note ai-highlight-legend">
+              <i className="fas fa-highlighter"></i> المقاطع الملوّنة أعلاه هي مواضع الأخطاء — مرّر فوقها لمعرفة النوع والوصف.
+            </p>
+          )}
 
           {hasRevisions &&
             (submission.revisions ?? []).map((revision, index) => (

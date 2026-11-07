@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { SkeletonSection } from "../../components/SkeletonBlocks";
 import { topics } from "../../data/topics";
+import StudentSelect from "../../components/StudentSelect";
 import "../../styles/TeacherPanel.css";
 
 type UserRole = "student" | "teacher" | "admin" | null;
@@ -126,55 +127,21 @@ export default function TeacherActivityReports({
           <p className="muted-note">لا يوجد طلاب متاحون.</p>
         ) : (
           <div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="viewMode"
-                  checked={viewMode === 'all'}
-                  onChange={() => { setViewMode('all'); setSelectedStudentId(null); }}
-                />
-                <span>عرض الكل</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="viewMode"
-                  checked={viewMode === 'single'}
-                  onChange={() => setViewMode('single')}
-                />
-                <span>عرض طالب واحد</span>
-              </label>
-            </div>
-            {viewMode === 'single' && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-                {users.map((user) => (
-                  <button
-                    key={user.id}
-                    className={`button button-compact ${selectedStudentId === user.id ? 'button-primary' : 'button-secondary'}`}
-                    onClick={() => setSelectedStudentId(user.id)}
-                    style={{
-                      borderColor: selectedStudentId === user.id ? 'var(--primary)' : 'var(--border-color)',
-                      backgroundColor: selectedStudentId === user.id ? 'var(--primary)' : 'var(--bg-secondary)',
-                      color: selectedStudentId === user.id ? 'var(--primary-icon)' : 'var(--text-main)',
-                    }}
-                  >
-                    {getDisplayName(user)}
-                  </button>
-                ))}
-              </div>
-            )}
-            {selectedStudentId && (
-              <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  className="button button-compact button-secondary"
-                  onClick={() => { setSelectedStudentId(null); setViewMode('all'); }}
-                >
-                  إلغاء تحديد الطالب
-                </button>
-              </div>
-            )}
+            <StudentSelect
+              options={users.map((user) => ({ id: user.id, name: getDisplayName(user) }))}
+              value={viewMode === 'single' ? selectedStudentId : null}
+              allOptionLabel="كل الطلبة"
+              placeholder="ابحث عن طالب بالاسم..."
+              onChange={(id) => {
+                if (id) {
+                  setViewMode('single');
+                  setSelectedStudentId(id);
+                } else {
+                  setViewMode('all');
+                  setSelectedStudentId(null);
+                }
+              }}
+            />
           </div>
         )}
       </section>
