@@ -18,10 +18,12 @@ export const AI_ERROR_TYPES = ["إملائي", "نحوي", "ترقيم", "أسل
 export type AIErrorType = (typeof AI_ERROR_TYPES)[number];
 
 // موضع خطأ في نص الطالب — تحديد فقط دون تصحيح، منسوب إلى معيار التقييم الذي يخصّه.
+// note: وصف موجز لطبيعة الخطأ دون ذكر الصيغة الصحيحة.
 export type AIErrorItem = {
   criterion_id: string;
   quote: string;
   type: AIErrorType;
+  note?: string;
 };
 
 const MIN_MEANINGFUL_WORDS_FOR_GRADE = 5;
@@ -379,12 +381,13 @@ const buildErrorLocationPrompt = (rubric: Rubric): string => {
 أنت معلم لغة عربية خبير. مهمتك الوحيدة: تحديد مواضع الأخطاء في نص الطالب، دون تصحيحها ودون إعادة كتابتها، ونسب كل خطأ إلى معيار التقييم الذي يخصّه.
 
 قواعد صارمة:
-- لا تقترح تصحيحًا، ولا تكتب الصيغة الصحيحة، ولا تشرح كيف يُصلَح الخطأ. فقط حدّد مكانه ونوعه والمعيار الذي يخصّه.
+- لا تقترح تصحيحًا، ولا تكتب الصيغة الصحيحة، ولا تطلب من الطالب أن يكتب كذا. فقط حدّد مكان الخطأ ونوعه ووصفه والمعيار الذي يخصّه.
 - لكل خطأ، انسخ المقطع الخاطئ حرفيًا كما ورد في نص الطالب تمامًا (نفس الحروف والتشكيل إن وُجد)، دون أي تعديل.
 - اجعل المقطع المنسوخ قصيرًا بقدر الإمكان (كلمة أو عبارة قصيرة) بحيث يكفي للعثور على موضع الخطأ.
 - نوع الخطأ يجب أن يكون واحدًا من: إملائي، نحوي، ترقيم، أسلوبي.
+- أضف وصفًا موجزًا (note) يشرح **طبيعة** الخطأ دون كشف الصيغة الصحيحة، مثل: "همزة قطع في موضع همزة وصل"، "تذكير الصفة مع موصوف مؤنث"، "غياب فاصلة بين جملتين". لا تكتب الكلمة الصحيحة إطلاقًا.
 - انسب كل خطأ إلى المعيار الأنسب له من معايير التقييم أدناه عبر معرّفه (criterion_id).
-- لا تُكرّر الخطأ نفسه، ولا تخترع أخطاء غير موجودة. إن كان النص سليمًا فأعِد قائمة فارغة.
+- كن دقيقًا وشاملًا: حدّد كل خطأ فعلي على حدة، ولا تُجمِل. لكن لا تُكرّر الخطأ نفسه ولا تخترع أخطاء غير موجودة. إن كان النص سليمًا فأعِد قائمة فارغة.
 
 معايير التقييم (انسب كل خطأ إلى أحدها):
 ${criteriaDetails}
@@ -394,7 +397,7 @@ ${criteriaDetails}
 تنسيق الإخراج المطلوب (JSON صالح فقط، دون أي نص قبله أو بعده):
 {
   "errors": [
-    { "criterion_id": "<أحد المعرّفات أعلاه>", "quote": "<المقطع الخاطئ منقول حرفيًا>", "type": "<إملائي|نحوي|ترقيم|أسلوبي>" }
+    { "criterion_id": "<أحد المعرّفات أعلاه>", "quote": "<المقطع الخاطئ منقول حرفيًا>", "type": "<إملائي|نحوي|ترقيم|أسلوبي>", "note": "<وصف موجز لطبيعة الخطأ دون الصيغة الصحيحة>" }
   ]
 }
 `.trim();
@@ -413,7 +416,7 @@ const normalizeErrorItems = (raw: unknown, criterionIds: string[]): AIErrorItem[
 
   for (const entry of list) {
     if (!entry || typeof entry !== "object") continue;
-    const e = entry as { criterion_id?: unknown; quote?: unknown; type?: unknown };
+    const e = entry as { criterion_id?: unknown; quote?: unknown; type?: unknown; note?: unknown };
 
     const quote = typeof e.quote === "string" ? e.quote.trim() : "";
     if (!quote) continue;
@@ -428,11 +431,13 @@ const normalizeErrorItems = (raw: unknown, criterionIds: string[]): AIErrorItem[
         ? (e.type.trim() as AIErrorType)
         : "أسلوبي";
 
+    const note = typeof e.note === "string" && e.note.trim() ? e.note.trim() : undefined;
+
     const dedupeKey = `${criterionId}::${quote}::${type}`;
     if (seen.has(dedupeKey)) continue;
     seen.add(dedupeKey);
 
-    items.push({ criterion_id: criterionId, quote, type });
+    items.push({ criterion_id: criterionId, quote, type, note });
   }
 
   return items;

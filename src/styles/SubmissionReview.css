@@ -493,3 +493,32 @@
   color: var(--color-text-muted, var(--color-text-main));
   margin-inline-start: auto;
 }
+
+/* إبراز مواضع الأخطاء داخل نص الطالب */
+.ai-highlight {
+  padding: 0.05em 0.15em;
+  border-radius: 4px;
+  color: inherit;
+  background-color: transparent;
+  border-bottom: 3px solid currentColor;
+  cursor: help;
+}
+
+.ai-highlight--spelling { background-color: rgba(220, 38, 38, 0.16); border-bottom-color: #dc2626; }
+.ai-highlight--grammar { background-color: rgba(124, 58, 237, 0.16); border-bottom-color: #7c3aed; }
+.ai-highlight--punctuation { background-color: rgba(217, 119, 6, 0.18); border-bottom-color: #d97706; }
+.ai-highlight--style { background-color: rgba(15, 118, 110, 0.16); border-bottom-color: #0f766e; }
+
+.ai-highlight-legend {
+  margin: 0.25rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ai-error-note {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, var(--color-text-main));
+  margin-top: 0.15rem;
+}
