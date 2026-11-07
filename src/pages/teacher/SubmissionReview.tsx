@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import type { AIResponseType, AIErrorItem } from '../../services/aiEvaluationService';
+import { getAIAnalysis, getAIErrorLocations } from '../../services/aiEvaluationService';
 import { rubrics } from '../../data/rubrics';
 import type { RubricLevel } from '../../data/rubrics';
 import { topics, WritingSection } from '../../data/topics';
@@ -71,6 +72,8 @@ export default function SubmissionReview() {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentCriterionIndex, setCurrentCriterionIndex] = useState(0);
+  const [activeEvalTab, setActiveEvalTab] = useState<'ai' | 'teacher'>('ai');
+  const [reevaluating, setReevaluating] = useState(false);
 
   // Refs for scrolling
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -275,15 +278,68 @@ export default function SubmissionReview() {
           ? 'مهمة التقرير'
           : 'مهمة الكتابة';
 
+  const handleReevaluate = async () => {
+    if (!submission || !rubric || !topic || reevaluating) return;
+    const confirmed = window.confirm(
+      'سيعيد الذكاء الاصطناعي تقييم هذا التسليم وتحديث الدرجة ومواضع الأخطاء (لا يؤثر على تقييم المعلم). هل تريد المتابعة؟'
+    );
+    if (!confirmed) return;
+
+    setReevaluating(true);
+    try {
+      const [aiResult, aiErrors] = await Promise.all([
+        getAIAnalysis(submission.submission_data, rubric, {
+          topicTitle: topic.title,
+          evaluationTask: topic.evaluationTask?.description,
+          evaluationMode: topic.evaluationTask?.mode,
+          writingSections: topic.writingSections,
+        }),
+        getAIErrorLocations(submission.submission_data, rubric, {
+          writingSections: topic.writingSections,
+        }),
+      ]);
+
+      const { error: updateError } = await supabase
+        .from('submissions')
+        .update({ ai_response: aiResult, ai_grade: aiResult.score, ai_errors: aiErrors })
+        .eq('id', submission.id);
+
+      if (updateError) throw updateError;
+
+      setSubmission((prev) =>
+        prev ? { ...prev, ai_response: aiResult, ai_grade: aiResult.score, ai_errors: aiErrors } : prev
+      );
+      setActiveEvalTab('ai');
+    } catch (e) {
+      console.error('Re-evaluation failed:', e);
+      alert('تعذّرت إعادة التقييم بالذكاء الاصطناعي. حاول مرة أخرى.');
+    } finally {
+      setReevaluating(false);
+    }
+  };
+
   const renderAITab = () => {
     const suggestions = Array.isArray(aiResponse?.suggestions) ? aiResponse.suggestions : [];
     const aiScore = typeof aiResponse?.score === 'number' ? aiResponse.score : 0;
 
     return (
       <section className="card ai-feedback-area">
-        <h2>
-          <i className="fas fa-robot"></i> تقييم الذكاء الاصطناعي
-        </h2>
+        <div className="ai-feedback-header">
+          <h2>
+            <i className="fas fa-robot"></i> تقييم الذكاء الاصطناعي
+          </h2>
+          {isTeacher && (
+            <button
+              type="button"
+              className="button button-compact"
+              onClick={handleReevaluate}
+              disabled={reevaluating}
+            >
+              <i className="fas fa-rotate"></i>{' '}
+              {reevaluating ? 'جارٍ إعادة التقييم...' : 'إعادة التقييم بالذكاء الاصطناعي'}
+            </button>
+          )}
+        </div>
 
         <div className="score ai-score">
           {aiScore}/{totalMaxScore}
@@ -536,7 +592,7 @@ export default function SubmissionReview() {
 
           {hasRevisions && (
             <h3 className="writing-version-label">
-              <i className="fas fa-pen-to-square"></i> النسخة المعدّلة (الأخيرة)
+              <i className="fas fa-pen-to-square"></i> المسودة الثانية (المحسّنة)
               {typeof submission.ai_grade === 'number' && (
                 <span className="writing-version-score"> — تقييم الذكاء الاصطناعي: {submission.ai_grade}</span>
               )}
@@ -558,8 +614,8 @@ export default function SubmissionReview() {
                 <h3 className="writing-version-label writing-version-label--previous">
                   <i className="fas fa-clock-rotate-left"></i>{' '}
                   {(submission.revisions?.length ?? 0) === 1
-                    ? 'النسخة الأولى (قبل التعديل)'
-                    : `نسخة سابقة ${index + 1}`}
+                    ? 'المسودة الأولى'
+                    : `مسودة سابقة ${index + 1}`}
                   {typeof revision.ai_grade === 'number' && (
                     <span className="writing-version-score"> — تقييم الذكاء الاصطناعي: {revision.ai_grade}</span>
                   )}
@@ -576,8 +632,27 @@ export default function SubmissionReview() {
             ))}
         </section>
 
-        {renderAITab()}
-        {renderTeacherTab()}
+        <div className="evaluation-panel">
+          <div className="tabs eval-tabs">
+            <button
+              type="button"
+              className={activeEvalTab === 'ai' ? 'active' : ''}
+              onClick={() => setActiveEvalTab('ai')}
+            >
+              <i className="fas fa-robot"></i> تقييم الذكاء الاصطناعي
+            </button>
+            <button
+              type="button"
+              className={activeEvalTab === 'teacher' ? 'active' : ''}
+              onClick={() => setActiveEvalTab('teacher')}
+            >
+              <i className="fas fa-chalkboard-user"></i> تقييم المعلم
+            </button>
+          </div>
+          <div className="tab-content">
+            {activeEvalTab === 'ai' ? renderAITab() : renderTeacherTab()}
+          </div>
+        </div>
       </div>
 
       <div className="page-actions">
