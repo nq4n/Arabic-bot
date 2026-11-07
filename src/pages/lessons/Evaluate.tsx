@@ -427,6 +427,40 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
       { id: "main", title: "النص الرئيسي", placeholder: "اكتب النص هنا...", description: "" },
     ];
 
+  const sectionTitle = (id: string) =>
+    sectionsToRender.find((s) => s.id === id)?.title || "النص الرئيسي";
+
+  // The student's saved attempts, oldest first: past versions from `revisions`
+  // followed by the current saved version. Used to show an explicit history
+  // (each version's text and AI score) so the student sees both of their tries.
+  const attemptsLog =
+    existingSubmissionId !== null && savedSnapshot
+      ? [
+          ...revisions.map((r) => {
+            const rev = (r ?? {}) as {
+              submission_data?: WritingValues;
+              ai_grade?: number | null;
+            };
+            return {
+              submission_data: rev.submission_data ?? {},
+              ai_grade: typeof rev.ai_grade === "number" ? rev.ai_grade : null,
+            };
+          }),
+          {
+            submission_data: savedSnapshot.submission_data ?? {},
+            ai_grade: savedSnapshot.ai_grade,
+          },
+        ]
+      : [];
+  const attemptsUsed = attemptsLog.length; // 0, 1, or 2
+  const maxAttempts = 2;
+  const attemptLabel = (index: number, total: number) =>
+    index === 0
+      ? "المحاولة الأولى"
+      : index === total - 1
+        ? "المحاولة الثانية (الأخيرة)"
+        : `المحاولة ${index + 1}`;
+
   return (
     <div className="evaluate-page" dir="rtl">
       {false && (
@@ -444,6 +478,18 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           {evaluationTitle}: {topic.title}
         </h1>
         <p>املأ الأقسام أدناه واحصل على تقييم فوري بناءً على المعايير الموضحة.</p>
+        <div className="attempts-badge" aria-label="عدد محاولات التقييم المستخدمة">
+          <i className="fas fa-list-ol"></i>
+          <span>محاولات التقييم: {attemptsUsed} / {maxAttempts} مُستخدمة</span>
+          <span className="attempts-dots">
+            {Array.from({ length: maxAttempts }).map((_, i) => (
+              <span
+                key={i}
+                className={`attempts-dot${i < attemptsUsed ? " attempts-dot--used" : ""}`}
+              />
+            ))}
+          </span>
+        </div>
         {existingSubmissionId !== null && !hasReachedAttemptLimit && (
           <p className="text-note" style={{ marginTop: "0.5rem" }}>
             <i className="fas fa-pen-to-square"></i>{" "}
@@ -510,6 +556,38 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
                       : "قيّم النص الآن"}
             </button>
           </div>
+
+          {attemptsLog.length > 0 && (
+            <section className="card attempts-log evaluate-section">
+              <h2>
+                <i className="fas fa-clock-rotate-left"></i> سجلّ محاولاتك
+              </h2>
+              <p className="text-note">
+                هذه كتاباتك المحفوظة ودرجة الذكاء الاصطناعي لكلٍّ منها. يراها معلّمك أيضاً.
+              </p>
+              {attemptsLog.map((attempt, index) => (
+                <div
+                  key={`attempt-${index}`}
+                  className={`attempt-entry${index === attemptsLog.length - 1 ? " attempt-entry--latest" : ""}`}
+                >
+                  <div className="attempt-entry-header">
+                    <strong>{attemptLabel(index, attemptsLog.length)}</strong>
+                    {typeof attempt.ai_grade === "number" && (
+                      <span className="attempt-score">
+                        درجة الذكاء الاصطناعي: {attempt.ai_grade}
+                      </span>
+                    )}
+                  </div>
+                  {Object.entries(attempt.submission_data || {}).map(([key, value]) => (
+                    <div key={`attempt-${index}-${key}`} className="attempt-section">
+                      <h4>{sectionTitle(key)}</h4>
+                      <p>{value || "—"}</p>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </section>
+          )}
         </div>
 
         <div className="vertical-stack">
