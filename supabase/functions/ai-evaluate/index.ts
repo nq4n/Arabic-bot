@@ -10,7 +10,38 @@ const openRouterKey = Deno.env.get("OPENROUTER_API_KEY")!;
 
 const PRIMARY_MODEL = Deno.env.get("AI_EVAL_MODEL") || "qwen/qwen3.8-omni-flash";
 const FALLBACK_MODEL = Deno.env.get("AI_FALLBACK_MODEL") || "qwen/qwen3.7-flash";
+// Extra fallbacks tried only after the first two fail. Comma-separated, env-overridable.
+const EXTRA_FALLBACKS = (
+  Deno.env.get("AI_EXTRA_FALLBACKS") || "qwen/qwen3.8-flash,qwen/qwen3-30b-a3b-instruct-2507"
+)
+  .split(",")
+  .map((m) => m.trim())
+  .filter(Boolean);
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+// How long to wait for a single OpenRouter call before giving up and retrying.
+const REQUEST_TIMEOUT_MS = 60000;
+// Statuses worth retrying on the SAME model (transient congestion / infra).
+const RETRYABLE_STATUS = new Set([408, 409, 425, 429, 500, 502, 503, 504]);
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// Exponential backoff with jitter so a whole class retrying at once doesn't sync up.
+const backoff = (attempt: number) =>
+  Math.min(2 ** attempt * 1200, 12000) + Math.floor(Math.random() * 400);
+
+const buildModelChain = (): string[] => [
+  ...new Set([PRIMARY_MODEL, FALLBACK_MODEL, ...EXTRA_FALLBACKS]),
+];
+
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -29,44 +60,88 @@ const json = (body: unknown, status = 200) =>
   });
 
 async function callOpenRouter(messages: unknown, temperature: number) {
-  const models = [PRIMARY_MODEL, FALLBACK_MODEL];
-  let lastError = "";
+  const models = buildModelChain();
+  const maxAttempts = 4;
+  let lastError = "failed";
+  let lastStatus = 0;
 
   for (const model of models) {
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      const res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${openRouterKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://arabic-bot-7h16.onrender.com",
-          "X-Title": "Arabic Writing Platform",
-        },
-        body: JSON.stringify({ model, messages, temperature }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const content = data?.choices?.[0]?.message?.content;
-        if (content != null) return { content };
-        lastError = "empty response";
-        break;
-      }
-
-      if (res.status === 429) {
-        const retryAfter = res.headers.get("retry-after");
-        const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.min(2 ** attempt * 1500, 15000);
-        await new Promise((r) => setTimeout(r, delay));
-        lastError = "rate limited";
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      let res: Response;
+      try {
+        res = await fetchWithTimeout(
+          OPENROUTER_URL,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${openRouterKey}`,
+              "Content-Type": "application/json",
+              "HTTP-Referer": "https://arabic-bot-7h16.onrender.com",
+              "X-Title": "Arabic Writing Platform",
+            },
+            body: JSON.stringify({
+              model,
+              messages,
+              temperature,
+              provider: { allow_fallbacks: true },
+            }),
+          },
+          REQUEST_TIMEOUT_MS
+        );
+      } catch (err) {
+        // Network error or timeout (AbortController) — treat as transient, retry.
+        lastError = `network/${(err as Error)?.name || "error"}`;
+        console.error(`[ai-evaluate] ${model} attempt ${attempt}: ${lastError}`);
+        await sleep(backoff(attempt));
         continue;
       }
 
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        const content = data?.choices?.[0]?.message?.content;
+        if (content != null && String(content).trim() !== "") return { content };
+        lastError = "empty response";
+        console.error(`[ai-evaluate] ${model} returned an empty/invalid body`);
+        break; // try the next model
+      }
+
+      // Capture the REAL upstream reason so it shows up in the function logs.
+      const bodyText = await res.text().catch(() => "");
+      lastStatus = res.status;
       lastError = `upstream ${res.status}`;
+      console.error(
+        `[ai-evaluate] ${model} attempt ${attempt} -> HTTP ${res.status}: ${bodyText.slice(0, 400)}`
+      );
+
+      if (res.status === 429) {
+        const retryAfter = res.headers.get("retry-after");
+        const delay = retryAfter ? parseInt(retryAfter) * 1000 : backoff(attempt);
+        await sleep(delay);
+        continue;
+      }
+
+      // 404 = "No endpoints found" for this model (transient provider availability).
+      // Give it one quick retry, then fall through to the next model in the chain.
+      if (res.status === 404) {
+        if (attempt === 0) {
+          await sleep(800);
+          continue;
+        }
+        break;
+      }
+
+      if (RETRYABLE_STATUS.has(res.status)) {
+        await sleep(backoff(attempt));
+        continue;
+      }
+
+      // 400/401/403 and other non-transient errors: retrying the same model
+      // won't help, so move on to the next model.
       break;
     }
   }
 
-  return { error: lastError || "failed" };
+  return { error: lastError, status: lastStatus };
 }
 
 serve(async (req) => {
@@ -94,7 +169,14 @@ serve(async (req) => {
     );
 
     if ("error" in result) {
-      return json({ success: false, error: "فشل الاتصال بخدمة التقييم." });
+      console.error(
+        `[ai-evaluate] all models failed: ${result.error} (status ${result.status ?? 0})`
+      );
+      return json({
+        success: false,
+        error: "فشل الاتصال بخدمة التقييم.",
+        detail: result.error,
+      });
     }
 
     return json({ success: true, content: result.content });
