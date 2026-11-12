@@ -197,6 +197,43 @@ export default function Evaluate() {
     setWritingValues((prev) => ({ ...prev, [id]: value }));
   };
 
+  // Persist the student's writing WITHOUT a grade. Used when AI evaluation fails
+  // so their work is never lost. An ungraded draft does not snapshot into
+  // `revisions`, does not grant points, and does not consume the one allowed edit;
+  // a later successful evaluation grades it in place as the first attempt.
+  // Returns true if the text was safely stored.
+  const saveUngradedDraft = async (): Promise<boolean> => {
+    if (!session || !topic) return false;
+    try {
+      if (existingSubmissionId !== null) {
+        const { error } = await supabase
+          .from("submissions")
+          .update({ submission_data: writingValues })
+          .eq("id", existingSubmissionId);
+        if (error) throw error;
+      } else {
+        const { data: newDraft, error } = await supabase
+          .from("submissions")
+          .insert({
+            student_id: session.user.id,
+            topic_title: topic.title,
+            submission_data: writingValues,
+            ai_response: null,
+            ai_grade: null,
+            ai_errors: [],
+          })
+          .select("id")
+          .maybeSingle();
+        if (error) throw error;
+        if (newDraft?.id != null) setExistingSubmissionId(newDraft.id);
+      }
+      return true;
+    } catch (draftError) {
+      console.error("Failed to save ungraded draft:", draftError);
+      return false;
+    }
+  };
+
   const handleEvaluate = async () => {
     if (!session) {
       alert("الرجاء تسجيل الدخول أولاً للمتابعة.");
@@ -234,25 +271,46 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
 
       // Grade the text and locate its errors in parallel. Error locations are
       // independent of the grade (no corrections) and never block grading if they fail.
-      const [aiResult, aiErrors] = await Promise.all([
-        getAIAnalysis(writingValues, rubric, {
-          topicTitle: topic.title,
-          evaluationTask: topic.evaluationTask.description,
-          evaluationMode: topic.evaluationTask.mode,
-          writingSections: topic.writingSections,
-          studentName: userProfile?.full_name,
-          studentGrade: userProfile?.grade,
-          lessonContext,
-        }),
-        getAIErrorLocations(writingValues, rubric, { writingSections: topic.writingSections }),
-      ]);
+      let aiResult: Awaited<ReturnType<typeof getAIAnalysis>> | null = null;
+      let aiErrors: Awaited<ReturnType<typeof getAIErrorLocations>> = [];
+      try {
+        [aiResult, aiErrors] = await Promise.all([
+          getAIAnalysis(writingValues, rubric, {
+            topicTitle: topic.title,
+            evaluationTask: topic.evaluationTask.description,
+            evaluationMode: topic.evaluationTask.mode,
+            writingSections: topic.writingSections,
+            studentName: userProfile?.full_name,
+            studentGrade: userProfile?.grade,
+            lessonContext,
+          }),
+          getAIErrorLocations(writingValues, rubric, { writingSections: topic.writingSections }),
+        ]);
+      } catch (aiError) {
+        // AI grading failed — never lose the student's writing. Store it as an
+        // ungraded draft so they can retry later without retyping anything.
+        console.error("AI evaluation failed; saving ungraded draft:", aiError);
+        const saved = await saveUngradedDraft();
+        setIsEvaluating(false);
+        setIsConfirming(false);
+        alert(
+          saved
+            ? "تعذّر التقييم بالذكاء الاصطناعي الآن، لكن تم حفظ نصّك. أعد المحاولة بعد قليل دون القلق على كتابتك."
+            : "تعذّر التقييم ولم نتمكن من حفظ النص تلقائيًا. انسخ كتابتك احتياطيًا ثم أعد المحاولة."
+        );
+        return;
+      }
+      if (!aiResult) return;
 
       setIsConfirming(true);
 
-      const isEditing = existingSubmissionId !== null;
+      // Only a submission that was already GRADED counts as a real edit (which
+      // consumes the single allowed revision). An ungraded draft left by a previous
+      // failed attempt is graded in place as the first evaluation.
+      const isRevision = existingSubmissionId !== null && savedSnapshot?.ai_grade != null;
       let submissionId: number | null = existingSubmissionId;
 
-      if (isEditing) {
+      if (isRevision) {
         // Revise the existing submission. Snapshot the previously saved version into
         // `revisions` first (so the teacher can compare the first write to the edit),
         // then store the new text as the current version. The teacher evaluation (if
@@ -285,6 +343,24 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
         }
 
         setRevisions(nextRevisions);
+      } else if (existingSubmissionId !== null) {
+        // An ungraded draft already exists (saved after a previous failed attempt).
+        // Grade it in place as the first evaluation — no revision is consumed.
+        const { error: updateError } = await supabase
+          .from("submissions")
+          .update({
+            submission_data: writingValues,
+            ai_response: aiResult,
+            ai_grade: aiResult.score,
+            ai_errors: aiErrors,
+            teacher_response: null,
+            teacher_grade: null,
+          })
+          .eq("id", existingSubmissionId);
+
+        if (updateError) {
+          throw updateError;
+        }
       } else {
         const { data: newSubmission, error: submissionError } = await supabase
           .from("submissions")
@@ -320,11 +396,11 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           topicTitle: topic.title,
           timestamp: new Date().toISOString(),
           score: aiResult.score,
-          revised: isEditing,
+          revised: isRevision,
         },
       });
 
-      if (isEditing) {
+      if (isRevision) {
         await logAdminNotification({
           recipientId: session.user.id,
           actorId: session.user.id,
