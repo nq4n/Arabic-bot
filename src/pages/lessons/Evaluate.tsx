@@ -15,6 +15,12 @@ import {
   autoConfirmTracking,
 } from "../../utils/enhancedStudentTracking";
 import ConfirmationDialog from "../../components/ConfirmationDialog";
+import {
+  defaultSubmissionTitle,
+  grantsPointsForEvaluation,
+  resolveSubmissionTitle,
+  hasReachedAttemptLimit as hasReachedAttemptLimitFn,
+} from "../../utils/submissionHelpers";
 
 type WritingValues = { [key: string]: string };
 
@@ -65,7 +71,7 @@ export default function Evaluate() {
   } | null>(null);
   const [revisions, setRevisions] = useState<unknown[]>([]);
   // One past version stored → the current text is already the second (final) attempt.
-  const hasReachedAttemptLimit = revisions.length >= 1;
+  const hasReachedAttemptLimit = hasReachedAttemptLimitFn(revisions.length);
 
   // A student may create more than one submission for the same lesson. Each row in
   // `submissions` is an independent submission with its own title and its own two
@@ -83,8 +89,6 @@ export default function Evaluate() {
   const [topicSubmissions, setTopicSubmissions] = useState<TopicSubmission[]>([]);
   // Editable label shown to the student and teacher for the current submission.
   const [submissionTitle, setSubmissionTitle] = useState<string>("");
-
-  const defaultSubmissionTitle = (n: number) => `التسليم رقم ${n}`;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -257,6 +261,7 @@ export default function Evaluate() {
     if (!session || !topic) return false;
     const trimmedTitle = submissionTitle.trim();
     const titlePatch = trimmedTitle ? { title: trimmedTitle } : {};
+    const titleForInsert = resolveSubmissionTitle(submissionTitle, topicSubmissions.length + 1);
     try {
       if (existingSubmissionId !== null) {
         const { error } = await supabase
@@ -274,7 +279,7 @@ export default function Evaluate() {
             ai_response: null,
             ai_grade: null,
             ai_errors: [],
-            title: trimmedTitle || defaultSubmissionTitle(topicSubmissions.length + 1),
+            title: titleForInsert,
           })
           .select("id")
           .maybeSingle();
@@ -366,15 +371,18 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
 
       const trimmedTitle = submissionTitle.trim();
       const titlePatch = trimmedTitle ? { title: trimmedTitle } : {};
-      const effectiveTitle =
-        trimmedTitle || defaultSubmissionTitle(topicSubmissions.length + 1);
+      const effectiveTitle = resolveSubmissionTitle(
+        submissionTitle,
+        topicSubmissions.length + 1
+      );
       // Points are granted once per lesson, for its first graded submission only.
       // Additional submissions for the same lesson are saved without new points so a
       // student cannot farm points by re-submitting the same lesson repeatedly.
-      const topicAlreadyHasGrade = topicSubmissions.some(
-        (s) => s.ai_grade != null && s.id !== existingSubmissionId
+      const grantsPoints = grantsPointsForEvaluation(
+        isRevision,
+        topicSubmissions,
+        existingSubmissionId
       );
-      const grantsPoints = !isRevision && !topicAlreadyHasGrade;
 
       if (isRevision) {
         // Revise the existing submission. Snapshot the previously saved version into
@@ -439,7 +447,7 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
             ai_response: aiResult,
             ai_grade: aiResult.score,
             ai_errors: aiErrors,
-            title: trimmedTitle || defaultSubmissionTitle(topicSubmissions.length + 1),
+            title: effectiveTitle,
           })
           .select("id")
           .maybeSingle();
