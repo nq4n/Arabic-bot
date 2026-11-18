@@ -26,6 +26,7 @@ CREATE TABLE public.submissions (
   teacher_grade numeric,
   revisions jsonb NOT NULL DEFAULT '[]'::jsonb,
   ai_errors jsonb NOT NULL DEFAULT '[]'::jsonb,
+  title text,
   CONSTRAINT submissions_pkey PRIMARY KEY (id),
   CONSTRAINT submissions_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.profiles(id)
 );
