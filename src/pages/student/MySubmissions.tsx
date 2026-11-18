@@ -12,6 +12,7 @@ const getTopicIdByTitle = (title: string): string | undefined =>
 type Submission = {
   id: number;
   topic_title: string;
+  title: string | null;
   created_at: string;
   ai_grade: number | null;
   teacher_response: { rubric_breakdown: { [key: string]: { score: number } }, total_score: number } | null;
@@ -55,7 +56,7 @@ export default function MySubmissions() {
         // 1) Fetch formal writing submissions
         const { data: subData, error: subError } = await supabase
           .from('submissions')
-          .select('id, topic_title, created_at, ai_grade, teacher_response')
+          .select('id, topic_title, title, created_at, ai_grade, teacher_response')
           .eq('student_id', session.user.id)
           .order('created_at', { ascending: false });
 
@@ -178,6 +179,7 @@ export default function MySubmissions() {
             <thead>
               <tr>
                 <th>الموضوع</th>
+                <th>عنوان التسليم</th>
                 <th>تاريخ التسليم</th>
                 <th>تقييم الذكاء الاصطناعي</th>
                 <th>تقييم المعلم</th>
@@ -187,7 +189,7 @@ export default function MySubmissions() {
             <tbody>
               {submissions.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>لم تقم بأي تسليمات بعد.</td>
+                  <td colSpan={6}>لم تقم بأي تسليمات بعد.</td>
                 </tr>
               ) : (
                 submissions.map((sub) => {
@@ -195,6 +197,7 @@ export default function MySubmissions() {
                   return (
                     <tr key={sub.id}>
                       <td>{sub.topic_title}</td>
+                      <td>{sub.title || '—'}</td>
                       <td>{new Date(sub.created_at).toLocaleDateString('ar')}</td>
                       <td>{sub.ai_grade !== null ? `${sub.ai_grade}/100` : '-'}</td>
                       <td>{teacherScore !== null ? `${teacherScore}/100` : 'لم يُقيّم بعد'}</td>

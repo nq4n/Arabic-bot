@@ -67,6 +67,25 @@ export default function Evaluate() {
   // One past version stored → the current text is already the second (final) attempt.
   const hasReachedAttemptLimit = revisions.length >= 1;
 
+  // A student may create more than one submission for the same lesson. Each row in
+  // `submissions` is an independent submission with its own title and its own two
+  // evaluation attempts. We load every submission for this topic so we can list
+  // them, number them, and let the student switch between them or start a new one.
+  type TopicSubmission = {
+    id: number;
+    submission_data: WritingValues;
+    ai_response: unknown;
+    ai_grade: number | null;
+    revisions: unknown[];
+    title: string | null;
+    created_at: string;
+  };
+  const [topicSubmissions, setTopicSubmissions] = useState<TopicSubmission[]>([]);
+  // Editable label shown to the student and teacher for the current submission.
+  const [submissionTitle, setSubmissionTitle] = useState<string>("");
+
+  const defaultSubmissionTitle = (n: number) => `التسليم رقم ${n}`;
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -162,30 +181,37 @@ export default function Evaluate() {
     const loadExistingSubmission = async () => {
       if (!session || !topic) return;
 
-      const { data: existing, error } = await supabase
+      // Load ALL submissions for this lesson (oldest first) so the student can see,
+      // number, and switch between them — not just the latest one.
+      const { data: existingList, error } = await supabase
         .from("submissions")
-        .select("id, submission_data, ai_response, ai_grade, revisions")
+        .select("id, submission_data, ai_response, ai_grade, revisions, title, created_at")
         .eq("student_id", session.user.id)
         .eq("topic_title", topic.title)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: true });
 
       if (error) {
-        console.error("Error loading existing submission:", error);
+        console.error("Error loading existing submissions:", error);
         return;
       }
 
-      if (existing) {
-        setExistingSubmissionId(existing.id);
-        const saved = (existing.submission_data || {}) as WritingValues;
-        setWritingValues((prev) => ({ ...prev, ...saved }));
-        setSavedSnapshot({
-          submission_data: saved,
-          ai_response: existing.ai_response ?? null,
-          ai_grade: existing.ai_grade ?? null,
-        });
-        setRevisions(Array.isArray(existing.revisions) ? existing.revisions : []);
+      const list: TopicSubmission[] = (existingList ?? []).map((s: any) => ({
+        id: s.id,
+        submission_data: (s.submission_data || {}) as WritingValues,
+        ai_response: s.ai_response ?? null,
+        ai_grade: s.ai_grade ?? null,
+        revisions: Array.isArray(s.revisions) ? s.revisions : [],
+        title: s.title ?? null,
+        created_at: s.created_at,
+      }));
+      setTopicSubmissions(list);
+
+      // By default open the most recent submission so an edit/revision still works.
+      if (list.length > 0) {
+        loadSubmissionIntoEditor(list[list.length - 1], list.length);
+      } else {
+        // No submissions yet → the first one the student writes is "التسليم رقم 1".
+        setSubmissionTitle(defaultSubmissionTitle(1));
       }
     };
 
@@ -197,6 +223,31 @@ export default function Evaluate() {
     setWritingValues((prev) => ({ ...prev, [id]: value }));
   };
 
+  // Load a specific existing submission into the editor so the student can read it
+  // or revise it. `number` is its 1-based position for the default title.
+  const loadSubmissionIntoEditor = (sub: TopicSubmission, number: number) => {
+    setExistingSubmissionId(sub.id);
+    setWritingValues({ ...initialWritingValues, ...sub.submission_data });
+    setSavedSnapshot({
+      submission_data: sub.submission_data,
+      ai_response: sub.ai_response,
+      ai_grade: sub.ai_grade,
+    });
+    setRevisions(Array.isArray(sub.revisions) ? sub.revisions : []);
+    setSubmissionTitle(sub.title ?? defaultSubmissionTitle(number));
+  };
+
+  // Start a brand-new submission for this lesson: clear the editor and reset the
+  // attempt counter so the next evaluation creates a new row instead of editing
+  // the previous submission.
+  const startNewSubmission = () => {
+    setExistingSubmissionId(null);
+    setSavedSnapshot(null);
+    setRevisions([]);
+    setWritingValues({ ...initialWritingValues });
+    setSubmissionTitle(defaultSubmissionTitle(topicSubmissions.length + 1));
+  };
+
   // Persist the student's writing WITHOUT a grade. Used when AI evaluation fails
   // so their work is never lost. An ungraded draft does not snapshot into
   // `revisions`, does not grant points, and does not consume the one allowed edit;
@@ -204,11 +255,13 @@ export default function Evaluate() {
   // Returns true if the text was safely stored.
   const saveUngradedDraft = async (): Promise<boolean> => {
     if (!session || !topic) return false;
+    const trimmedTitle = submissionTitle.trim();
+    const titlePatch = trimmedTitle ? { title: trimmedTitle } : {};
     try {
       if (existingSubmissionId !== null) {
         const { error } = await supabase
           .from("submissions")
-          .update({ submission_data: writingValues })
+          .update({ submission_data: writingValues, ...titlePatch })
           .eq("id", existingSubmissionId);
         if (error) throw error;
       } else {
@@ -221,6 +274,7 @@ export default function Evaluate() {
             ai_response: null,
             ai_grade: null,
             ai_errors: [],
+            title: trimmedTitle || defaultSubmissionTitle(topicSubmissions.length + 1),
           })
           .select("id")
           .maybeSingle();
@@ -310,6 +364,18 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
       const isRevision = existingSubmissionId !== null && savedSnapshot?.ai_grade != null;
       let submissionId: number | null = existingSubmissionId;
 
+      const trimmedTitle = submissionTitle.trim();
+      const titlePatch = trimmedTitle ? { title: trimmedTitle } : {};
+      const effectiveTitle =
+        trimmedTitle || defaultSubmissionTitle(topicSubmissions.length + 1);
+      // Points are granted once per lesson, for its first graded submission only.
+      // Additional submissions for the same lesson are saved without new points so a
+      // student cannot farm points by re-submitting the same lesson repeatedly.
+      const topicAlreadyHasGrade = topicSubmissions.some(
+        (s) => s.ai_grade != null && s.id !== existingSubmissionId
+      );
+      const grantsPoints = !isRevision && !topicAlreadyHasGrade;
+
       if (isRevision) {
         // Revise the existing submission. Snapshot the previously saved version into
         // `revisions` first (so the teacher can compare the first write to the edit),
@@ -335,6 +401,7 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
             revisions: nextRevisions,
             teacher_response: null,
             teacher_grade: null,
+            ...titlePatch,
           })
           .eq("id", existingSubmissionId);
 
@@ -355,6 +422,7 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
             ai_errors: aiErrors,
             teacher_response: null,
             teacher_grade: null,
+            ...titlePatch,
           })
           .eq("id", existingSubmissionId);
 
@@ -371,6 +439,7 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
             ai_response: aiResult,
             ai_grade: aiResult.score,
             ai_errors: aiErrors,
+            title: trimmedTitle || defaultSubmissionTitle(topicSubmissions.length + 1),
           })
           .select("id")
           .maybeSingle();
@@ -405,7 +474,7 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           recipientId: session.user.id,
           actorId: session.user.id,
           actorRole: "student",
-          message: `تم تعديل كتابة درس "${topic.title}" وإعادة تقييمها.`,
+          message: `تم تعديل كتابة درس "${topic.title}" (${effectiveTitle}) وإعادة تقييمها.`,
           category: "points",
         });
 
@@ -414,12 +483,12 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           message: "تم حفظ التعديلات وإعادة تقييم كتابتك.",
           tone: "info",
         });
-      } else {
+      } else if (grantsPoints) {
         await logAdminNotification({
           recipientId: session.user.id,
           actorId: session.user.id,
           actorRole: "student",
-          message: `تم تسليم كتابة لدرس "${topic.title}" وحصلت على 10 نقاط.`,
+          message: `تم تسليم كتابة لدرس "${topic.title}" (${effectiveTitle}) وحصلت على 10 نقاط.`,
           category: "points",
         });
 
@@ -428,6 +497,22 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           message: "تم منحك 10 نقاط لإكمال التقييم.",
           points: 10,
           tone: "success",
+        });
+      } else {
+        // An additional submission for a lesson that was already graded: saved and
+        // evaluated, but no new points (points are granted once per lesson).
+        await logAdminNotification({
+          recipientId: session.user.id,
+          actorId: session.user.id,
+          actorRole: "student",
+          message: `تم تسليم إجابة جديدة لدرس "${topic.title}" (${effectiveTitle}).`,
+          category: "points",
+        });
+
+        emitAchievementToast({
+          title: "تم حفظ تسليمك الجديد",
+          message: "تم تقييم إجابتك الجديدة. النقاط تُمنح مرة واحدة لكل درس.",
+          tone: "info",
         });
       }
 
@@ -589,6 +674,63 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
 
       <div className="evaluate-content-wrapper">
         <div className="vertical-stack">
+          <section className="card submissions-manager evaluate-section">
+            <h2>
+              <i className="fas fa-layer-group"></i> تسليماتك لهذا الدرس
+            </h2>
+            <p className="text-note">
+              يمكنك إنشاء أكثر من تسليم لنفس الدرس، ولكل تسليم عنوانه الخاص ومحاولتا
+              تقييم مستقلتان. اختر تسليماً لمتابعته، أو ابدأ تسليماً جديداً.
+            </p>
+
+            {topicSubmissions.length > 0 && (
+              <ul className="topic-submissions-list">
+                {topicSubmissions.map((s, i) => {
+                  const isActive = s.id === existingSubmissionId;
+                  return (
+                    <li
+                      key={s.id}
+                      className={`topic-submission-item${isActive ? " is-active" : ""}`}
+                    >
+                      <div className="topic-submission-info">
+                        <span className="topic-submission-title">
+                          {s.title || defaultSubmissionTitle(i + 1)}
+                        </span>
+                        <span className="topic-submission-meta">
+                          {s.ai_grade != null ? `${s.ai_grade}/100` : "مسودة بدون تقييم"}
+                          {" · "}
+                          {new Date(s.created_at).toLocaleDateString("ar")}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="button button-small"
+                        disabled={isActive || isEvaluating}
+                        onClick={() => loadSubmissionIntoEditor(s, i + 1)}
+                      >
+                        {isActive ? "مفتوح الآن" : "فتح"}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={startNewSubmission}
+              disabled={isEvaluating || existingSubmissionId === null}
+              title={
+                existingSubmissionId === null
+                  ? "أنت تكتب تسليماً جديداً بالفعل"
+                  : "ابدأ تسليماً جديداً فارغاً لهذا الدرس"
+              }
+            >
+              <i className="fas fa-plus"></i> تسليم جديد
+            </button>
+          </section>
+
           <section className="card rubric-area evaluate-section">
             <h2>
               <i className="fas fa-clipboard-check"></i> {topic.evaluationTask.title}
@@ -606,6 +748,25 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           </section>
 
           <div className="card evaluation-area evaluate-section">
+            <div className="writing-section submission-title-field">
+              <label htmlFor="submission-title">عنوان التسليم</label>
+              <p className="writing-section-description">
+                اكتب عنواناً مميزاً لهذا التسليم (مثال: «كتابة موضوع — التسليم رقم 1»)،
+                أو اترك العنوان الافتراضي.
+              </p>
+              <input
+                id="submission-title"
+                type="text"
+                className="text-input submission-title-input"
+                value={submissionTitle}
+                onChange={(e) => setSubmissionTitle(e.target.value)}
+                placeholder={defaultSubmissionTitle(
+                  existingSubmissionId === null ? topicSubmissions.length + 1 : topicSubmissions.length
+                )}
+                disabled={isEvaluating || hasReachedAttemptLimit}
+                maxLength={120}
+              />
+            </div>
             {sectionsToRender.map((section) => (
               <div key={section.id} className="writing-section">
                 <label htmlFor={section.id}>{section.title}</label>
