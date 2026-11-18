@@ -419,29 +419,7 @@
   color: var(--color-text-secondary);
 }
 
-/* حقل عنوان التسليم */
-.submission-title-field {
+/* عنوان التسليم (تلقائي حسب رقم الكتابة) */
+.submission-title-note {
   margin-bottom: 1rem;
-}
-
-.submission-title-input {
-  width: 100%;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
-  font-family: inherit;
-  font-size: 1rem;
-}
-
-.submission-title-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light-transparent);
-}
-
-.submission-title-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }

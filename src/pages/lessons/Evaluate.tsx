@@ -756,25 +756,12 @@ ${topic.reviewQuestions.map((question) => `- ${question.question} | الإجاب
           </section>
 
           <div className="card evaluation-area evaluate-section">
-            <div className="writing-section submission-title-field">
-              <label htmlFor="submission-title">عنوان التسليم</label>
-              <p className="writing-section-description">
-                اكتب عنواناً مميزاً لهذا التسليم (مثال: «كتابة موضوع — التسليم رقم 1»)،
-                أو اترك العنوان الافتراضي.
-              </p>
-              <input
-                id="submission-title"
-                type="text"
-                className="text-input submission-title-input"
-                value={submissionTitle}
-                onChange={(e) => setSubmissionTitle(e.target.value)}
-                placeholder={defaultSubmissionTitle(
-                  existingSubmissionId === null ? topicSubmissions.length + 1 : topicSubmissions.length
-                )}
-                disabled={isEvaluating || hasReachedAttemptLimit}
-                maxLength={120}
-              />
-            </div>
+            <p className="text-note submission-title-note">
+              <i className="fas fa-hashtag"></i>{" "}
+              عنوان هذا التسليم:{" "}
+              <strong>{submissionTitle || defaultSubmissionTitle(topicSubmissions.length + 1)}</strong>
+              {" "}(يُحدَّد تلقائياً حسب رقم الكتابة).
+            </p>
             {sectionsToRender.map((section) => (
               <div key={section.id} className="writing-section">
                 <label htmlFor={section.id}>{section.title}</label>
